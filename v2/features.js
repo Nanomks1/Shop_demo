@@ -469,3 +469,40 @@ const SCI={phones:'mobile',glass:'shield',case:'box',acc:'plug'};
 const scN=k=>k=='glass'?GM().length:S.items.filter(i=>i.sec==k).length;
 const _H10=VW.home;VW.home=function(){const r=_H10();r.h=r.h.replace(/<button class="card" onclick="go\('sec',\{k:'(\w+)'\}\)">([^<]+)<\/button>/g,(m,k,n)=>`<button class="card sc" onclick="go('sec',{k:'${k}'})">${ic(SCI[k])}<b>${n}</b><span class="m">${scN(k)} صنف</span></button>`);return r};
 const _r10=render;render=function(){_r10();try{const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(document.documentElement).getPropertyValue('--c').trim()||m.content}catch(e){}};
+
+/* ===== الأمان: دخول المدير، إدارة المستخدمين، البحث العام، حماية الأخطاء ===== */
+Object.assign(DL0,{alk:10});LM.push(['alk','قفل المدير تلقائياً بعد (دقائق بلا استعمال)']);
+let LAST=Date.now(),LGF=0,LGT=0;
+['touchstart','click','keydown'].forEach(e=>addEventListener(e,()=>{LAST=Date.now()},true));
+const admOk=()=>{try{return sessionStorage.getItem('admOk')=='1'}catch(e){return false}};
+const admSet=v=>{try{v?sessionStorage.setItem('admOk','1'):sessionStorage.removeItem('admOk')}catch(e){}};
+function lgShow(){if($('lg'))return;admSet(false);const emp=S.users.filter(u=>!u.admin),ads=S.users.filter(u=>u.admin);
+document.body.insertAdjacentHTML('beforeend',`<div id="lg" style="position:fixed;inset:0;z-index:55;background:var(--bg);overflow:auto;padding:24px;display:flex;flex-direction:column;gap:10px;justify-content:center;max-width:420px;margin:auto"><h2 style="text-align:center">${I('lock')} تسجيل الدخول</h2>${emp.length?'<p class="m" style="text-align:center;margin:0">دخول كموظف</p>'+emp.map((u,i)=>`<button class="btn s" onclick="lgEmp(${i})">${esc(u.name)}</button>`).join(''):''}<p class="m" style="text-align:center;margin:8px 0 0">دخول كمدير</p><select id="lga">${ads.map(u=>`<option>${esc(u.name)}</option>`).join('')}</select><input id="lgp" type="password" placeholder="رمز المدير" onkeydown="if(event.key==='Enter')lgAdm()"><button class="btn" onclick="lgAdm()">دخول</button></div>`)}
+function lgEmp(i){const u=S.users.filter(x=>!x.admin)[i];upd(()=>{S.me=u.name});$('lg').remove()}
+function lgAdm(){const p=$('lgp');if(Date.now()<LGT){p.value='';p.placeholder='انتظر قليلاً ثم أعد المحاولة';return}
+if(hs(p.value)==S.pin){LGF=0;admSet(true);LAST=Date.now();const n=$('lga').value;upd(()=>{S.me=n});$('lg').remove()}else{LGF++;p.value='';p.placeholder='رمز خاطئ';if(LGF>=5){LGF=0;LGT=Date.now()+30000}}}
+who=function(){ask('من أنت؟',[{k:'u',l:'المستخدم',t:'sel',o:S.users.map(u=>u.name),v:S.me}],'اختيار').then(v=>{if(!v)return;const u=S.users.find(x=>x.name==v.u);if(!u.admin){admSet(false);return upd(()=>{S.me=u.name})}if(u.name==S.me&&admOk())return;ask('رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'دخول').then(p=>{if(p)hs(p.p)==S.pin?(admSet(true),upd(()=>{S.me=u.name})):toast('الرمز خاطئ')})})};
+const needAdm=f=>function(...a){if(!isAdmin())return toast('للمدير فقط');ask('تأكيد: رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'تأكيد').then(v=>{if(!v)return;if(hs(v.p)==S.pin)f.apply(null,a);else toast('الرمز خاطئ')})};
+const _uA=uAdd,_uE=uEd,_pC=pinCh,_pT=pTog;uAdd=needAdm(_uA);uEd=needAdm(_uE);pinCh=needAdm(_pC);pTog=function(k){if(isAdmin())_pT(k)};
+setInterval(()=>{if(S.users.length&&S.pin&&isAdmin()&&!$('lg')&&(!admOk()||Date.now()-LAST>(S.cfg.alk??10)*60000))lgShow()},15000);
+if(!S.users.length)admSet(true);else if(S.pin&&(isAdmin()&&!admOk()||!S.users.some(u=>u.name==S.me)))lgShow();
+/* البحث العام: المخزون + الصيانة + دليل الأسعار */
+const scH2=()=>[['','الكل'],['phones','هواتف'],['glass','أنتي كاس'],['case','بوشيط'],['acc','إكسسوارات'],['rp','صيانة'],['gd','الدليل']].map(([k,l])=>`<button class="tag ${SC==k?'on':''}" onclick="scSet('${k}')">${l}</button>`).join('');
+scSet=function(k){SC=k;const b=$('sc');if(b)b.innerHTML=scH2();sq(Q)};
+const _H11=VW.home;VW.home=function(){const r=_H11();r.h=r.h.replace(/<div id="sc">[\s\S]*?<\/div>/,()=>'<div id="sc">'+scH2()+'</div>');return r};
+srch=function(q){const n=nz(q),o=[],sec=['phones','glass','case','acc'];
+if(!SC||SC=='glass')GM().filter(g=>g.models.some(m=>nz(((g.br||{})[m]||'')+m).includes(n))).forEach(g=>o.push(glB(g)));
+S.items.filter(i=>i.sec!='glass'&&(!SC||i.sec==SC)&&nz(hay(i)+' '+fxTxt(i)).includes(n)).slice(0,30).forEach(i=>o.push(card(i)));
+if(!SC||SC=='rp')S.rp.filter(r=>nz(r.name+r.tel+r.dev+r.fault+r.note+' '+fxTxt(r)).includes(n)).slice(0,15).forEach(r=>o.push(rc(r)));
+if(!SC||SC=='gd')S.guide.filter(g=>nz(g.m+g.f+(g.n||'')).includes(n)).slice(0,15).forEach(g=>o.push(gdCard(g)));
+return o.join('')||'<p class="m">لا نتائج</p>'};
+function goSearch(){go('home');setTimeout(()=>{const i=document.querySelector('main input');if(i)i.focus()},60)}
+if($('lkb'))$('lkb').insertAdjacentHTML('beforebegin','<button id="srb" class="ib" onclick="goSearch()">'+ic('search')+'</button>');
+/* حماية: التقاط الأخطاء ومؤشر المساحة */
+Object.assign(IC,{search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'});
+const errLog=m=>{try{const a=JSON.parse(localStorage.getItem('shopErr')||'[]');a.unshift(new Date().toLocaleString('ar-MA')+' — '+String(m).slice(0,160));localStorage.setItem('shopErr',JSON.stringify(a.slice(0,8)))}catch(e){}};
+let ERT=0;const errUi=m=>{errLog(m);if(Date.now()-ERT<4000)return;ERT=Date.now();toast(/quota|storage/i.test(m)?'المساحة ممتلئة: خذ نسخة احتياطية الآن':'حدث خطأ غير متوقع، بياناتك محفوظة')};
+addEventListener('error',e=>errUi(e.message||e));addEventListener('unhandledrejection',e=>errUi((e.reason&&e.reason.message)||e.reason));
+const _bk11=VW.st_bk;VW.st_bk=function(){const o=_bk11(),n=(localStorage.getItem('shop3')||'').length,p=Math.round(n/5e4),er=JSON.parse(localStorage.getItem('shopErr')||'[]');
+o.h+=`<h3>المساحة المستعملة</h3><div class="card"><div class="row2"><b>${p}%</b><span class="m">${(n/1e6).toFixed(1)} مليون حرف من نحو 5</span></div><div style="height:8px;border-radius:4px;background:var(--b);margin-top:8px"><div style="height:8px;border-radius:4px;width:${Math.min(100,p)}%;background:${p>70?'#dc2626':'var(--p)'}"></div></div>${p>70?'<p class="m">اقتربت المساحة من الامتلاء. خذ نسخة احتياطية واحذف الصور القديمة.</p>':''}</div>`+(er.length?'<h3>آخر الأخطاء (للتشخيص)</h3>'+er.map(x=>`<div class="m">${esc(x)}</div>`).join(''):'');return o};
+render();
