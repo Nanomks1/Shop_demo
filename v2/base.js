@@ -1,7 +1,7 @@
 /* ============================================================
    base.js — النسخة الأساسية: الهواتف، الأنتي كاس، البوشيط، الإكسسوارات
    ============================================================ */
-document.head.insertAdjacentHTML('beforeend','<style>.dotl{display:inline-block;width:12px;height:12px;border-radius:50%}.cn{min-width:2.2rem;text-align:center;font-weight:700}.rs{color:#b45309;font-weight:700}.sub{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.sub .btn{margin:0}</style>');
+document.head.insertAdjacentHTML('beforeend','<style>.dotl{display:inline-block;width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 3px rgba(128,128,128,.18);flex:none}.cn{min-width:2.2rem;text-align:center;font-weight:700}.rs{color:#b45309;font-weight:700}.sub{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.sub .btn{margin:0}</style>');
 const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g'};
 const KS=Object.keys(AL).sort((a,b)=>b.length-a.length);
 const nz=s=>{s=String(s||'').toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/[\u064B-\u0652]/g,'');for(const k of KS)s=s.split(k).join(AL[k]);return s.replace(/[\s\-_]/g,'')};

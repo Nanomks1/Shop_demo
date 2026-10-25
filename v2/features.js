@@ -5,6 +5,10 @@
    v3.js — الألوان، الترتيب، فلتر البحث، مستويات الأنتي كاس، بحث البوشيط، تطوير الإكسسوارات
    ============================================================ */
 document.head.insertAdjacentHTML('beforeend','<style>.sw{width:42px;height:42px;border-radius:50%;border:3px solid transparent;margin:4px;padding:0}.sw.on{border-color:var(--t)}.lvs{display:flex;gap:6px;margin:6px 0 10px}.lvb{flex:1;min-height:44px;border:2px solid var(--lc);background:transparent;color:var(--t);border-radius:12px;font:inherit;font-size:.85rem;opacity:.6;padding:0}.lvb.on{background:var(--lc);color:var(--lt);opacity:1;font-weight:700}.gm{border-top:1px solid var(--b);padding-top:8px;margin-top:8px}.kvs{display:flex;gap:8px;margin:8px 0}.kv{flex:1;background:var(--bg);border-radius:10px;padding:6px 10px;text-align:center}.kv small{display:block;color:var(--m);font-size:.75rem}.kv b{font-size:1.1rem}</style>');
+
+/* ===== أيقونات خطية موحدة (بديل الإيموجي) ===== */
+Object.assign(IC,{lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M8 7v10M12 7v10M16 7v10"/>',mobile:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',box:'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12M3.3 7l8.7 5 8.7-5"/>',plug:'<path d="M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>',check:'<path d="M20 6 9 17l-5-5"/>',bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/>',tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',send:'<path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/>',cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>'});
+const I=n=>ic(n).replace('class="ic"','class="ic s"');
 /* ===== الألوان ===== */
 const PAL=['#3b82f6','#f97316','#22c55e','#a855f7','#ec4899','#eab308','#06b6d4','#ef4444','#64748b','#84cc16'];
 const DBC={Samsung:'#3b82f6',Redmi:'#f97316',Xiaomi:'#eab308',Realme:'#facc15',Oppo:'#22c55e',Vivo:'#a855f7',Tecno:'#06b6d4',Infinix:'#84cc16',iPhone:'#64748b',Itel:'#ef4444'};
@@ -132,11 +136,11 @@ render();
    v5.js — القفل السريع ومسح الباركود
    ============================================================ */
 /* ===== قفل سريع ===== */
-function lkShow(){if($('lk'))return;document.body.insertAdjacentHTML('beforeend','<div id="lk" style="position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:12px;padding:24px"><h2 style="text-align:center">🔒 التطبيق مقفل</h2><input id="lki" type="tel" placeholder="الرمز" onkeydown="if(event.key===\'Enter\')lkTry()"><button class="btn" onclick="lkTry()">فتح</button></div>')}
+function lkShow(){if($('lk'))return;document.body.insertAdjacentHTML('beforeend','<div id="lk" style="position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:12px;padding:24px"><h2 style="text-align:center">'+I('lock')+' التطبيق مقفل</h2><input id="lki" type="tel" placeholder="الرمز" onkeydown="if(event.key===\'Enter\')lkTry()"><button class="btn" onclick="lkTry()">فتح</button></div>')}
 function lkTry(){const c=$('lki').value;if(c&&(hs(c)==S.cfg.lk||hs(c)==S.pin)){localStorage.removeItem('shopLock');$('lk').remove()}else{$('lki').value='';$('lki').placeholder='رمز خاطئ'}}
 function lkSet(go2){if(!isAdmin())return toast('للمدير فقط');ask('رمز القفل السريع',[{k:'p',l:'رمز بسيط (أرقام)',t:'password'}]).then(v=>{if(v&&v.p){upd(()=>S.cfg.lk=hs(v.p));if(go2===true)lockNow()}})}
 function lockNow(){if(!S.cfg.lk)return isAdmin()?lkSet(true):toast('المدير يعيّن رمز القفل من المزيد');try{localStorage.setItem('shopLock','1')}catch(e){}lkShow()}
-$('me').insertAdjacentHTML('beforebegin','<button id="lkb" class="ib" onclick="lockNow()">🔒</button>');
+$('me').insertAdjacentHTML('beforebegin','<button id="lkb" class="ib" onclick="lockNow()">'+I('lock')+'</button>');
 const _st5=VW.st;VW.st=function(){const o=_st5();o.h+=row('رمز القفل السريع','lkSet()',S.cfg.lk?'مُعيَّن':'غير مُعيَّن');return o};
 /* ===== مسح الباركود ===== */
 let BS=null,BI=0,BCODE='';
@@ -150,7 +154,7 @@ function bcHome(){bcScan(c=>{BCODE=c;const m=S.items.filter(i=>i.code==c&&i.sec!
 function bcLink(){$('sh').innerHTML='<div class="bar"></div><h3>ربط الرمز بعنصر</h3><label>ابحث عن العنصر<input oninput="bcF(this.value)"></label><div id="pr"></div><button class="btn s" onclick="finish(null)">إلغاء</button>';sheetOpen(()=>{});bcF('')}
 function bcF(q){const n=nz(q);$('pr').innerHTML=S.items.filter(i=>i.sec!='glass'&&n&&nz(hay(i)).includes(n)).slice(0,8).map(i=>`<button class="card row2" onclick="bcSet('${i.id}')"><b>${esc(bcLbl(i))}</b></button>`).join('')}
 function bcSet(id){const i=find(id);upd(()=>{i.code=BCODE});finish(null);toast('تم الربط')}
-const _H5=VW.home;VW.home=function(){const r=_H5();r.h=r.h.replace('<div id="res"></div>','<button class="btn s" onclick="bcHome()">📷 مسح باركود</button><div id="res"></div>');return r};
+const _H5=VW.home;VW.home=function(){const r=_H5();r.h=r.h.replace('<div id="res"></div>','<button class="btn s" onclick="bcHome()">'+I('scan')+' مسح باركود</button><div id="res"></div>');return r};
 try{if(localStorage.getItem('shopLock')=='1'&&S.cfg.lk)lkShow()}catch(e){}
 render();
 
@@ -243,7 +247,7 @@ function suggestGuidePrice() {
 
   if (matches.length) {
     box.innerHTML = matches.map(g =>
-      `<button type="button" class="tag on" style="margin-top:4px" onclick="$('r_c').value='${esc(g.p)}'">💡 السعر في الدليل (${esc(g.m)} - ${esc(g.f)}): ${esc(dh(g.p))} — اضغط لوضعه</button>`
+      `<button type="button" class="tag on" style="margin-top:4px" onclick="$('r_c').value='${esc(g.p)}'">${I('bulb')} السعر في الدليل (${esc(g.m)} - ${esc(g.f)}): ${esc(dh(g.p))} — اضغط لوضعه</button>`
     ).join('');
   } else {
     box.innerHTML = '';
@@ -260,7 +264,7 @@ function checkDeviceHistory() {
   if (recent.length) {
     const last = recent[recent.length - 1];
     const days = Math.floor((Date.now() - last.t2) / 864e5);
-    box.textContent = `⚠️ تنبيه: جهاز مشابه (${last.dev} — ${last.name}) سُلّم منذ ${days || 'أقل من'} يوم (${last.tst ? 'جُرِّب مع الزبون ✅' : 'بدون توثيق تجربة'})`;
+    box.textContent = `تنبيه: جهاز مشابه (${last.dev} — ${last.name}) سُلّم منذ ${days || 'أقل من'} يوم (${last.tst ? 'جُرِّب مع الزبون' : 'بدون توثيق تجربة'})`;
   } else {
     box.textContent = '';
   }
@@ -271,12 +275,12 @@ const _rc7 = rc;
 rc = function(r) {
   let h = _rc7(r);
   if (r.tel) {
-    const callBtn = `<a href="tel:${esc(r.tel)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">📞 اتصال</a>`;
+    const callBtn = `<a href="tel:${esc(r.tel)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a>`;
     h = h.replace('<div class="sub">', `<div class="sub">${callBtn}`);
   }
   if (r.st == 'dn') {
     const badge = r.tst
-      ? `<div class="m" style="color:#16a34a;font-weight:700">✅ جُرِّب مع الزبون وسُلِّم مصلوحاً (${esc(r.dby || '')})</div>`
+      ? `<div class="m" style="color:#16a34a;font-weight:700">${I('check')} جُرِّب مع الزبون وسُلِّم مصلوحاً (${esc(r.dby || '')})</div>`
       : (r.res == 'ok' ? `<div class="m">سُلِّم بدون توثيق التجربة</div>` : '');
     const dnoteHtml = r.dnote ? `<div class="m">ملاحظة التسليم: ${esc(r.dnote)}</div>` : '';
     h = h.replace('<div class="sub">', badge + dnoteHtml + '<div class="sub">');
@@ -292,7 +296,7 @@ rDV = function(id, pre) {
     { k: 'p', l: def ? 'هل المبلغ المقبوض هو ' + def + ' ؟ عدّله إن اختلف' : 'المبلغ المقبوض (0 إن لم يُقبض شيء)', t: 'tel', v: pr.p ?? def }
   ];
   if (r.res == 'ok') {
-    fields.unshift({ k: 'tested', l: (pr.err ? '⚠️ اختر أحد الخيارين: ' : '') + 'تجربة الإصلاح مع الزبون قبل التسليم (إجباري)', t: 'sel', o: DVO, v: DVO[0] });
+    fields.unshift({ k: 'tested', l: (pr.err ? 'مطلوب، اختر أحد الخيارين: ' : '') + 'تجربة الإصلاح مع الزبون قبل التسليم (إجباري)', t: 'sel', o: DVO, v: DVO[0] });
   }
   fields.push({ k: 'dnote', l: 'ملاحظة عند التسليم (اختياري)', v: pr.dnote ?? (r.dnote || '') });
   ask('تسليم الهاتف: ' + r.name, fields, 'تأكيد التسليم', false).then(v => {
@@ -334,25 +338,25 @@ const repL7 = () => repLines().map(x => {
   if (x[0] == 'البوشيط') { const i = find(idOf(x)); if (i && (i.rem || i.need)) return [x[0], x[1] + (i.rem ? ' — باقي: ' + i.rem : '') + (i.need ? ' — خاصنا: ' + i.need : ''), x[2], x[3]]; }
   return x;
 });
-const RTABS = [['all', '📋 التقرير الشامل'], ['phones', '📱 الهواتف'], ['glass', '🛡️ الأنتي كاس'], ['pochette', '📲 البوشيط'], ['acc', '🔌 الإكسسوارات']];
-const RSEC = { phones: ['الهواتف الناقصة', '📱 قسم الهواتف النافدة', 'لا هواتف نافدة'], glass: ['الأنتي كاس', '🛡️ قسم زجاج الحماية (الأنتي كاس)', 'الأنتي كاس مكتمل'], pochette: ['البوشيط', '📲 قسم البوشيط', 'البوشيط مكتمل'], acc: ['الإكسسوارات', '🔌 قسم الإكسسوارات وقطع الصيانة', 'الإكسسوارات مكتملة'] };
+const RTABS = [['all', 'الشامل'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['pochette', 'البوشيط'], ['acc', 'الإكسسوارات']];
+const RSEC = { phones: ['الهواتف الناقصة', 'قسم الهواتف النافدة', 'لا هواتف نافدة'], glass: ['الأنتي كاس', 'قسم زجاج الحماية (الأنتي كاس)', 'الأنتي كاس مكتمل'], pochette: ['البوشيط', 'قسم البوشيط', 'البوشيط مكتمل'], acc: ['الإكسسوارات', 'قسم الإكسسوارات وقطع الصيانة', 'الإكسسوارات مكتملة'] };
 const rSecs = m => m == 'all' ? ['phones', 'glass', 'pochette', 'acc'] : [m];
 
 function generateReportText(mode = 'all') {
-  const L = repL7(), o = [`📋 *تقرير المحل (${new Date().toLocaleDateString('ar-MA')})*`, ''];
+  const L = repL7(), o = [`*تقرير المحل (${new Date().toLocaleDateString('ar-MA')})*`, ''];
   if (mode == 'all' || mode == 'phones') {
     const s = stkL();
-    if (s.length) { o.push('*📱 الهواتف المتوفرة حالياً*'); s.forEach(i => o.push('• ' + stkN(i) + ' — العدد ' + i.cnt + (i.price ? ' (' + dh(i.price) + ')' : ''))); o.push(''); }
+    if (s.length) { o.push('*الهواتف المتوفرة حالياً*'); s.forEach(i => o.push('• ' + stkN(i) + ' — العدد ' + i.cnt + (i.price ? ' (' + dh(i.price) + ')' : ''))); o.push(''); }
   }
   rSecs(mode).forEach(k => {
     const [key, title, none] = RSEC[k], ls = L.filter(x => x[0] == key);
     o.push('*' + title + '*');
     ls.forEach(x => o.push((x[2] == 'r' ? '🔴 ' : '🟡 ') + x[1]));
     if (k == 'acc') {
-      S.rp.filter(r => r.st == 'in' && r.part).forEach(r => o.push('🔧 قطعة صيانة: ' + r.part + ' (' + r.dev + ')'));
-      if (mode == 'all') S.req.forEach(q => o.push('🗣️ طلب زبون: ' + q.t));
+      S.rp.filter(r => r.st == 'in' && r.part).forEach(r => o.push('قطعة صيانة: ' + r.part + ' (' + r.dev + ')'));
+      if (mode == 'all') S.req.forEach(q => o.push('طلب زبون: ' + q.t));
     }
-    if (!ls.length && !(k == 'acc' && (S.rp.some(r => r.st == 'in' && r.part) || (mode == 'all' && S.req.length)))) o.push('✅ ' + none);
+    if (!ls.length && !(k == 'acc' && (S.rp.some(r => r.st == 'in' && r.part) || (mode == 'all' && S.req.length)))) o.push(none);
     o.push('');
   });
   return o.join('\n').trim();
@@ -362,17 +366,17 @@ VW.rep = function() {
   const L = repL7(), s = stkL();
   let h = `<div style="margin-bottom:12px;display:flex;gap:6px;overflow-x:auto">${RTABS.map(([k, l]) => `<button class="tag ${reportSectionFilter === k ? 'on' : ''}" onclick="reportSectionFilter='${k}';render()">${l}</button>`).join('')}</div>`;
   if ((reportSectionFilter == 'all' || reportSectionFilter == 'phones') && s.length)
-    h += '<h3>📱 الهواتف المتوفرة حالياً</h3>' + s.map(i => `<div class="card row2"><span style="flex:1">${esc(stkN(i))}</span><span class="m">${i.cnt}${i.price ? ' · ' + esc(dh(i.price)) : ''}</span></div>`).join('');
+    h += '<h3>الهواتف المتوفرة حالياً</h3>' + s.map(i => `<div class="card row2"><span style="flex:1">${esc(stkN(i))}</span><span class="m">${i.cnt}${i.price ? ' · ' + esc(dh(i.price)) : ''}</span></div>`).join('');
   rSecs(reportSectionFilter).forEach(k => {
     const [key, title, none] = RSEC[k], ls = L.filter(x => x[0] == key);
     let b = ls.map(x => `<div class="card row2"><span class="dotl" style="background:${DT[x[2]]}"></span><span style="flex:1">${esc(x[1])}</span><button class="btn sm" onclick="${x[3]}">تم الشراء</button></div>`).join('');
     if (k == 'acc') {
-      b += S.rp.filter(r => r.st == 'in' && r.part).map(r => `<div class="card row2"><span class="dotl" style="background:#f59e0b"></span><span style="flex:1">🔧 قطعة صيانة: <b>${esc(r.part)}</b> <span class="m">(${esc(r.dev)})</span></span></div>`).join('');
-      if (reportSectionFilter == 'all') b += S.req.map(q => `<div class="card row2"><span style="flex:1">🗣️ طلب زبون: <b>${esc(q.t)}</b></span><button class="btn s sm" onclick="rqD('${q.id}')">مسح</button></div>`).join('');
+      b += S.rp.filter(r => r.st == 'in' && r.part).map(r => `<div class="card row2"><span class="dotl" style="background:#f59e0b"></span><span style="flex:1">${I('tool')} قطعة صيانة: <b>${esc(r.part)}</b> <span class="m">(${esc(r.dev)})</span></span></div>`).join('');
+      if (reportSectionFilter == 'all') b += S.req.map(q => `<div class="card row2"><span style="flex:1">${I('chat')} طلب زبون: <b>${esc(q.t)}</b></span><button class="btn s sm" onclick="rqD('${q.id}')">مسح</button></div>`).join('');
     }
     h += `<h3>${title}</h3>` + (b || `<p class="m">${none}</p>`);
   });
-  h += `<div style="margin-top:20px;display:flex;gap:10px"><button class="btn" style="flex:1" onclick="location.href='https://wa.me/?text='+encodeURIComponent(generateReportText(reportSectionFilter))">📲 إرسال القسم بالواتساب</button><button class="btn s" onclick="navigator.clipboard.writeText(generateReportText(reportSectionFilter)).then(()=>toast('تم النسخ'))">نسخ النص</button></div>`;
+  h += `<div style="margin-top:20px;display:flex;gap:10px"><button class="btn" style="flex:1" onclick="location.href='https://wa.me/?text='+encodeURIComponent(generateReportText(reportSectionFilter))">${I('send')} إرسال القسم بالواتساب</button><button class="btn s" onclick="navigator.clipboard.writeText(generateReportText(reportSectionFilter)).then(()=>toast('تم النسخ'))">نسخ النص</button></div>`;
   return { t: 'التقرير اليومي', h };
 };
 
@@ -380,7 +384,7 @@ VW.rep = function() {
 const _csCard7 = csCard;
 csCard = function(i) {
   let h = _csCard7(i);
-  const info = (i.rem ? `<div class="m">🟢 باقي: ${esc(i.rem)}</div>` : '') + (i.need ? `<div class="rs">🔴 خاصنا: ${esc(i.need)}</div>` : '');
+  const info = (i.rem ? `<div class="m"><span class="dotl" style="background:${DT.g}"></span> باقي: ${esc(i.rem)}</div>` : '') + (i.need ? `<div class="rs"><span class="dotl" style="background:${DT.r}"></span> خاصنا: ${esc(i.need)}</div>` : '');
   h = h.replace('<div class="sub">', info + `<div class="sub"><button class="btn s sm" onclick="csQuickNote('${i.id}')">باقي / خاصنا</button>`);
   return h;
 };
@@ -414,7 +418,7 @@ const fxList=(sec,key)=>(S.fields||[]).filter(f=>f.sec==sec&&(!f.kinds||!f.kinds
 const fxKey=()=>FXSEC=='acc'?CS.kind:FXSEC=='phones'?PF.brand:'';
 const fxVal=(i,f)=>[].concat((i.x||{})[f.id]||[]).filter(Boolean);
 const fxTxt=i=>(S.fields||[]).map(f=>fxVal(i,f).length?f.name+' '+fxVal(i,f).join(' '):'').join(' ');
-const fxShow=i=>{const p=(S.fields||[]).map(f=>fxVal(i,f).length?f.name+': '+fxVal(i,f).join('، '):'').filter(Boolean);return p.length?`<div class="m">🏷 ${esc(p.join(' · '))}</div>`:''};
+const fxShow=i=>{const p=(S.fields||[]).map(f=>fxVal(i,f).length?f.name+': '+fxVal(i,f).join('، '):'').filter(Boolean);return p.length?`<div class="m">${I('tag')} ${esc(p.join(' · '))}</div>`:''};
 const fxIns=(h,t)=>!t?h:h.includes('<div class="sub">')?h.replace('<div class="sub">',()=>t+'<div class="sub">'):h.replace(/<\/div>\s*$/,()=>t+'</div>');
 function fxR(){const b=$('fx');if(!b)return;b.innerHTML=fxList(FXSEC,fxKey()).map(f=>{const v=[].concat(FX[f.id]||[]);return `<label>${esc(f.name)}</label><div>${f.opts.map((o,j)=>`<button type="button" class="tag ${v.includes(o)?'on':''}" onclick="fxT('${f.id}',${j})">${esc(o)}</button>`).join('')}${FXA==f.id?`<span class="row2"><input id="fxn" placeholder="خيار جديد"><button type="button" class="btn sm" onclick="fxN('${f.id}')">إضافة</button></span>`:`<button type="button" class="tag" onclick="FXA='${f.id}';fxR()">+ جديد</button>`}</div>`}).join('')}
 function fxT(id,j){const f=S.fields.find(x=>x.id==id),o=f.opts[j],a=[].concat(FX[id]||[]);FX[id]=f.multi?(a.includes(o)?a.filter(x=>x!=o):[...a,o]):(a[0]==o?'':o);fxR()}
@@ -458,3 +462,10 @@ VW.st_c=()=>{const c=CATS[V.c]||CATS.ph;return{t:c[0],h:c[1].map(([l,fn,n])=>row
 VW.st=()=>({t:'المزيد',h:Object.keys(CATS).map(k=>row(CATS[k][0],"go('st_c',{c:'"+k+"'})")).join('')+'<h3>عام</h3>'+row('الخانات المخصصة',"go('st_fx')",(S.fields||[]).length||'')+row('تلوين البطاقات',"go('st_col')")+row('الحقول في النماذج',"go('st_fld')")+row('المستخدمون والصلاحيات',"go('st_users')")+row('المظهر',"go('st_look')")+row('رمز القفل السريع','lkSet()',S.cfg.lk?'مُعيَّن':'غير مُعيَّن')+row('النسخ الاحتياطي والاستعادة',"go('st_bk')")+row('المحذوفات',"go('st_trash')",S.trash.length||'')+row('كل الوسوم (قائمة كاملة)',"go('st_tags')")});
 render();
 
+/* ===== الواجهة: الثيمات، بطاقات الأقسام، لون شريط الحالة ===== */
+const THM=[['a','تلقائي','يتبدّل بين النهاري والليلي مع الهاتف',['#f4f6fa','#0b1220','#2563eb']],['l','نقي','فاتح · أزرق',['#f4f6fa','#ffffff','#2563eb']],['d','ليل','داكن · أزرق',['#0b1220','#131c2e','#4f8cff']],['g','زمرد','فاتح · أخضر',['#f2f7f4','#ffffff','#059669']],['v','بنفسجي','داكن · بنفسجي',['#130f1f','#1c1630','#8b5cf6']],['w','دافئ','ورقي · برتقالي',['#f8f3ea','#fffdf8','#d9480f']]];
+VW.st_look=()=>({t:'المظهر',h:'<h3>الثيم (لهذا الجهاز فقط)</h3>'+THM.map(([k,n,d,c])=>{const on=(S.cfg.th||'a')==k;return `<button class="card row2 ${on?'sel':''}" onclick="upd(()=>S.cfg.th='${k}')"><span class="sw3">${c.map(x=>`<i style="background:${x}"></i>`).join('')}</span><b>${n}<div class="m" style="font-weight:400">${d}</div></b>${on?I('check'):''}</button>`}).join('')+'<h3>حجم الخط</h3>'+[[15,'صغير'],[17,'عادي'],[19,'كبير'],[21,'أكبر']].map(([v,l])=>`<button class="tag ${S.cfg.fs==v?'on':''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')});
+const SCI={phones:'mobile',glass:'shield',case:'box',acc:'plug'};
+const scN=k=>k=='glass'?GM().length:S.items.filter(i=>i.sec==k).length;
+const _H10=VW.home;VW.home=function(){const r=_H10();r.h=r.h.replace(/<button class="card" onclick="go\('sec',\{k:'(\w+)'\}\)">([^<]+)<\/button>/g,(m,k,n)=>`<button class="card sc" onclick="go('sec',{k:'${k}'})">${ic(SCI[k])}<b>${n}</b><span class="m">${scN(k)} صنف</span></button>`);return r};
+const _r10=render;render=function(){_r10();try{const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(document.documentElement).getPropertyValue('--c').trim()||m.content}catch(e){}};
