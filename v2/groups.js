@@ -50,3 +50,19 @@ window.agKE=j=>{if(!can('tags'))return toast('للمدير فقط');const k=S.ta
 VW.st_ag=()=>({t:'مجموعات الإكسسوارات',h:'<p class="m">الكابلات والشواحن تُجمَّع حسب الفئة (والموصل والقدرة)، والحكم على المجموع.</p>'+S.tags.kind.map((k,j)=>{const c=gkc(k);return row(k,'agKE('+j+')',c.g?'مجموعات'+(c.w?' · قدرة':'')+' · حد '+(c.lim??(S.cfg.agl??10)):'عادي')}).join('')+row('القدرات (واط)',"go('st_tg',{g:'pw'})",S.tags.pw.length)});
 const _st99=VW.st;VW.st=function(){const o=_st99();o.h+=row('مجموعات الكابلات والشواحن',"go('st_ag')");return o};
 })();
+/* ============================================================
+   رموز الموظفين: لكل موظف رمز يحدده المدير (اختياري) عند التبديل إليه
+   ============================================================ */
+(()=>{
+const F2=[{k:'p',l:'الرمز',t:'password'}];
+uAdd=needAdm(function(){ask('مستخدم جديد',[{k:'n',l:'الاسم'},{k:'r',l:'الدور',t:'sel',o:['موظف','مدير'],v:'موظف'},{k:'p',l:'رمز الموظف (اختياري)',t:'password'}]).then(v=>{if(v&&v.n.trim())upd(()=>{const u={name:v.n.trim(),admin:v.r=='مدير'};if(v.p&&!u.admin)u.pin=hs(v.p);S.users.push(u)})})});
+uEd=needAdm(function(i){const u=S.users[i],F=[{k:'r',l:'الدور',t:'sel',o:['موظف','مدير'],v:u.admin?'مدير':'موظف'},{k:'p',l:'رمز جديد للموظف (فارغ = بلا تغيير)'+(u.pin?' — له رمز حالياً':''),t:'password'}];
+if(u.pin)F.push({k:'d',l:'حذف رمز الموظف؟',t:'sel',o:['لا','نعم'],v:'لا'});F.push({k:'x',l:'حذف المستخدم؟',t:'sel',o:['لا','نعم'],v:'لا'});
+ask(u.name,F).then(v=>{if(!v)return;if((v.x=='نعم'||v.r=='موظف')&&u.admin&&S.users.filter(x=>x.admin).length<2)return toast('يجب أن يبقى مدير واحد على الأقل');
+upd(()=>{if(v.x=='نعم')S.users.splice(i,1);else{u.admin=v.r=='مدير';if(u.admin)delete u.pin;else if(v.p)u.pin=hs(v.p);else if(v.d=='نعم')delete u.pin}})})});
+who=function(){ask('من أنت؟',[{k:'u',l:'المستخدم',t:'sel',o:S.users.map(u=>u.name),v:S.me}],'اختيار').then(v=>{if(!v)return;const u=S.users.find(x=>x.name==v.u);
+if(!u.admin){const go2=()=>{admSet(false);upd(()=>{S.me=u.name})};if(!u.pin||u.name==S.me||isAdmin())return go2();return ask('رمز '+u.name,F2,'دخول').then(p=>{if(!p)return;hs(p.p)==u.pin?go2():toast('الرمز خاطئ')})}
+if(u.name==S.me&&admOk())return;ask('رمز المدير',F2,'دخول').then(p=>{if(p)hs(p.p)==S.pin?(admSet(true),upd(()=>{S.me=u.name})):toast('الرمز خاطئ')})})};
+lgEmp=function(i){const u=S.users.filter(x=>!x.admin)[i],L=$('lg'),done=()=>{upd(()=>{S.me=u.name});$('lg').remove()};if(!u.pin)return done();
+L.style.zIndex=10;ask('رمز '+u.name,F2,'دخول').then(p=>{if($('lg'))$('lg').style.zIndex=55;if(!p)return;hs(p.p)==u.pin?done():toast('الرمز خاطئ')})};
+})();
