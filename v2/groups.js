@@ -43,19 +43,20 @@ if(G){o.h=o.h.replace('<p class="m">لا شيء بعد</p>','');const p=o.h.inde
 /* التقرير */
 const _rl9=repLines;repLines=function(){const L=_rl9().filter(x=>{if(x[0]!='الإكسسوارات')return 1;const m=/buyA\('([^']+)'\)/.exec(x[3]||''),i=m&&find(m[1]);return!(i&&gkc(i.kind).g)});
 agList().filter(d=>d.st!='g').forEach(d=>L.push(['الإكسسوارات',d.title+(d.tot!==null?' — المجموع '+(d.est?'≈':'')+d.tot:d.st=='r'?' — نفد':' — قارب النفاد'),d.st,`agBuy('${encodeURIComponent(d.id)}')`]));return L};
-/* الإعدادات */
+/* الإعدادات (إضافتها أيضاً داخل قسم الإكسسوارات CATS.ac لسهولة الوصول) */
 let AG0;
 window.agKR=()=>{if($('agl'))AG0.lim=$('agl').value;$('sh').innerHTML=`<div class="bar"></div><h3>${esc(AG0.k)}</h3><label>طريقة العرض</label><div><button class="tag ${AG0.g?'on':''}" onclick="AG0.g=${AG0.g?0:1};agKR()">مجموعات حسب الفئة</button><button class="tag ${AG0.w?'on':''}" onclick="AG0.w=${AG0.w?0:1};agKR()">القدرة (واط)</button></div><label>حد «قارب النفاد» للمجموع (فارغ = الحد العام)</label><input id="agl" type="tel" value="${esc(AG0.lim)}"><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="if($('agl'))AG0.lim=$('agl').value;finish(AG0)">حفظ</button></div>`};
 window.agKE=j=>{if(!can('tags'))return toast('للمدير فقط');const k=S.tags.kind[j],c=gkc(k);window.AG0=AG0={k,g:c.g?1:0,w:c.w?1:0,lim:c.lim??''};agKR();sheetOpen(v=>{if(!v)return;upd(()=>{S.cfg.gkc=S.cfg.gkc||{};const l=String(v.lim).trim();S.cfg.gkc[v.k]={g:v.g,w:v.w,...(l===''?{}:{lim:Math.max(0,+l||0)})}})})};
 VW.st_ag=()=>({t:'مجموعات الإكسسوارات',h:'<p class="m">الكابلات والشواحن تُجمَّع حسب الفئة (والموصل والقدرة)، والحكم على المجموع.</p>'+S.tags.kind.map((k,j)=>{const c=gkc(k);return row(k,'agKE('+j+')',c.g?'مجموعات'+(c.w?' · قدرة':'')+' · حد '+(c.lim??(S.cfg.agl??10)):'عادي')}).join('')+row('القدرات (واط)',"go('st_tg',{g:'pw'})",S.tags.pw.length)});
+if(typeof CATS!='undefined'&&CATS.ac)CATS.ac[1].push(['مجموعات الكابلات والشواحن',"go('st_ag')"]);
 const _st99=VW.st;VW.st=function(){const o=_st99();o.h+=row('مجموعات الكابلات والشواحن',"go('st_ag')");return o};
 })();
 /* ============================================================
-   رموز الموظفين: لكل موظف رمز يحدده المدير (اختياري) عند التبديل إليه
+   رموز الموظفين: لكل موظف رمز يحدده المدير (اختياري) عبر لوحة الأرقام
    ============================================================ */
 (()=>{
-const F2=[{k:'p',l:'الرمز',t:'password'}];
-uAdd=needAdm(function(){ask('مستخدم جديد',[{k:'n',l:'الاسم'},{k:'r',l:'الدور',t:'sel',o:['موظف','مدير'],v:'موظف'},{k:'p',l:'رمز الموظف (اختياري)',t:'password'}]).then(v=>{if(v&&v.n.trim())upd(()=>{const u={name:v.n.trim(),admin:v.r=='مدير'};if(v.p&&!u.admin)u.pin=hs(v.p);S.users.push(u)})})});
+const F2=[{k:'p',l:'الرمز بالأرقام',t:'password'}];
+uAdd=needAdm(function(){ask('مستخدم جديد',[{k:'n',l:'الاسم'},{k:'r',l:'الدور',t:'sel',o:['موظف','مدير'],v:'موظف'},{k:'p',l:'رمز الموظف بالأرقام (اختياري)',t:'password'}]).then(v=>{if(v&&v.n.trim())upd(()=>{const u={name:v.n.trim(),admin:v.r=='مدير'};if(v.p&&!u.admin)u.pin=hs(v.p);S.users.push(u)})})});
 uEd=needAdm(function(i){const u=S.users[i],F=[{k:'r',l:'الدور',t:'sel',o:['موظف','مدير'],v:u.admin?'مدير':'موظف'},{k:'p',l:'رمز جديد للموظف (فارغ = بلا تغيير)'+(u.pin?' — له رمز حالياً':''),t:'password'}];
 if(u.pin)F.push({k:'d',l:'حذف رمز الموظف؟',t:'sel',o:['لا','نعم'],v:'لا'});F.push({k:'x',l:'حذف المستخدم؟',t:'sel',o:['لا','نعم'],v:'لا'});
 ask(u.name,F).then(v=>{if(!v)return;if((v.x=='نعم'||v.r=='موظف')&&u.admin&&S.users.filter(x=>x.admin).length<2)return toast('يجب أن يبقى مدير واحد على الأقل');
