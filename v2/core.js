@@ -22,27 +22,44 @@ function sheetOpen(res){SH=true;SHR={res,val:null};$('ov').hidden=false;history.
 function hideSheet(){$('ov').hidden=true;SH=false;const r=SHR;SHR=null;r&&r.res(r.val)}
 const finish=v=>{if(SHR)SHR.val=v;history.back()};
 $('ov').onclick=e=>{if(e.target.id=='ov')finish(null)};
+
+/* ===== لوحة الأرقام التفاعلية للرموز السرية (PIN Pad) ===== */
+function pinPadHtml(id,ph='أدخل الرمز بالأرقام'){
+  return `<div class="pin-wrap"><input id="${id}" type="hidden" value=""><div id="${id}_dots" class="pin-dots" data-ph="${esc(ph)}"><span class="pin-ph">${esc(ph)}</span></div><div class="pin-grid">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" class="pkb" onclick="pkTap('${id}','${n}')">${n}</button>`).join('')}<button type="button" class="pkb fn" onclick="pkTap('${id}','C')">مسح</button><button type="button" class="pkb" onclick="pkTap('${id}','0')">0</button><button type="button" class="pkb fn" onclick="pkTap('${id}','B')">⌫</button></div></div>`;
+}
+function pkTap(id,k){
+  const el=$(id);if(!el)return;
+  if(k=='C')el.value='';
+  else if(k=='B')el.value=el.value.slice(0,-1);
+  else if(el.value.length<12)el.value+=k;
+  const d=$(id+'_dots');
+  if(d){
+    const ph=d.getAttribute('data-ph')||'أدخل الرمز';
+    d.innerHTML=el.value.length?Array(el.value.length).fill('<span class="pin-dot"></span>').join(''):`<span class="pin-ph">${esc(ph)}</span>`;
+  }
+}
+
 function ask(title,F,ok='حفظ',danger){return new Promise(res=>{
-$('sh').innerHTML=`<div class="bar"></div><h3>${esc(title)}</h3>`+F.map(f=>`<label>${esc(f.l)}`+(f.t=='area'?`<textarea id="f_${f.k}">${esc(f.v)}</textarea>`:f.t=='sel'?`<select id="f_${f.k}">${f.o.map(o=>`<option ${o==f.v?'selected':''}>${esc(o)}</option>`).join('')}</select>`:`<input id="f_${f.k}" type="${f.t||'text'}" value="${esc(f.v)}">`)+'</label>').join('')+`<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn ${danger?'d':''}" id="so">${esc(ok)}</button></div>`;
-sheetOpen(res);$('so').onclick=()=>{const o={};F.forEach(f=>o[f.k]=$('f_'+f.k).value);finish(o)};const i=$('sh').querySelector('input');if(i&&!i.value)setTimeout(()=>i.focus(),150)})}
+$('sh').innerHTML=`<div class="bar"></div><h3>${esc(title)}</h3>`+F.map(f=>`<label>${esc(f.l)}`+(f.t=='area'?`<textarea id="f_${f.k}">${esc(f.v)}</textarea>`:f.t=='sel'?`<select id="f_${f.k}">${f.o.map(o=>`<option ${o==f.v?'selected':''}>${esc(o)}</option>`).join('')}</select>`:f.t=='password'?pinPadHtml('f_'+f.k,f.ph||'أدخل الأرقام'):`<input id="f_${f.k}" type="${f.t||'text'}" value="${esc(f.v)}">`)+'</label>').join('')+`<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn ${danger?'d':''}" id="so">${esc(ok)}</button></div>`;
+sheetOpen(res);$('so').onclick=()=>{const o={};F.forEach(f=>o[f.k]=$('f_'+f.k).value);finish(o)};const i=$('sh').querySelector('input:not([type=hidden])');if(i&&!i.value)setTimeout(()=>i.focus(),150)})}
 function sure(msg,ok='نعم',danger=true){return new Promise(res=>{$('sh').innerHTML=`<div class="bar"></div><h3>${esc(msg)}</h3><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn ${danger?'d':''}" onclick="finish(1)">${esc(ok)}</button></div>`;sheetOpen(res)}).then(v=>!!v)}
 function upd(fn){fn();save();render()}
-const snap=()=>JSON.stringify({items:S.items,req:S.req,tags:S.tags,rp:S.rp.map(r=>({...r,img:r.img?1:0}))});
-function commit(label,fn){const b=snap(),im=Object.fromEntries(S.rp.map(r=>[r.id,r.img]));fn();save();render();toast(label,()=>{const o=JSON.parse(b);S.items=o.items;S.req=o.req;S.tags=o.tags;S.rp=o.rp.map(r=>({...r,img:im[r.id]||''}))})}
+const snap=()=>JSON.stringify({items:S.items,req:S.req,tags:S.tags,gg:S.gg||[],guide:S.guide||[],ag:S.ag||[],rp:S.rp.map(r=>({...r,img:r.img?1:0}))});
+function commit(label,fn){const b=snap(),im=Object.fromEntries(S.rp.map(r=>[r.id,r.img]));fn();save();render();toast(label,()=>{const o=JSON.parse(b);S.items=o.items;S.req=o.req;S.tags=o.tags;S.gg=o.gg;S.guide=o.guide;S.ag=o.ag;S.rp=o.rp.map(r=>({...r,img:im[r.id]||''}))})}
 function del(coll,id,label){if(!can('del'))return toast('الحذف للمدير فقط');sure('حذف «'+label+'» ؟').then(y=>{if(!y)return;const i=S[coll].findIndex(x=>x.id==id);if(i<0)return;const o=S[coll].splice(i,1)[0],t={id:uid(),coll,obj:o,label,t:Date.now()};S.trash.push(t);save();render();toast('تم الحذف',()=>restore(t.id))})}
-function restore(id){const t=S.trash.find(x=>x.id==id);if(!t)return;S.trash=S.trash.filter(x=>x!=t);S[t.coll].push(t.obj);save();render()}
+function restore(id){const t=S.trash.find(x=>x.id==id);if(!t)return;S.trash=S.trash.filter(x=>x!=t);S[t.coll]=S[t.coll]||[];S[t.coll].push(t.obj);save();render()}
 const row=(l,fn,sub)=>`<button class="card row2" onclick="${fn}"><b>${esc(l)}</b><span class="m">${esc(sub||'')}</span></button>`;
 const NV=[['home','home','الرئيسية'],['rp','tool','الصيانة'],['rep','list','التقرير'],['st','sl','المزيد']];
 const soon=t=>({t,h:'<div class="card"><b>يُبنى في المرحلة القادمة</b><p class="m">هذا القسم لم يُنقل إلى النسخة الجديدة بعد، والنسخة القديمة ما زالت تعمل.</p></div>'});
 const VW={
-home:()=>({t:'محلنا',h:`<input placeholder="ابحث..." value="${esc(Q)}" oninput="sq(this.value)"><div id="res"></div><h3>الأقسام</h3><div class="grid">${[['phones','الهواتف'],['glass','الأنتي كاس'],['case','البوشيط'],['acc','الإكسسوارات']].map(([k,n])=>`<button class="card" onclick="go('sec',{k:'${k}'})">${n}</button>`).join('')}</div>`,a:()=>sq(Q)}),
+home:()=>({t:'محل عزيز',h:`<input placeholder="ابحث..." value="${esc(Q)}" oninput="sq(this.value)"><div id="res"></div><h3>الأقسام</h3><div class="grid">${[['phones','الهواتف'],['glass','الأنتي كاس'],['case','البوشيط'],['acc','الإكسسوارات']].map(([k,n])=>`<button class="card" onclick="go('sec',{k:'${k}'})">${n}</button>`).join('')}</div>`,a:()=>sq(Q)}),
 sec:()=>soon('قسم'),rp:()=>soon('الصيانة'),rep:()=>soon('التقرير'),
 st:()=>({t:'المزيد',h:row('المستخدمون والصلاحيات',"go('st_users')")+row('الوسوم','go(\'st_tags\')')+row('المظهر',"go('st_look')")+row('النسخ الاحتياطي',"go('st_bk')")+row('المحذوفات',"go('st_trash')",S.trash.length||'')}),
 st_users:()=>{const a=isAdmin();return{t:'المستخدمون',h:S.users.map((u,i)=>`<div class="card row2"><b>${esc(u.name)}</b><span class="m">${u.admin?'مدير':'موظف'}</span>${a?`<button class="btn s sm" onclick="uEd(${i})">تعديل</button>`:''}</div>`).join('')+(a?`<button class="btn" onclick="uAdd()">+ مستخدم</button><button class="btn s" onclick="pinCh()">تغيير رمز المدير</button><h3>الصلاحيات</h3>`+Object.keys(PL).map(k=>`<div class="card row2"><b>${PL[k]}</b><button class="btn s sm" onclick="pTog('${k}')">${S.perm[k]=='a'?'المدير فقط':'الجميع'}</button></div>`).join(''):'<p class="m">التعديل للمدير فقط.</p>')}},
 st_tags:()=>({t:'الوسوم',h:Object.keys(TG).map(g=>row(TG[g],`go('st_tg',{g:'${g}'})`,S.tags[g].length)).join('')}),
 st_tg:()=>{const g=V.g;return{t:TG[g],h:(can('tags')?'':'<p class="m">التعديل للمدير فقط.</p>')+`<div>${S.tags[g].map((t,i)=>`<span class="tag">${esc(t)}${can('tags')?`<b onclick="tgDel('${g}',${i})">×</b>`:''}</span>`).join('')}</div>`+(can('tags')?`<button class="btn" onclick="tgAdd('${g}')">+ إضافة</button>`:'')}},
 st_look:()=>({t:'المظهر',h:`<h3>حجم الخط</h3>${[[15,'صغير'],[17,'عادي'],[19,'كبير'],[21,'أكبر']].map(([v,l])=>`<button class="tag ${S.cfg.fs==v?'on':''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')}<h3>المظهر</h3>${[['a','تلقائي'],['l','نهاري'],['d','ليلي']].map(([v,l])=>`<button class="tag ${S.cfg.th==v?'on':''}" onclick="upd(()=>S.cfg.th='${v}')">${l}</button>`).join('')}`}),
-st_bk:()=>({t:'النسخ الاحتياطي',h:'<button class="btn" onclick="BKP()">حفظ ملف النسخة</button><label>استعادة من ملف<input type="file" accept=".json" onchange="RST(this.files[0])"></label>'}),
+st_bk:()=>({t:'النسخ الاحتياطي',h:'<p class="m">يتم تشفير بيانات الزبائن الحساسة (الصيانة، الطلبات، الحجوزات) داخل ملف النسخة الاحتياطية لحمايتها من التسريب.</p><button class="btn" onclick="BKP()">حفظ ملف النسخة (محمي)</button><label>استعادة من ملف<input type="file" accept=".json" onchange="RST(this.files[0])"></label>'}),
 st_trash:()=>({t:'المحذوفات (30 يوماً)',h:S.trash.map(t=>`<div class="card row2"><div style="flex:1"><b>${esc(t.label)}</b><div class="m"><bdi>${fd(t.t)}</bdi></div></div><button class="btn s sm" onclick="restore('${t.id}')">استرجاع</button></div>`).join('')||'<p class="m">لا شيء</p>'})};
 function render(){const r=(VW[V.v]||VW.home)();$('ti').textContent=r.t;$('bk').hidden=V.v=='home';$('me').textContent=S.me;$('m').innerHTML=r.h;
 $('nv').innerHTML=NV.map(([k,i,l])=>`<button class="${V.v.startsWith(k)?'on':''}" onclick="go('${k}')">${ic(i)}<span>${l}</span></button>`).join('');
@@ -51,14 +68,87 @@ const adm=()=>S.users.filter(u=>u.admin).length;
 function uAdd(){ask('مستخدم جديد',[{k:'n',l:'الاسم'},{k:'r',l:'الدور',t:'sel',o:['موظف','مدير'],v:'موظف'}]).then(v=>{if(v&&v.n.trim())upd(()=>S.users.push({name:v.n.trim(),admin:v.r=='مدير'}))})}
 function uEd(i){const u=S.users[i];ask(u.name,[{k:'r',l:'الدور',t:'sel',o:['موظف','مدير'],v:u.admin?'مدير':'موظف'},{k:'x',l:'حذف المستخدم؟',t:'sel',o:['لا','نعم'],v:'لا'}]).then(v=>{if(!v)return;if((v.x=='نعم'||v.r=='موظف')&&u.admin&&adm()<2)return toast('يجب أن يبقى مدير واحد على الأقل');upd(()=>{if(v.x=='نعم')S.users.splice(i,1);else u.admin=v.r=='مدير'})})}
 function pTog(k){upd(()=>S.perm[k]=S.perm[k]=='a'?'e':'a')}
-function pinCh(){ask('رمز المدير الجديد',[{k:'p',l:'الرمز',t:'password'}]).then(v=>{if(v&&v.p)upd(()=>S.pin=hs(v.p))})}
+function pinCh(){ask('رمز المدير الجديد',[{k:'p',l:'الرمز الجديد',t:'password'}]).then(v=>{if(v&&v.p)upd(()=>S.pin=hs(v.p))})}
 function who(){ask('من أنت؟',[{k:'u',l:'المستخدم',t:'sel',o:S.users.map(u=>u.name),v:S.me}],'اختيار').then(v=>{if(!v)return;const u=S.users.find(x=>x.name==v.u);if(!u.admin||u.name==S.me)return sw(u.name);ask('رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'دخول').then(p=>{if(p)hs(p.p)==S.pin?sw(u.name):toast('الرمز خاطئ')})})}
 const sw=n=>upd(()=>S.me=n);
 function tgAdd(g){ask('وسم جديد: '+TG[g],[{k:'t',l:'الاسم'}]).then(v=>{const t=v&&v.t.trim();if(t&&!S.tags[g].includes(t))upd(()=>S.tags[g].push(t))})}
 function tgDel(g,i){sure('حذف الوسم «'+S.tags[g][i]+'» ؟').then(y=>{if(!y)return;const o=[...S.tags[g]];upd(()=>S.tags[g].splice(i,1));toast('تم الحذف',()=>{S.tags[g]=o})})}
-function BKP(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='shop-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click()}
-function RST(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.users)throw 0;sure('استبدال كل البيانات الحالية بالنسخة؟','استعادة').then(y=>{if(y){S={...load(),...d};save();location.reload()}})}catch(e){toast('ملف غير صالح')}};r.readAsText(f)}
-function setup(){ask('مرحباً! إعداد المدير',[{k:'n',l:'اسمك'},{k:'p',l:'رمز المدير (يحمي الصلاحيات)',t:'password'}],'ابدأ').then(v=>{if(!v||!v.n.trim()||!v.p)return setup();S.users=[{name:v.n.trim(),admin:true}];S.me=v.n.trim();S.pin=hs(v.p);save();render()})}
+
+/* ===== تشفير وفك تشفير بيانات الزبائن الحساسة في النسخ الاحتياطي ===== */
+async function bkKey(pin){
+  const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:new TextEncoder().encode('aziz-bk-v1'),iterations:150000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function bkEncObj(obj,pin){
+  const key=await bkKey(pin),iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(obj))));
+  const out=new Uint8Array(12+ct.length);out.set(iv);out.set(ct,12);
+  let s='';for(let i=0;i<out.length;i+=8192)s+=String.fromCharCode.apply(null,out.subarray(i,i+8192));
+  return btoa(s);
+}
+async function bkDecObj(b64,pin){
+  const key=await bkKey(pin),u=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u.subarray(0,12)},key,u.subarray(12));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+function BKP(){
+  if(!isAdmin())return toast('النسخ الاحتياطي للمدير فقط');
+  ask('تأكيد رمز المدير لتشفير بيانات الزبائن',[{k:'p',l:'رمز المدير (سيُستخدم لتشفير بيانات الزبائن في النسخة)',t:'password'}],'حفظ النسخة').then(async v=>{
+    if(!v||!v.p)return;
+    if(hs(v.p)!==S.pin)return toast('رمز المدير خاطئ');
+    try{
+      const copy=JSON.parse(JSON.stringify(S));
+      const resMap={};
+      (copy.items||[]).forEach(i=>{if(i.res){resMap[i.id]=i.res;delete i.res}});
+      const custData={rp:copy.rp||[],req:copy.req||[],res:resMap,trash:(copy.trash||[]).filter(t=>t.coll=='rp')};
+      copy._encCust=await bkEncObj(custData,v.p);
+      copy.rp=[];copy.req=[];copy.trash=(copy.trash||[]).filter(t=>t.coll!='rp');
+      delete copy.pin;if(copy.cfg)delete copy.cfg.lk;
+      (copy.users||[]).forEach(u=>delete u.pin);
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([JSON.stringify(copy)],{type:'application/json'}));
+      a.download='aziz-shop-backup-'+new Date().toISOString().slice(0,10)+'.json';
+      a.click();
+      S.cfg.lb=Date.now();save();render();
+    }catch(e){toast('تعذر إنشاء النسخة')}
+  });
+}
+
+function RST(f){
+  if(!f)return;
+  if(!isAdmin())return toast('الاستعادة للمدير فقط');
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!d.users)throw 0;
+      sure('استبدال كل البيانات الحالية بالنسخة؟','استعادة').then(y=>{
+        if(!y)return;
+        if(d._encCust){
+          ask('فك تشفير بيانات الزبائن',[{k:'p',l:'أدخل رمز المدير الذي حُفظت به النسخة',t:'password'}],'فك التشفير والاستعادة').then(async v=>{
+            if(!v||!v.p)return;
+            try{
+              const cust=await bkDecObj(d._encCust,v.p);
+              delete d._encCust;
+              d.rp=cust.rp||[];d.req=cust.req||[];
+              (d.items||[]).forEach(i=>{if(cust.res&&cust.res[i.id])i.res=cust.res[i.id]});
+              d.trash=[...(d.trash||[]),...(cust.trash||[])];
+              d.pin=d.pin||S.pin;
+              if(S.cfg&&S.cfg.lk)d.cfg={...(d.cfg||{}),lk:S.cfg.lk};
+              S={...load(),...d};save();location.reload();
+            }catch(e){toast('الرمز خاطئ، تعذر فك تشفير بيانات الزبائن')}
+          });
+        }else{
+          S={...load(),...d};save();location.reload();
+        }
+      });
+    }catch(e){toast('ملف غير صالح')}
+  };
+  r.readAsText(f);
+}
+
+function setup(){ask('مرحباً في محل عزيز! إعداد المدير',[{k:'n',l:'اسمك'},{k:'p',l:'رمز المدير (أرقام لحماية الصلاحيات)',t:'password'}],'ابدأ').then(v=>{if(!v||!v.n.trim()||!v.p)return setup();S.users=[{name:v.n.trim(),admin:true}];S.me=v.n.trim();S.pin=hs(v.p);save();render()})}
 $('bk').innerHTML=ic('back');
 S.trash=S.trash.filter(t=>Date.now()-t.t<2592e6);
 try{navigator.storage.persist()}catch(e){}
