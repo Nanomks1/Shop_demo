@@ -53,11 +53,12 @@ nav button.on .ic{background:var(--ab)}
 .tag{display:inline-flex;gap:8px;align-items:center;margin:4px;padding:8px 14px;border-radius:999px;background:var(--c);border:1px solid var(--b);color:var(--t);font:inherit}
 .tag b{color:#dc2626}
 .tag.on{background:var(--p);color:var(--onp);border-color:var(--p)}
-/* لوحة الأرقام التفاعلية للرموز السرية */
+/* لوحة الأرقام التفاعلية مع دعم التبديل للحروف */
 .pin-wrap{margin:10px 0 4px;user-select:none}
-.pin-dots{display:flex;justify-content:center;align-items:center;gap:12px;min-height:46px;padding:8px 14px;margin-bottom:12px;border-radius:14px;background:var(--bg);border:1px solid var(--b);direction:ltr}
+.pin-dots{display:flex;justify-content:center;align-items:center;gap:12px;min-height:46px;padding:8px 14px;margin-bottom:10px;border-radius:14px;background:var(--bg);border:1px solid var(--b);direction:ltr}
 .pin-dot{width:14px;height:14px;border-radius:50%;background:var(--p);transition:transform .15s ease}
 .pin-ph{color:var(--m);font-size:.9rem;direction:rtl}
 .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;direction:ltr;max-width:320px;margin:0 auto}
-.pkb{min-height:56px;border-radius:16px;border:1px solid var(--b);background:var(--c);color:var(--t);font:inherit;font-size:1.35rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 4px rgba(15,23,42,.04)}
-.pkb.fn{font-size:1rem;font-weight:600;color:var(--m);background:var(--bg)}
+.pkb{min-height:54px;border-radius:16px;border:1px solid var(--b);background:var(--c);color:var(--t);font:inherit;font-size:1.35rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 4px rgba(15,23,42,.04)}
+.pkb.fn{font-size:.95rem;font-weight:600;color:var(--m);background:var(--bg)}
+.pin-sw{display:block;margin:10px auto 0;background:none;border:0;color:var(--p);font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:8px}
