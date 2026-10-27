@@ -114,5 +114,9 @@ pickRpBrand=function(b){const el=$('r_v');if(!el)return;
   const o=(S.tags.brand||[]).find(x=>x&&cur.toLowerCase().startsWith(String(x).toLowerCase()));
   if(o)cur=cur.slice(o.length).trim();
   el.value=b+' '+cur;el.focus();checkDeviceHistory();suggestGuidePrice()};
+/* ---------- دمج مجموعات الأنتي كاس: لا يُفقد الحد الأدنى والسعر ---------- */
+const _gm=glMerge;
+glMerge=function(a,b){const keep=S.items.filter(i=>i.sec=='glass'&&i.gid==b.id).map(i=>({ty:i.ty,min:i.min,price:i.price}));
+  _gm(a,b);keep.forEach(k=>{const t=gitem(a.id,k.ty);if(!t)return;if(t.min==null&&k.min!=null)t.min=k.min;if(!t.price&&k.price)t.price=k.price})};
 render();
 })();

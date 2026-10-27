@@ -62,3 +62,9 @@ nav button.on .ic{background:var(--ab)}
 .pkb{min-height:54px;border-radius:16px;border:1px solid var(--b);background:var(--c);color:var(--t);font:inherit;font-size:1.35rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 4px rgba(15,23,42,.04)}
 .pkb.fn{font-size:.95rem;font-weight:600;color:var(--m);background:var(--bg)}
 .pin-sw{display:block;margin:10px auto 0;background:none;border:0;color:var(--p);font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:8px}
+
+.rtabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px}
+.rtabs .tag{flex:none;white-space:nowrap;margin:0;padding:6px 14px;font-size:.88rem}
+.card .sub{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.card .sub .btn.sm{flex:1 1 auto;min-height:38px;padding:0 6px;white-space:nowrap;font-size:.82rem}
+.row2 .btn.sm{min-height:36px;padding:0 10px;font-size:.85rem;white-space:nowrap}
