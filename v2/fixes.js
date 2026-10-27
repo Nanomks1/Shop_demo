@@ -129,3 +129,465 @@ VW.home=function(){const r=_hm();let hid=0;try{hid=Date.now()-(+localStorage.get
   r.h=r.h.replace(/<div class="card"><b>احفظ نسخة احتياطية<\/b>.*?<\/button><\/div>/s,hid?'':'<div class="bkb"><span>لم تُحفظ نسخة خارجية منذ أسبوع</span><button class="btn sm" onclick="BKP()">حفظ</button><button class="bkx" onclick="bkHide()" aria-label="إغلاق">✕</button></div>');return r};
 render();
 })();
+/* ============================================================
+   تحديث: IMEI بالباركود + ضمان الإصلاح + تخزين الصور في IndexedDB
+   ============================================================ */
+(()=>{
+/* ---------- 1) خزنة الصور في IndexedDB لتفريغ localStorage نهائياً ---------- */
+const IMG_CACHE = {};
+function imgDb(mode, fn) {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('AzizShopMedia', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('imgs');
+    req.onsuccess = e => {
+      try {
+        const tx = e.target.result.transaction('imgs', mode);
+        fn(tx.objectStore('imgs'), res, rej);
+      } catch (err) { rej(err); }
+    };
+    req.onerror = rej;
+  });
+}
+function putImg(id, data) {
+  if (!id || !data) return;
+  IMG_CACHE[id] = data;
+  imgDb('readwrite', (st, res) => { st.put(data, id); res(); }).catch(() => {});
+}
+function delImg(id) {
+  if (!id) return;
+  delete IMG_CACHE[id];
+  imgDb('readwrite', (st, res) => { st.delete(id); res(); }).catch(() => {});
+}
+
+/* استرجاع كل الصور من IndexedDB عند فتح التطبيق وترحيل أي صور قديمة من localStorage */
+function initImgs() {
+  let migrated = 0;
+  (S.rp || []).forEach(r => {
+    if (r.img && r.img.startsWith('data:image')) {
+      putImg(r.id, r.img);
+      migrated = 1;
+    }
+  });
+  imgDb('readonly', (st, res) => {
+    const req = st.openCursor();
+    req.onsuccess = e => {
+      const cur = e.target.result;
+      if (cur) {
+        IMG_CACHE[cur.key] = cur.value;
+        cur.continue();
+      } else res();
+    };
+  }).then(() => {
+    let chg = 0;
+    (S.rp || []).forEach(r => {
+      if (IMG_CACHE[r.id] && (!r.img || r.img.startsWith('idb:'))) {
+        r.img = IMG_CACHE[r.id];
+        chg = 1;
+      }
+    });
+    if (migrated) save();
+    else if (chg) render();
+  }).catch(() => {});
+}
+
+/* تفريغ الصور من نص localStorage مع إبقائها في الذاكرة الحية S.rp */
+const _prevSvHook = window._svHook;
+let _strippedImgs = null;
+window._svHook = () => {
+  if (_prevSvHook) try { _prevSvHook(); } catch (e) {}
+  try {
+    _strippedImgs = [];
+    (S.rp || []).forEach(r => {
+      if (r.img && r.img.startsWith('data:image')) {
+        putImg(r.id, r.img);
+        _strippedImgs.push([r, r.img]);
+        r.img = 'idb:' + r.id;
+      } else if (!r.img && IMG_CACHE[r.id] && r.st == 'dn') {
+        delImg(r.id);
+      }
+      /* تضمين IMEI في فهرس البحث السريع للصيانة */
+      if (r.imei) r._nzV = -1;
+    });
+    (S.items || []).forEach(i => {
+      if (i.imei || i.code) i._nzV = -1;
+    });
+  } catch (e) {}
+};
+
+const _origSetItem = Storage.prototype.setItem;
+Storage.prototype.setItem = function(k, v) {
+  try {
+    return _origSetItem.call(this, k, v);
+  } finally {
+    if (this === localStorage && k === 'shop3' && _strippedImgs) {
+      _strippedImgs.forEach(([r, data]) => { r.img = data; });
+      _strippedImgs = null;
+    }
+  }
+};
+
+/* ---------- 2) منظف الصور الذكي المرتبط بمدة الضمان ---------- */
+Object.assign(DL0, { rpKeep: 30 });
+LM.push(['rpKeep', 'الصيانة: مسح الصورة والرمز بعد التسليم بـ (أيام)']);
+
+window.cleanOldRpMedia = function() {
+  const now = Date.now(), baseKeep = (S.cfg.rpKeep ?? 30) * 864e5;
+  let chg = 0;
+  (S.rp || []).forEach(r => {
+    if (r.st == 'dn' && r.t2) {
+      /* لا تُمسح الصورة أبداً طالما الجهاز تحت الضمان + 3 أيام احتياطية */
+      const warKeep = ((+r.war || 0) + 3) * 864e5;
+      const keepMs = Math.max(baseKeep, warKeep);
+      if (now - r.t2 > keepMs && (r.img || r.lock || (r.pat && r.pat.length))) {
+        r.img = ''; r.lock = ''; r.pat = [];
+        delImg(r.id);
+        chg = 1;
+      }
+    }
+  });
+  if (chg) save();
+};
+
+/* تكبير صورة الصيانة عند الضغط عليها */
+window.rpZoom = id => {
+  const r = rf(id), src = r && (IMG_CACHE[r.id] || (r.img && r.img.startsWith('data:') ? r.img : ''));
+  if (!src) return;
+  $('sh').innerHTML = `<div class="bar"></div><h3>${esc(r.name + ' — ' + r.dev)}</h3><img src="${src}" style="width:100%;max-height:70vh;object-fit:contain;border-radius:12px"><div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>`;
+  sheetOpen(() => {});
+};
+
+/* ---------- 3) دعم مسح الباركود على الآيفون (iOS Safari / PWA) ---------- */
+let _bcPolyLoading = null;
+async function ensureBarcodeDetector() {
+  if ('BarcodeDetector' in window) return true;
+  if (_bcPolyLoading) return _bcPolyLoading;
+  _bcPolyLoading = new Promise(res => {
+    const s = document.createElement('script');
+    s.src = 'https://fastly.jsdelivr.net/npm/barcode-detector@2/dist/iife/pure.min.js';
+    s.onload = () => {
+      if (window.BarcodeDetectorPolyfill && !('BarcodeDetector' in window)) {
+        window.BarcodeDetector = window.BarcodeDetectorPolyfill;
+      }
+      res('BarcodeDetector' in window);
+    };
+    s.onerror = () => res(false);
+    document.head.appendChild(s);
+  });
+  return _bcPolyLoading;
+}
+
+const _origBcScan = bcScan;
+window.bcScan = async function(cb) {
+  if (!('BarcodeDetector' in window)) {
+    toast('جارٍ تجهيز ماسح الباركود...');
+    await ensureBarcodeDetector();
+  }
+  _origBcScan(cb);
+};
+
+/* مسح IMEI مباشر داخل أي حقل إدخال دون إغلاق النافذة الحالية */
+let _inlineStream = null, _inlineTimer = 0;
+window.stopInlineScan = () => {
+  clearInterval(_inlineTimer);
+  if (_inlineStream) { _inlineStream.getTracks().forEach(t => t.stop()); _inlineStream = null; }
+  const bx = $('inline_bc_box');
+  if (bx) bx.remove();
+};
+window.scanIntoInput = async function(inputId) {
+  if ($('inline_bc_box')) { stopInlineScan(); return; }
+  const inp = $(inputId);
+  if (!inp) return;
+  if (!(await ensureBarcodeDetector()) || !navigator.mediaDevices) {
+    return toast('هذا المتصفح لا يدعم المسح بالكاميرا');
+  }
+  const wrap = inp.closest('label') || inp.parentElement;
+  wrap.insertAdjacentHTML('afterend', `<div id="inline_bc_box" class="card" style="margin:8px 0;padding:10px;text-align:center"><div class="m" style="margin-bottom:6px">وجّه الكاميرا نحو باركود IMEI على العلبة أو الشاشة (*#06#)</div><video id="inline_bcv" autoplay playsinline muted style="width:100%;max-height:190px;object-fit:cover;border-radius:10px"></video><button type="button" class="btn s sm" style="margin-top:8px;width:100%" onclick="stopInlineScan()">إلغاء المسح</button></div>`);
+  const det = new BarcodeDetector();
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(stream => {
+    const v = $('inline_bcv');
+    if (!v) { stream.getTracks().forEach(t => t.stop()); return; }
+    _inlineStream = stream;
+    v.srcObject = stream;
+    _inlineTimer = setInterval(() => {
+      det.detect(v).then(codes => {
+        if (codes && codes[0] && _inlineStream) {
+          const val = String(codes[0].rawValue || '').trim();
+          if (val) {
+            const cur = inp.value.trim();
+            inp.value = cur && !cur.includes(val) ? cur + ' · ' + val : val;
+            stopInlineScan();
+            toast('تم التقاط الرمز: ' + val);
+          }
+        }
+      }).catch(() => {});
+    }, 350);
+  }).catch(() => {
+    stopInlineScan();
+    toast('تعذر فتح الكاميرا');
+  });
+};
+
+const _origHideSheet = hideSheet;
+window.hideSheet = function() {
+  stopInlineScan();
+  _origHideSheet();
+};
+
+/* ---------- 4) إضافة حقل IMEI للهواتف + الصيانة + الضمان ---------- */
+FLD.phones.push(['imei', 'IMEI', 'I:p_imei']);
+FLD.rp.push(['imei', 'IMEI', 'I:r_imei'], ['war', 'ضمان الإصلاح', 'I:r_war']);
+
+let _tmpPhImei = '';
+const _pfImei = phForm;
+phForm = function(rec) {
+  _pfImei(rec);
+  const cntInp = $('pcnt');
+  if (cntInp) {
+    const lbl = cntInp.closest('label');
+    if (lbl) {
+      lbl.insertAdjacentHTML('afterend', `<label>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="p_imei" value="${esc(rec.imei || '')}" placeholder="امسح الباركود أو اكتب الرقم" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('p_imei')">${I('scan')} مسح</button></div></label>`);
+    }
+  }
+  hideF('phones');
+};
+
+const _psImei = phSave;
+phSave = function() {
+  const el = $('p_imei');
+  _tmpPhImei = el ? el.value.trim() : '';
+  _psImei();
+};
+
+const _pdImei = phDone;
+phDone = function(v) {
+  if (v && typeof v == 'object' && v.add === undefined) {
+    v.imei = _tmpPhImei;
+  }
+  _pdImei(v);
+};
+
+/* خيارات الضمان في نموذج الصيانة */
+const WAR_OPTS = [[0, 'بدون ضمان'], [3, '3 أيام'], [7, '7 أيام'], [15, '15 يوم'], [30, '30 يوم']];
+let _curWar = 0, _tmpRpImei = '', _tmpRpWar = 0;
+
+window.setRpWar = d => {
+  _curWar = +d || 0;
+  const inp = $('r_war');
+  if (inp) inp.value = _curWar || '';
+  document.querySelectorAll('.war-tg').forEach(b => {
+    b.classList.toggle('on', +b.dataset.w === _curWar);
+  });
+};
+
+const _rfWar = rForm;
+rForm = function(rec) {
+  _rfWar(rec);
+  _curWar = +(rec.war ?? 0);
+  const vInp = $('r_v'), dInp = $('r_d');
+  if (vInp) {
+    const lbl = vInp.closest('label');
+    const hist = $('rp_dev_hist');
+    const target = hist || lbl;
+    if (target) {
+      target.insertAdjacentHTML('afterend', `<label>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="r_imei" value="${esc(rec.imei || '')}" placeholder="امسح باركود العلبة أو *#06#" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('r_imei')">${I('scan')} مسح</button></div></label>`);
+    }
+  }
+  if (dInp) {
+    const lbl = dInp.closest('label');
+    if (lbl) {
+      lbl.insertAdjacentHTML('afterend', `<label>ضمان الإصلاح (يبدأ من تاريخ التسليم)<div style="margin:4px 0">${WAR_OPTS.map(([d, l]) => `<button type="button" class="tag war-tg ${_curWar === d ? 'on' : ''}" data-w="${d}" onclick="setRpWar(${d})">${l}</button>`).join('')}</div><input id="r_war" type="tel" value="${_curWar || ''}" placeholder="أو اكتب عدد أيام الضمان (0 = بدون ضمان)" oninput="_curWar=+this.value||0;document.querySelectorAll('.war-tg').forEach(b=>b.classList.toggle('on',+b.dataset.w===_curWar))"></label>`);
+    }
+  }
+  hideF('rp');
+};
+
+const _rsWar = rSave;
+rSave = function() {
+  const im = $('r_imei'), wr = $('r_war');
+  _tmpRpImei = im ? im.value.trim() : (ZR && ZR.imei ? ZR.imei : '');
+  _tmpRpWar = wr ? Math.max(0, Math.floor(+wr.value || 0)) : (ZR && ZR.war ? +ZR.war : 0);
+  _rsWar();
+};
+
+const _rdWar = rDone;
+rDone = function(v) {
+  if (v && typeof v == 'object') {
+    v.imei = _tmpRpImei;
+    v.war = _tmpRpWar;
+  }
+  _rdWar(v);
+};
+
+/* ---------- 5) تأكيد مدة الضمان عند التسليم (rDV) + إضافته للواتساب ---------- */
+const WAR_SEL = ['بدون ضمان (0 يوم)', '3 أيام', '7 أيام', '15 يوم', '30 يوم'];
+const warToLbl = d => {
+  d = +d || 0;
+  if (!d) return WAR_SEL[0];
+  const f = WAR_OPTS.find(x => x[0] === d);
+  return f ? f[1] : d + ' يوم';
+};
+const lblToWar = s => {
+  const m = String(s || '').match(/\d+/);
+  return m ? +m[0] : 0;
+};
+
+rDV = function(id, pre) {
+  const r = rf(id), pr = pre || {};
+  const cap = sn1(r.cap) ? +r.cap : null, dep = sn1(r.dep) ? +r.dep : 0;
+  const def = (r.res == 'ok' && cap !== null) ? String(Math.max(0, cap - dep)) : '';
+  const lbl = def
+    ? (dep ? 'المتبقي ' + def + ' (السعر ' + cap + ' − العربون ' + dep + ') — هل هو المقبوض الآن؟ عدّله إن اختلف' : 'هل المبلغ المقبوض هو ' + def + ' ؟ عدّله إن اختلف')
+    : (dep ? 'المبلغ المقبوض الآن (العربون ' + r.dep + ' مقبوض سابقاً — اكتب 0 إن لم يُقبض شيء)' : 'المبلغ المقبوض (0 إن لم يُقبض شيء)');
+  const fields = [{ k: 'p', l: lbl, t: 'tel', v: pr.p ?? def }];
+  if (r.res == 'ok') {
+    const curW = warToLbl(pr.war ?? r.war ?? 0);
+    const wOpts = WAR_SEL.includes(curW) ? WAR_SEL : [curW, ...WAR_SEL];
+    fields.unshift(
+      { k: 'tested', l: (pr.err ? 'مطلوب، اختر أحد الخيارين: ' : '') + 'تجربة الإصلاح مع الزبون قبل التسليم (إجباري)', t: 'sel', o: DVO, v: pr.tested || DVO[0] },
+      { k: 'war', l: 'مدة ضمان الإصلاح (يبدأ اليوم)', t: 'sel', o: wOpts, v: curW }
+    );
+  }
+  fields.push({ k: 'dnote', l: 'ملاحظة عند التسليم (اختياري)', v: pr.dnote ?? (r.dnote || '') });
+  ask('تسليم الهاتف: ' + r.name, fields, 'تأكيد التسليم', false).then(v => {
+    if (!v) return;
+    const again = e => rDV(id, { p: v.p, dnote: v.dnote, tested: v.tested, war: lblToWar(v.war), err: e });
+    if (r.res == 'ok' && v.tested == DVO[0]) return again(1);
+    if (v.p.trim() !== '' && !sn1(v.p)) { toast('اكتب المبلغ رقماً فقط (مثال 100)'); return again(0); }
+    commit('تم التسليم', () => {
+      r.st = 'dn';
+      r.t2 = Date.now();
+      r.dby = S.me;
+      r.paid = v.p.trim() || '0';
+      r.tst = v.tested == DVO[1] ? Date.now() : 0;
+      if (r.res == 'ok') r.war = lblToWar(v.war);
+      r.dnote = (v.dnote || '').trim();
+    });
+  });
+};
+
+/* حساب حالة الضمان لجهاز مسلّم */
+function warInfo(r) {
+  const w = +r.war || 0;
+  if (!w || r.res == 'fail' || r.res == 'ref') return null;
+  if (r.st != 'dn' || !r.t2) return { active: true, daysLeft: w, label: `الضمان المقرر: ${w} يوم` };
+  const end = r.t2 + w * 864e5;
+  const rem = Math.ceil((end - Date.now()) / 864e5);
+  const endStr = new Date(end).toLocaleDateString('ar-MA');
+  return rem > 0
+    ? { active: true, daysLeft: rem, label: `تحت الضمان: باقي ${rem} يوم (لغاية ${endStr})` }
+    : { active: false, daysLeft: 0, label: `انتهى الضمان (${w} يوم — انتهى ${endStr})` };
+}
+
+/* عرض IMEI والضمان وتكبير الصورة في البطاقات */
+const _cardWar = card;
+card = function(i) {
+  let h = _cardWar(i);
+  if (i.sec == 'phones' && i.imei) {
+    const imHtml = `<div class="m">IMEI: <bdi>${esc(i.imei)}</bdi></div>`;
+    h = h.replace('<div class="row2" style="margin-top:8px">', imHtml + '<div class="row2" style="margin-top:8px">');
+  }
+  return h;
+};
+
+const _rcWar = rc;
+rc = function(r) {
+  const realImg = IMG_CACHE[r.id] || (r.img && r.img.startsWith('data:') ? r.img : '');
+  const bakImg = r.img;
+  r.img = realImg;
+  let h;
+  try { h = _rcWar(r); } finally { r.img = bakImg; }
+  if (realImg) {
+    h = h.replace('<img src="', `<img onclick="rpZoom('${r.id}')" style="cursor:pointer;width:56px;height:56px;object-fit:cover;border-radius:10px" src="`);
+  }
+  let extra = '';
+  if (r.imei) extra += `<div class="m">IMEI: <bdi>${esc(r.imei)}</bdi></div>`;
+  const wi = warInfo(r);
+  if (wi) {
+    const col = wi.active ? '#16a34a' : '#64748b';
+    extra += `<div class="m" style="color:${col};font-weight:700">${I('shield')} ${esc(wi.label)}</div>`;
+  }
+  if (extra) h = h.replace('<div class="sub">', extra + '<div class="sub">');
+  return h;
+};
+
+/* تنبيه الضمان عند كتابة رقم الزبون أو نوع الجهاز */
+const _origRH = rH;
+rH = function() {
+  _origRH();
+  const t = ($('r_t') ? $('r_t').value : '').replace(/\D/g, '');
+  if (t.length <= 5) return;
+  const m = S.rp.filter(r => r != ZR && String(r.tel).replace(/\D/g, '') == t);
+  const activeW = m.map(r => ({ r, w: warInfo(r) })).filter(x => x.r.st == 'dn' && x.w && x.w.active);
+  if (activeW.length && $('rh')) {
+    const last = activeW[activeW.length - 1];
+    $('rh').innerHTML = `<span style="color:#16a34a;font-weight:700">⚠️ جهاز (${esc(last.r.dev)}) لهذا الزبون ما زال ${esc(last.w.label)}!</span>`;
+  }
+};
+
+/* تضمين الضمان وIMEI في رسالة الواتساب */
+const _waWar = rWA;
+rWA = function(id, k) {
+  const r = rf(id);
+  if (!r || !rnum(r.tel)) return toast('لا يوجد رقم لهذا الزبون: عدّل السجل وأضف الرقم');
+  const wTxt = (+r.war > 0 && (!k || r.res == 'ok')) ? ` (الضمان: ${r.war} يوم)` : '';
+  const imTxt = r.imei ? ` [IMEI: ${r.imei}]` : '';
+  const origDev = r.dev;
+  r.dev = origDev + imTxt + wTxt;
+  try { _waWar(id, k); } finally { r.dev = origDev; }
+};
+
+/* ---------- 6) شمول IMEI في البحث الشامل ومسح الباركود من الرئيسية ---------- */
+const _origSrch = srch;
+srch = function(q) {
+  const n = nz(q);
+  (S.items || []).forEach(i => {
+    if (i.imei || i.code) i._nz = nz(hay(i) + ' ' + fxTxt(i) + ' ' + (i.imei || '') + ' ' + (i.code || ''));
+    i._nzV = window._nzVer || 0;
+  });
+  (S.rp || []).forEach(r => {
+    if (r.imei) r._nz = nz(r.name + r.tel + r.dev + r.fault + r.note + ' ' + fxTxt(r) + ' ' + r.imei);
+    r._nzV = window._nzVer || 0;
+  });
+  return _origSrch(q);
+};
+
+const _origRpList = rpList;
+rpList = function() {
+  (S.rp || []).forEach(r => {
+    if (r.imei) {
+      r._nz = nz(r.name + r.tel + r.dev + r.fault + r.note + ' ' + fxTxt(r) + ' ' + r.imei);
+      r._nzV = window._nzVer || 0;
+    }
+  });
+  return _origRpList();
+};
+
+bcHome = function() {
+  bcScan(c => {
+    BCODE = c;
+    const nc = nz(c);
+    const mItems = S.items.filter(i => i.sec != 'glass' && (i.code == c || (i.imei && nz(i.imei).includes(nc))));
+    const mRp = (S.rp || []).filter(r => r.imei && nz(r.imei).includes(nc));
+    const r = $('res');
+    if (!r) return;
+    if (mItems.length || mRp.length) {
+      r.innerHTML = mItems.map(card).join('') + mRp.map(rc).join('');
+    } else {
+      r.innerHTML = `<p class="m">رمز غير مسجل: <bdi>${esc(c)}</bdi></p><button class="btn" onclick="bcLink()">ربطه بعنصر في المخزون</button>`;
+    }
+  });
+};
+
+/* إظهار حالة خزنة الصور في شاشة النسخ الاحتياطي */
+const _bkIdb = VW.st_bk;
+VW.st_bk = function() {
+  const o = _bkIdb();
+  const imgCnt = Object.keys(IMG_CACHE).length;
+  o.h += `<div class="card" style="margin-top:10px"><b>خزنة الصور المعزولة (IndexedDB)</b><div class="m">عدد صور الصيانة المحفوظة خارج ذاكرة المتصفح الضيقة: <b>${imgCnt}</b> صورة (لا تستهلك من حد الـ 5 ميجابايت).</div></div>`;
+  return o;
+};
+
+initImgs();
+cleanOldRpMedia();
+render();
+})();
