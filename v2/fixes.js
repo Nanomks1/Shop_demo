@@ -130,7 +130,11 @@ VW.home=function(){const r=_hm();let hid=0;try{hid=Date.now()-(+localStorage.get
 render();
 })();
 /* ============================================================
-   تحديث: IMEI بالباركود + ضمان الإصلاح + تخزين الصور في IndexedDB
+   تحديث شامل (الدفعة 1 + 2):
+   1. خزنة الصور في IndexedDB + تكبير الصور
+   2. IMEI بالباركود + دعم الآيفون + إضافة مباشرة من المسح (هاتف / صيانة / ربط)
+   3. نظام ضمان الإصلاح المتكامل
+   4. منع تضارب المخزون بين الموظفين في المزامنة (Delta Sync) + إحكام أمان الموظفين
    ============================================================ */
 (()=>{
 /* ---------- 1) خزنة الصور في IndexedDB لتفريغ localStorage نهائياً ---------- */
@@ -159,7 +163,6 @@ function delImg(id) {
   imgDb('readwrite', (st, res) => { st.delete(id); res(); }).catch(() => {});
 }
 
-/* استرجاع كل الصور من IndexedDB عند فتح التطبيق وترحيل أي صور قديمة من localStorage */
 function initImgs() {
   let migrated = 0;
   (S.rp || []).forEach(r => {
@@ -190,7 +193,6 @@ function initImgs() {
   }).catch(() => {});
 }
 
-/* تفريغ الصور من نص localStorage مع إبقائها في الذاكرة الحية S.rp */
 const _prevSvHook = window._svHook;
 let _strippedImgs = null;
 window._svHook = () => {
@@ -205,7 +207,6 @@ window._svHook = () => {
       } else if (!r.img && IMG_CACHE[r.id] && r.st == 'dn') {
         delImg(r.id);
       }
-      /* تضمين IMEI في فهرس البحث السريع للصيانة */
       if (r.imei) r._nzV = -1;
     });
     (S.items || []).forEach(i => {
@@ -235,7 +236,6 @@ window.cleanOldRpMedia = function() {
   let chg = 0;
   (S.rp || []).forEach(r => {
     if (r.st == 'dn' && r.t2) {
-      /* لا تُمسح الصورة أبداً طالما الجهاز تحت الضمان + 3 أيام احتياطية */
       const warKeep = ((+r.war || 0) + 3) * 864e5;
       const keepMs = Math.max(baseKeep, warKeep);
       if (now - r.t2 > keepMs && (r.img || r.lock || (r.pat && r.pat.length))) {
@@ -248,7 +248,6 @@ window.cleanOldRpMedia = function() {
   if (chg) save();
 };
 
-/* تكبير صورة الصيانة عند الضغط عليها */
 window.rpZoom = id => {
   const r = rf(id), src = r && (IMG_CACHE[r.id] || (r.img && r.img.startsWith('data:') ? r.img : ''));
   if (!src) return;
@@ -285,7 +284,6 @@ window.bcScan = async function(cb) {
   _origBcScan(cb);
 };
 
-/* مسح IMEI مباشر داخل أي حقل إدخال دون إغلاق النافذة الحالية */
 let _inlineStream = null, _inlineTimer = 0;
 window.stopInlineScan = () => {
   clearInterval(_inlineTimer);
@@ -333,13 +331,14 @@ window.hideSheet = function() {
   _origHideSheet();
 };
 
-/* ---------- 4) إضافة حقل IMEI للهواتف + الصيانة + الضمان ---------- */
+/* ---------- 4) إضافة حقل IMEI للهواتف + دمج تلقائي عند تعدد القطع ---------- */
 FLD.phones.push(['imei', 'IMEI', 'I:p_imei']);
 FLD.rp.push(['imei', 'IMEI', 'I:r_imei'], ['war', 'ضمان الإصلاح', 'I:r_war']);
 
-let _tmpPhImei = '';
+let _tmpPhImei = '', _tmpPhCode = '';
 const _pfImei = phForm;
 phForm = function(rec) {
+  _tmpPhCode = (rec && rec.code) || '';
   _pfImei(rec);
   const cntInp = $('pcnt');
   if (cntInp) {
@@ -362,11 +361,20 @@ const _pdImei = phDone;
 phDone = function(v) {
   if (v && typeof v == 'object' && v.add === undefined) {
     v.imei = _tmpPhImei;
+    if (_tmpPhCode && !(PR && PR.id)) v.code = _tmpPhCode;
+    /* إذا كان الهاتف موجوداً مسبقاً وسيتم زيادة عدده، ندمج الـ IMEI الجديد مع القديم لئلا يضيع */
+    if (!(PR && PR.id) && _tmpPhImei) {
+      const d = ph().find(i => i.brand == v.brand && nz(i.name) == nz(v.name) && i.color == v.color && i.ram == v.ram && i.cap == v.cap && i.cond == v.cond);
+      if (d) {
+        d.imei = d.imei ? (d.imei.includes(_tmpPhImei) ? d.imei : d.imei + ' · ' + _tmpPhImei) : _tmpPhImei;
+      }
+    }
   }
+  _tmpPhCode = '';
   _pdImei(v);
 };
 
-/* خيارات الضمان في نموذج الصيانة */
+/* خيارات الضمان وIMEI في نموذج الصيانة */
 const WAR_OPTS = [[0, 'بدون ضمان'], [3, '3 أيام'], [7, '7 أيام'], [15, '15 يوم'], [30, '30 يوم']];
 let _curWar = 0, _tmpRpImei = '', _tmpRpWar = 0;
 
@@ -465,7 +473,6 @@ rDV = function(id, pre) {
   });
 };
 
-/* حساب حالة الضمان لجهاز مسلّم */
 function warInfo(r) {
   const w = +r.war || 0;
   if (!w || r.res == 'fail' || r.res == 'ref') return null;
@@ -478,7 +485,6 @@ function warInfo(r) {
     : { active: false, daysLeft: 0, label: `انتهى الضمان (${w} يوم — انتهى ${endStr})` };
 }
 
-/* عرض IMEI والضمان وتكبير الصورة في البطاقات */
 const _cardWar = card;
 card = function(i) {
   let h = _cardWar(i);
@@ -510,7 +516,6 @@ rc = function(r) {
   return h;
 };
 
-/* تنبيه الضمان عند كتابة رقم الزبون أو نوع الجهاز */
 const _origRH = rH;
 rH = function() {
   _origRH();
@@ -524,7 +529,6 @@ rH = function() {
   }
 };
 
-/* تضمين الضمان وIMEI في رسالة الواتساب */
 const _waWar = rWA;
 rWA = function(id, k) {
   const r = rf(id);
@@ -536,10 +540,9 @@ rWA = function(id, k) {
   try { _waWar(id, k); } finally { r.dev = origDev; }
 };
 
-/* ---------- 6) شمول IMEI في البحث الشامل ومسح الباركود من الرئيسية ---------- */
+/* ---------- 6) شمول IMEI في البحث + إجراءات مباشرة ذكية عند مسح رمز غير موجود ---------- */
 const _origSrch = srch;
 srch = function(q) {
-  const n = nz(q);
   (S.items || []).forEach(i => {
     if (i.imei || i.code) i._nz = nz(hay(i) + ' ' + fxTxt(i) + ' ' + (i.imei || '') + ' ' + (i.code || ''));
     i._nzV = window._nzVer || 0;
@@ -562,19 +565,140 @@ rpList = function() {
   return _origRpList();
 };
 
+/* دوال الإضافة المباشرة من شاشة المسح في الرئيسية */
+window.bcNewPh = () => {
+  $('sh').innerHTML = '';
+  sheetOpen(phDone);
+  phForm({ imei: BCODE, code: BCODE, cnt: 1 });
+};
+window.bcNewRp = () => {
+  $('sh').innerHTML = '';
+  sheetOpen(rDone);
+  rForm({ imei: BCODE });
+};
+
+/* تحسين ربط الرمز بصنف موجود: للهواتف يضيفه أيضاً إلى حقل IMEI */
+bcSet = function(id) {
+  const i = find(id);
+  if (!i) return;
+  upd(() => {
+    if (i.sec == 'phones' && /^\d{14,17}$/.test(BCODE)) {
+      i.imei = i.imei ? (i.imei.includes(BCODE) ? i.imei : i.imei + ' · ' + BCODE) : BCODE;
+    }
+    i.code = i.code || BCODE;
+    i.by = S.me;
+    i.at = Date.now();
+  });
+  finish(null);
+  toast('تم الربط بنجاح');
+};
+
 bcHome = function() {
   bcScan(c => {
-    BCODE = c;
-    const nc = nz(c);
-    const mItems = S.items.filter(i => i.sec != 'glass' && (i.code == c || (i.imei && nz(i.imei).includes(nc))));
+    BCODE = String(c || '').trim();
+    const nc = nz(BCODE);
+    const mItems = S.items.filter(i => i.sec != 'glass' && (i.code == BCODE || (i.imei && nz(i.imei).includes(nc))));
     const mRp = (S.rp || []).filter(r => r.imei && nz(r.imei).includes(nc));
     const r = $('res');
     if (!r) return;
     if (mItems.length || mRp.length) {
       r.innerHTML = mItems.map(card).join('') + mRp.map(rc).join('');
     } else {
-      r.innerHTML = `<p class="m">رمز غير مسجل: <bdi>${esc(c)}</bdi></p><button class="btn" onclick="bcLink()">ربطه بعنصر في المخزون</button>`;
+      r.innerHTML = `<div class="card"><div class="m">الرمز غير مسجل حالياً: <bdi><b>${esc(BCODE)}</b></bdi></div><div class="sub" style="margin-top:10px"><button class="btn sm" onclick="bcNewPh()">${I('mobile')} + إضافة كهاتف جديد</button><button class="btn s sm" onclick="bcNewRp()">${I('tool')} + استلام في الصيانة</button><button class="btn s sm" onclick="bcLink()">ربطه بصنف موجود</button></div></div>`;
     }
+  });
+};
+
+/* ---------- 7) منع تضارب المخزون بين الموظفين في المزامنة (Delta Sync Merge) ---------- */
+if (typeof syApply == 'function') {
+  const _origSyApply = syApply;
+  /* حفظ لقطة محلية لآخر أعداد معروفة عند كل مزامنة لحساب الفرق (Delta) بدقة */
+  const getSnapMap = () => {
+    try { return JSON.parse(localStorage.getItem('shopSyncSnap') || '{}'); } catch (e) { return {}; }
+  };
+  const saveSnapMap = m => {
+    try { localStorage.setItem('shopSyncSnap', JSON.stringify(m)); } catch (e) {}
+  };
+
+  /* تحديث اللقطة بعد كل دورة حفظ ناجحة في المزامنة */
+  const _origSyPut2 = syPut2;
+  window.syPut2 = function(st) {
+    _origSyPut2(st);
+    try {
+      const snap = getSnapMap();
+      (S.items || []).forEach(i => {
+        const k = 'items/' + i.id;
+        if (st.base && st.base[k] && !st.dt[k]) {
+          snap[k] = { cnt: i.cnt, stock: i.stock ? { ...i.stock } : null, v: Array.isArray(i.v) ? i.v.map(x => ({ id: x.id, n: x.n })) : null };
+        }
+      });
+      saveSnapMap(snap);
+    } catch (e) {}
+  };
+
+  window.syApply = async function(r, st, cm, force) {
+    const k = r.coll + '/' + r.id;
+    const loc = cm[k];
+    const snap = getSnapMap()[k];
+    /* إذا كان الصنف معدّلاً محلياً وفي السيرفر معاً في نفس الوقت (تضارب موظفين على نفس الصنف) */
+    if (r.coll == 'items' && !r.deleted && loc && snap && st.base[k]) {
+      const lh = syH(JSON.stringify(loc));
+      const isLocalDirty = lh !== st.base[k].h;
+      if (isLocalDirty && force) {
+        try {
+          let js = r.data;
+          if (r.enc) js = await syDec(js);
+          const rem = JSON.parse(js);
+          /* 1. دمج عدد الهواتف أو الإكسسوارات بالفرق (Delta) */
+          if (typeof loc.cnt == 'number' && typeof rem.cnt == 'number' && typeof snap.cnt == 'number') {
+            const localDelta = loc.cnt - snap.cnt;
+            const remoteDelta = rem.cnt - snap.cnt;
+            if (localDelta !== 0 && remoteDelta !== 0) {
+              rem.cnt = Math.max(0, snap.cnt + localDelta + remoteDelta);
+              r = { ...r, data: r.enc ? await syEnc(JSON.stringify(rem)) : JSON.stringify(rem) };
+            }
+          }
+          /* 2. دمج أعداد البوشيط (الألوان والأنواع) بالفرق */
+          if (Array.isArray(loc.v) && Array.isArray(rem.v) && Array.isArray(snap.v)) {
+            let vChg = 0;
+            rem.v.forEach(rv => {
+              const lv = loc.v.find(x => x.id == rv.id), sv = snap.v.find(x => x.id == rv.id);
+              if (lv && sv) {
+                const ld = lv.n - sv.n, rd = rv.n - sv.n;
+                if (ld !== 0 && rd !== 0) { rv.n = Math.max(0, sv.n + ld + rd); vChg = 1; }
+              }
+            });
+            if (vChg) r = { ...r, data: r.enc ? await syEnc(JSON.stringify(rem)) : JSON.stringify(rem) };
+          }
+        } catch (e) {}
+      }
+    }
+    return _origSyApply(r, st, cm, force);
+  };
+}
+
+/* ---------- 8) إحكام أمان حسابات الموظفين عند تبديل المستخدم ---------- */
+who = function() {
+  ask('من أنت؟', [{ k: 'u', l: 'المستخدم', t: 'sel', o: S.users.map(u => u.name), v: S.me }], 'اختيار').then(v => {
+    if (!v) return;
+    const u = S.users.find(x => x.name == v.u);
+    if (!u) return;
+    if (!u.admin) {
+      const go2 = () => { admSet(false); upd(() => { S.me = u.name; }); };
+      if (u.name == S.me) return;
+      /* إذا كان للموظف رمز، يُطلب دائماً، وإذا لم يكن له رمز ولكن هناك موظفون آخرون برمز، يُنبه المدير */
+      if (u.pin) {
+        return ask('رمز الموظف: ' + u.name, [{ k: 'p', l: 'الرمز السري', t: 'password' }], 'دخول').then(p => {
+          if (!p) return;
+          hv(p.p, u.pin) || hv(p.p, S.pin) ? go2() : toast('الرمز خاطئ');
+        });
+      }
+      return go2();
+    }
+    if (u.name == S.me && admOk()) return;
+    ask('رمز المدير', [{ k: 'p', l: 'الرمز', t: 'password' }], 'دخول').then(p => {
+      if (p) hv(p.p, S.pin) ? (admSet(true), upd(() => { S.me = u.name; })) : toast('الرمز خاطئ');
+    });
   });
 };
 
