@@ -5,8 +5,8 @@ const TG={brand:'الماركات',color:'الألوان',cap:'السعات',ram
 const PL={del:'الحذف',price:'تعديل الأسعار',tags:'إدارة الوسوم',fields:'إدارة الحقول'};
 const DEF={me:'',users:[],pin:'',perm:{del:'a',price:'a',tags:'a',fields:'a'},cfg:{fs:17,th:'a'},tags:{brand:['Samsung','Xiaomi','Redmi','Realme','Oppo','Vivo','Tecno','Infinix','iPhone','Itel'],color:['أسود','أبيض','أزرق','أحمر','أخضر','ذهبي','فضي','وردي'],cap:['32GB','64GB','128GB','256GB','512GB'],ram:['2GB','3GB','4GB','6GB','8GB','12GB'],gender:['رجالي','نسائي'],kind:['كابل','شاحن','رأس شاحن','USB','كارت ميموري','سماعة','باور بانك'],conn:['micro','type-c','lightning'],tier:['10','15','20','25','30','40','50'],glass:['عادي','Super Full Glue','Privacy']},items:[],rp:[],trash:[],req:[]};
 function load(){let o={};try{o=JSON.parse(localStorage.getItem('shop3')||'{}')}catch(e){}const d=JSON.parse(JSON.stringify(DEF));return{...d,...o,tags:{...d.tags,...o.tags},perm:{...d.perm,...o.perm},cfg:{...d.cfg,...o.cfg}}}
-let S=load(),V={v:'home'},Q='',QP=0,SH=false,SHR=null,ARM=0,TT;
-const save=()=>{try{localStorage.setItem('shop3',JSON.stringify(S))}catch(e){toast('الذاكرة ممتلئة')}};
+let S=load(),V={v:'home'},Q='',QP=0,SH=false,SHR=null,ARM=0,TT,AB_T=0,AB_FH=null;
+const save=()=>{try{localStorage.setItem('shop3',JSON.stringify(S));window._syDirty=1;window._nzVer=(window._nzVer||0)+1;schedAutoBk()}catch(e){toast('الذاكرة ممتلئة')}};
 const hs=s=>{let h=5381;for(const c of String(s))h=(h*33^c.charCodeAt(0))>>>0;return h.toString(36)};
 const isAdmin=()=>!!(S.users.find(u=>u.name==S.me)||{}).admin;
 const can=k=>S.perm[k]=='e'||isAdmin();
@@ -23,24 +23,42 @@ function hideSheet(){$('ov').hidden=true;SH=false;const r=SHR;SHR=null;r&&r.res(
 const finish=v=>{if(SHR)SHR.val=v;history.back()};
 $('ov').onclick=e=>{if(e.target.id=='ov')finish(null)};
 
-/* ===== لوحة الأرقام التفاعلية للرموز السرية (PIN Pad) ===== */
-function pinPadHtml(id,ph='أدخل الرمز بالأرقام'){
-  return `<div class="pin-wrap"><input id="${id}" type="hidden" value=""><div id="${id}_dots" class="pin-dots" data-ph="${esc(ph)}"><span class="pin-ph">${esc(ph)}</span></div><div class="pin-grid">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" class="pkb" onclick="pkTap('${id}','${n}')">${n}</button>`).join('')}<button type="button" class="pkb fn" onclick="pkTap('${id}','C')">مسح</button><button type="button" class="pkb" onclick="pkTap('${id}','0')">0</button><button type="button" class="pkb fn" onclick="pkTap('${id}','B')">⌫</button></div></div>`;
+/* ===== لوحة الأرقام التفاعلية مع التبديل السلس إلى لوحة الحروف والأرقام ===== */
+function pinPadHtml(id,ph='أدخل الرمز',onEnter=''){
+  return `<div class="pin-wrap" id="${id}_wrap"><input id="${id}" type="hidden" value="" autocomplete="off" ${onEnter?`onkeydown="if(event.key==='Enter')${onEnter}"`:''}><div id="${id}_pad"><div id="${id}_dots" class="pin-dots" data-ph="${esc(ph)}"><span class="pin-ph">${esc(ph)}</span></div><div class="pin-grid">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" class="pkb" onclick="pkTap('${id}','${n}')">${n}</button>`).join('')}<button type="button" class="pkb fn" onclick="pkTap('${id}','C')">مسح</button><button type="button" class="pkb" onclick="pkTap('${id}','0')">0</button><button type="button" class="pkb fn" onclick="pkTap('${id}','B')">⌫</button></div></div><button type="button" id="${id}_sw" class="pin-sw" onclick="pkMode('${id}')">⌨️ الرمز فيه حروف؟ اضغط هنا للكتابة</button></div>`;
 }
 function pkTap(id,k){
   const el=$(id);if(!el)return;
   if(k=='C')el.value='';
   else if(k=='B')el.value=el.value.slice(0,-1);
-  else if(el.value.length<12)el.value+=k;
+  else if(el.value.length<24)el.value+=k;
   const d=$(id+'_dots');
   if(d){
     const ph=d.getAttribute('data-ph')||'أدخل الرمز';
     d.innerHTML=el.value.length?Array(el.value.length).fill('<span class="pin-dot"></span>').join(''):`<span class="pin-ph">${esc(ph)}</span>`;
   }
 }
+function pkMode(id){
+  const el=$(id),pad=$(id+'_pad'),sw=$(id+'_sw'),d=$(id+'_dots');
+  if(!el||!pad||!sw)return;
+  const ph=(d&&d.getAttribute('data-ph'))||'أدخل الرمز';
+  if(el.type==='hidden'){
+    pad.hidden=true;
+    el.type='password';
+    el.placeholder=ph+' (حروف وأرقام)';
+    el.style.marginBottom='8px';
+    sw.textContent='🔢 العودة للوحة الأرقام السريعة';
+    setTimeout(()=>el.focus(),50);
+  }else{
+    el.type='hidden';
+    pad.hidden=false;
+    sw.textContent='⌨️ الرمز فيه حروف؟ اضغط هنا للكتابة';
+    pkTap(id,'');
+  }
+}
 
 function ask(title,F,ok='حفظ',danger){return new Promise(res=>{
-$('sh').innerHTML=`<div class="bar"></div><h3>${esc(title)}</h3>`+F.map(f=>`<label>${esc(f.l)}`+(f.t=='area'?`<textarea id="f_${f.k}">${esc(f.v)}</textarea>`:f.t=='sel'?`<select id="f_${f.k}">${f.o.map(o=>`<option ${o==f.v?'selected':''}>${esc(o)}</option>`).join('')}</select>`:f.t=='password'?pinPadHtml('f_'+f.k,f.ph||'أدخل الأرقام'):`<input id="f_${f.k}" type="${f.t||'text'}" value="${esc(f.v)}">`)+'</label>').join('')+`<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn ${danger?'d':''}" id="so">${esc(ok)}</button></div>`;
+$('sh').innerHTML=`<div class="bar"></div><h3>${esc(title)}</h3>`+F.map(f=>`<label>${esc(f.l)}`+(f.t=='area'?`<textarea id="f_${f.k}">${esc(f.v)}</textarea>`:f.t=='sel'?`<select id="f_${f.k}">${f.o.map(o=>`<option ${o==f.v?'selected':''}>${esc(o)}</option>`).join('')}</select>`:f.t=='password'?pinPadHtml('f_'+f.k,f.ph||'أدخل الرمز','document.getElementById(\'so\').click()'):`<input id="f_${f.k}" type="${f.t||'text'}" value="${esc(f.v)}">`)+'</label>').join('')+`<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn ${danger?'d':''}" id="so">${esc(ok)}</button></div>`;
 sheetOpen(res);$('so').onclick=()=>{const o={};F.forEach(f=>o[f.k]=$('f_'+f.k).value);finish(o)};const i=$('sh').querySelector('input:not([type=hidden])');if(i&&!i.value)setTimeout(()=>i.focus(),150)})}
 function sure(msg,ok='نعم',danger=true){return new Promise(res=>{$('sh').innerHTML=`<div class="bar"></div><h3>${esc(msg)}</h3><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn ${danger?'d':''}" onclick="finish(1)">${esc(ok)}</button></div>`;sheetOpen(res)}).then(v=>!!v)}
 function upd(fn){fn();save();render()}
@@ -59,7 +77,7 @@ st_users:()=>{const a=isAdmin();return{t:'المستخدمون',h:S.users.map((u
 st_tags:()=>({t:'الوسوم',h:Object.keys(TG).map(g=>row(TG[g],`go('st_tg',{g:'${g}'})`,S.tags[g].length)).join('')}),
 st_tg:()=>{const g=V.g;return{t:TG[g],h:(can('tags')?'':'<p class="m">التعديل للمدير فقط.</p>')+`<div>${S.tags[g].map((t,i)=>`<span class="tag">${esc(t)}${can('tags')?`<b onclick="tgDel('${g}',${i})">×</b>`:''}</span>`).join('')}</div>`+(can('tags')?`<button class="btn" onclick="tgAdd('${g}')">+ إضافة</button>`:'')}},
 st_look:()=>({t:'المظهر',h:`<h3>حجم الخط</h3>${[[15,'صغير'],[17,'عادي'],[19,'كبير'],[21,'أكبر']].map(([v,l])=>`<button class="tag ${S.cfg.fs==v?'on':''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')}<h3>المظهر</h3>${[['a','تلقائي'],['l','نهاري'],['d','ليلي']].map(([v,l])=>`<button class="tag ${S.cfg.th==v?'on':''}" onclick="upd(()=>S.cfg.th='${v}')">${l}</button>`).join('')}`}),
-st_bk:()=>({t:'النسخ الاحتياطي',h:'<p class="m">يتم تشفير بيانات الزبائن الحساسة (الصيانة، الطلبات، الحجوزات) داخل ملف النسخة الاحتياطية لحمايتها من التسريب.</p><button class="btn" onclick="BKP()">حفظ ملف النسخة (محمي)</button><label>استعادة من ملف<input type="file" accept=".json" onchange="RST(this.files[0])"></label>'}),
+st_bk:()=>({t:'النسخ الاحتياطي',h:'<p class="m">يتم تشفير بيانات الزبائن الحساسة (الصيانة، الطلبات، الحجوزات) داخل ملف النسخة الاحتياطية لحمايتها من التسريب.</p><button class="btn" onclick="BKP()">حفظ ملف النسخة في الهاتف (محمي)</button>'+(window.showSaveFilePicker?`<button class="btn s" onclick="linkAutoFile()">${AB_FH?'✅ مرتبط بملف تلقائي (اضغط لتغييره)':'ربط ملف حفظ تلقائي مباشر بالهاتف'}</button>`:'')+'<button class="btn s" onclick="restAutoIdb()">استرجاع النسخة التلقائية الداخلية</button><label>استعادة من ملف خارجي<input type="file" accept=".json" onchange="RST(this.files[0])"></label>'}),
 st_trash:()=>({t:'المحذوفات (30 يوماً)',h:S.trash.map(t=>`<div class="card row2"><div style="flex:1"><b>${esc(t.label)}</b><div class="m"><bdi>${fd(t.t)}</bdi></div></div><button class="btn s sm" onclick="restore('${t.id}')">استرجاع</button></div>`).join('')||'<p class="m">لا شيء</p>'})};
 function render(){const r=(VW[V.v]||VW.home)();$('ti').textContent=r.t;$('bk').hidden=V.v=='home';$('me').textContent=S.me;$('m').innerHTML=r.h;
 $('nv').innerHTML=NV.map(([k,i,l])=>`<button class="${V.v.startsWith(k)?'on':''}" onclick="go('${k}')">${ic(i)}<span>${l}</span></button>`).join('');
@@ -74,7 +92,7 @@ const sw=n=>upd(()=>S.me=n);
 function tgAdd(g){ask('وسم جديد: '+TG[g],[{k:'t',l:'الاسم'}]).then(v=>{const t=v&&v.t.trim();if(t&&!S.tags[g].includes(t))upd(()=>S.tags[g].push(t))})}
 function tgDel(g,i){sure('حذف الوسم «'+S.tags[g][i]+'» ؟').then(y=>{if(!y)return;const o=[...S.tags[g]];upd(()=>S.tags[g].splice(i,1));toast('تم الحذف',()=>{S.tags[g]=o})})}
 
-/* ===== تشفير وفك تشفير بيانات الزبائن الحساسة في النسخ الاحتياطي ===== */
+/* ===== تشفير وفك تشفير بيانات الزبائن الحساسة في النسخ الاحتياطي + الحفظ التلقائي ===== */
 async function bkKey(pin){
   const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveKey']);
   return crypto.subtle.deriveKey({name:'PBKDF2',salt:new TextEncoder().encode('aziz-bk-v1'),iterations:150000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
@@ -91,6 +109,58 @@ async function bkDecObj(b64,pin){
   const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u.subarray(0,12)},key,u.subarray(12));
   return JSON.parse(new TextDecoder().decode(pt));
 }
+async function makeSafeBackupJson(pinOrHash){
+  const copy=JSON.parse(JSON.stringify(S));
+  const resMap={};
+  (copy.items||[]).forEach(i=>{if(i.res){resMap[i.id]=i.res;delete i.res}});
+  const custData={rp:copy.rp||[],req:copy.req||[],res:resMap,trash:(copy.trash||[]).filter(t=>t.coll=='rp')};
+  copy._encCust=await bkEncObj(custData,pinOrHash);
+  copy.rp=[];copy.req=[];copy.trash=(copy.trash||[]).filter(t=>t.coll!='rp');
+  delete copy.pin;if(copy.cfg)delete copy.cfg.lk;
+  (copy.users||[]).forEach(u=>delete u.pin);
+  return JSON.stringify(copy);
+}
+
+/* حفظ تلقائي في قاعدة بيانات الهاتف المعزولة (IndexedDB) + ملف الهاتف المباشر */
+function idbOp(mode,fn){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open('AzizShopAutoBackup',1);
+    req.onupgradeneeded=e=>e.target.result.createObjectStore('bk');
+    req.onsuccess=e=>{const tx=e.target.result.transaction('bk',mode);fn(tx.objectStore('bk'),res,rej)};
+    req.onerror=rej;
+  });
+}
+function schedAutoBk(){
+  clearTimeout(AB_T);
+  AB_T=setTimeout(async()=>{
+    try{
+      const snapData={at:Date.now(),data:JSON.parse(JSON.stringify(S))};
+      await idbOp('readwrite',(st,res)=>{st.put(snapData,'latest');res()});
+      if(AB_FH&&S.pin){
+        const js=await makeSafeBackupJson(S.pin);
+        const w=await AB_FH.createWritable();
+        await w.write(js);await w.close();
+      }
+    }catch(e){}
+  },5000);
+}
+async function linkAutoFile(){
+  if(!isAdmin())return toast('للمدير فقط');
+  if(!window.showSaveFilePicker)return toast('متصفحك يعتمد الحفظ التلقائي الداخلي');
+  try{
+    AB_FH=await window.showSaveFilePicker({suggestedName:'aziz-shop-auto-backup.json',types:[{description:'JSON',accept:{'application/json':['.json']}}]});
+    schedAutoBk();render();toast('تم ربط ملف الحفظ التلقائي بنجاح');
+  }catch(e){}
+}
+function restAutoIdb(){
+  if(!isAdmin())return toast('للمدير فقط');
+  idbOp('readonly',(st,res)=>{const r=st.get('latest');r.onsuccess=()=>res(r.result)}).then(rec=>{
+    if(!rec||!rec.data)return toast('لا توجد نسخة تلقائية محفوظة بعد');
+    sure('استعادة النسخة التلقائية المحفوظة بتاريخ '+fd(rec.at)+' ؟','استعادة').then(y=>{
+      if(y){S={...load(),...rec.data};save();location.reload()}
+    });
+  }).catch(()=>toast('تعذر قراءة النسخة التلقائية'));
+}
 
 function BKP(){
   if(!isAdmin())return toast('النسخ الاحتياطي للمدير فقط');
@@ -98,16 +168,9 @@ function BKP(){
     if(!v||!v.p)return;
     if(hs(v.p)!==S.pin)return toast('رمز المدير خاطئ');
     try{
-      const copy=JSON.parse(JSON.stringify(S));
-      const resMap={};
-      (copy.items||[]).forEach(i=>{if(i.res){resMap[i.id]=i.res;delete i.res}});
-      const custData={rp:copy.rp||[],req:copy.req||[],res:resMap,trash:(copy.trash||[]).filter(t=>t.coll=='rp')};
-      copy._encCust=await bkEncObj(custData,v.p);
-      copy.rp=[];copy.req=[];copy.trash=(copy.trash||[]).filter(t=>t.coll!='rp');
-      delete copy.pin;if(copy.cfg)delete copy.cfg.lk;
-      (copy.users||[]).forEach(u=>delete u.pin);
+      const js=await makeSafeBackupJson(v.p);
       const a=document.createElement('a');
-      a.href=URL.createObjectURL(new Blob([JSON.stringify(copy)],{type:'application/json'}));
+      a.href=URL.createObjectURL(new Blob([js],{type:'application/json'}));
       a.download='aziz-shop-backup-'+new Date().toISOString().slice(0,10)+'.json';
       a.click();
       S.cfg.lb=Date.now();save();render();
@@ -129,7 +192,8 @@ function RST(f){
           ask('فك تشفير بيانات الزبائن',[{k:'p',l:'أدخل رمز المدير الذي حُفظت به النسخة',t:'password'}],'فك التشفير والاستعادة').then(async v=>{
             if(!v||!v.p)return;
             try{
-              const cust=await bkDecObj(d._encCust,v.p);
+              let cust;
+              try{cust=await bkDecObj(d._encCust,v.p)}catch(e1){cust=await bkDecObj(d._encCust,hs(v.p))}
               delete d._encCust;
               d.rp=cust.rp||[];d.req=cust.req||[];
               (d.items||[]).forEach(i=>{if(cust.res&&cust.res[i.id])i.res=cust.res[i.id]});
@@ -148,7 +212,7 @@ function RST(f){
   r.readAsText(f);
 }
 
-function setup(){ask('مرحباً في محل عزيز! إعداد المدير',[{k:'n',l:'اسمك'},{k:'p',l:'رمز المدير (أرقام لحماية الصلاحيات)',t:'password'}],'ابدأ').then(v=>{if(!v||!v.n.trim()||!v.p)return setup();S.users=[{name:v.n.trim(),admin:true}];S.me=v.n.trim();S.pin=hs(v.p);save();render()})}
+function setup(){ask('مرحباً في محل عزيز! إعداد المدير',[{k:'n',l:'اسمك'},{k:'p',l:'رمز المدير (لحماية الصلاحيات)',t:'password'}],'ابدأ').then(v=>{if(!v||!v.n.trim()||!v.p)return setup();S.users=[{name:v.n.trim(),admin:true}];S.me=v.n.trim();S.pin=hs(v.p);save();render()})}
 $('bk').innerHTML=ic('back');
 S.trash=S.trash.filter(t=>Date.now()-t.t<2592e6);
 try{navigator.storage.persist()}catch(e){}
