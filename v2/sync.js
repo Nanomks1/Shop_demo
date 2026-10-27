@@ -77,7 +77,7 @@ function syStat(s,m){SYS.st=s;SYS.msg=m||'';const d=$('syb');if(d)d.style.color=
 /* الإعداد */
 function syR(r){SYR=r;['first','extra'].forEach(k=>{const b=$('syr_'+k);if(b)b.classList.toggle('on',k==r)});const p=$('syn');if(p)p.textContent=r=='extra'?'سيُستبدل ما على هذا الجهاز ببيانات المحل.':'ارفع بيانات هذا الجهاز لتصير بيانات المحل.'}
 function syForm(){const c=syCfg();$('sh').innerHTML=`<div class="bar"></div><h3>إعداد المزامنة</h3><label>بريد حساب المحل<input id="sye" type="email" value="${esc(c.email||'')}"></label><label>كلمة سر الحساب<input id="syp" type="password" value="" placeholder="أدخل كلمة سر الحساب"></label><label>رمز تشفير بيانات الزبائن (لا يُرفع أبداً، احفظه جيداً)<input id="syc" type="password" value="" placeholder="أدخل رمز التشفير"></label><label>هذا الجهاز</label><div><button id="syr_first" class="tag ${SYR=='first'?'on':''}" onclick="syR('first')">أول جهاز (يرفع بياناته)</button><button id="syr_extra" class="tag ${SYR=='extra'?'on':''}" onclick="syR('extra')">جهاز إضافي (يحمّل بيانات المحل)</button></div><p id="syn" class="m">${SYR=='extra'?'سيُستبدل ما على هذا الجهاز ببيانات المحل.':'ارفع بيانات هذا الجهاز لتصير بيانات المحل.'}</p><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({e:$('sye').value.trim(),p:$('syp').value,c:$('syc').value,r:SYR})">حفظ وبدء</button></div>`}
-function syOpen(){if(!isAdmin())return toast('للمدير فقط');needAdm(()=>{SYR='first';syForm();sheetOpen(v=>{if(v)syStart(v)})})()}
+function syOpen(){if(!isAdmin())return toast('للمدير فقط');needAdm(()=>{SYR=(S.items.length||S.rp.length)?'first':'extra';syForm();sheetOpen(v=>{if(v)syStart(v)})})()}
 async function syStart(v){if(!v.e||!v.p||!v.c)return toast('أكمل الحقول الثلاثة');const old=localStorage.getItem('shopSyncCfg'),oldTok=localStorage.getItem('shopSyncTok');
 syStat('busy');
 try{
@@ -88,12 +88,18 @@ try{
   await syTok(v.p);
   const m=await syReq('records?coll=eq.meta&id=eq.check');
   if(m.length){if(await syDec(m[0].data)!=='ok')throw 0}else await syReq('records?on_conflict=coll,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify([{coll:'meta',id:'check',data:await syEnc('ok'),enc:true,deleted:false,ts:Date.now(),who:S.me||''}])});
+  /* حماية: إن كان في الخادم بيانات للمحل، لا يُسمح لجهاز فارغ برفع بياناته فوقها */
+  const has=await syReq('records?coll=neq.meta&limit=1');
+  if(has.length&&v.r!='extra'){
+    if(!S.items.length&&!S.rp.length&&!(S.req||[]).length&&!(S.gg||[]).length){v={...v,r:'extra'};toast('المحل يحتوي بيانات: سيُحمَّل هذا الجهاز كجهاز إضافي')}
+    else if(!(await sure('المحل يحتوي بيانات سابقة. رفع بيانات هذا الجهاز قد يستبدل الموظفين ورمز المدير والإعدادات على كل الأجهزة. هل تريد المتابعة؟','متابعة والرفع',false)))throw 'cancel';
+  }
   if(v.r=='extra'){SY_ARR.forEach(c=>{S[c]=[]})}syPut2({cur:SY_E0,base:{},dt:{},fresh:v.r=='extra'?1:0});save();syKick(true);toast('بدأت المزامنة بأمان')
 }catch(e){
   if(old)localStorage.setItem('shopSyncCfg',old);else localStorage.removeItem('shopSyncCfg');
   if(oldTok)localStorage.setItem('shopSyncTok',oldTok);
   SYS.key=null;syStat('off');
-  toast(e&&e.code=='auth'?'بيانات الدخول خاطئة':e&&e.code=='enc'||e===0?'رمز التشفير لا يطابق رمز المحل':'تعذّر الاتصال');
+  toast(e==='cancel'?'أُلغي الإعداد':e&&e.code=='auth'?'بيانات الدخول خاطئة':e&&e.code=='enc'||e===0?'رمز التشفير لا يطابق رمز المحل':'تعذّر الاتصال');
 }}
 function syOff(){if(!isAdmin())return toast('للمدير فقط');sure('إيقاف المزامنة على هذا الجهاز؟ تبقى البيانات المحلية كما هي.','إيقاف').then(y=>{if(y){const c=syCfg();c.on=0;localStorage.setItem('shopSyncCfg',JSON.stringify(c));syStat('off');render()}})}
 VW.st_sync=()=>{const c=syCfg();return{t:'المزامنة',h:c.on?`<div class="card"><b>${SYM[SYS.st]||''}</b><div class="m">${esc(SYS.msg)}${SYS.last?' · آخر مزامنة '+new Date(SYS.last).toLocaleTimeString('ar-MA'):''}</div></div><button class="btn" onclick="syKick(true)">مزامنة الآن</button><button class="btn s" onclick="syOpen()">تغيير الإعداد</button><button class="btn s" onclick="syOff()">إيقاف المزامنة</button><p class="m">تشفير انتقائي: بيانات الزبائن (الصيانة، الطلبات، الحجوزات) مشفّرة على الجهاز قبل الرفع، بينما يبقى المخزون العام خفيفاً وسريعاً.</p>`:`<p class="m">بيانات المحل تصير واحدة على كل الأجهزة. بيانات الزبائن الحساسة تُشفَّر على الجهاز قبل الرفع.</p><button class="btn" onclick="syOpen()">إعداد المزامنة</button>`}};
