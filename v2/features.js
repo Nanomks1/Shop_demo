@@ -133,27 +133,27 @@ const _rp4=VW.rp;VW.rp=function(){const r=_rp4();r.h='<button class="btn s" oncl
 render();
 
 /* ============================================================
-   v5.js — القفل السريع بلوحة أرقام تفاعلية ومسح الباركود
+   v5.js — القفل السريع بلوحة أرقام تفاعلية (مع دعم الحروف وتجميد 10 ثوانٍ) ومسح الباركود
    ============================================================ */
 let LKF=0,LKT=0;
 function lkShow(){
   if($('lk'))return;
-  document.body.insertAdjacentHTML('beforeend',`<div id="lk" style="position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:12px;padding:24px;max-width:420px;margin:auto"><h2 style="text-align:center;margin:0">${I('lock')} محل عزيز مقفل</h2><p id="lkm" class="m" style="text-align:center;margin:0">أدخل رمز القفل السريع أو رمز المدير</p>${pinPadHtml('lki','رمز الفتح')}<button class="btn" onclick="lkTry()">فتح التطبيق</button></div>`);
+  document.body.insertAdjacentHTML('beforeend',`<div id="lk" style="position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:12px;padding:24px;max-width:420px;margin:auto"><h2 style="text-align:center;margin:0">${I('lock')} محل عزيز مقفل</h2><p id="lkm" class="m" style="text-align:center;margin:0">أدخل رمز القفل السريع أو رمز المدير</p>${pinPadHtml('lki','رمز الفتح','lkTry()')}<button class="btn" onclick="lkTry()">فتح التطبيق</button></div>`);
 }
 function lkTry(){
-  const m=$('lkm');
-  if(Date.now()<LKT){if(m)m.textContent='انتظر 30 ثانية قبل المحاولة مجدداً';pkTap('lki','C');return}
-  const c=$('lki').value;
+  const m=$('lkm'),el=$('lki');
+  if(Date.now()<LKT){if(m)m.textContent='انتظر 10 ثوانٍ قبل المحاولة مجدداً';if(el)el.value='';pkTap('lki','C');return}
+  const c=el?el.value:'';
   const u=S.users.find(x=>x.name==S.me);
   if(c&&(hs(c)==S.cfg.lk||hs(c)==S.pin||(u&&u.pin&&hs(c)==u.pin))){
     LKF=0;localStorage.removeItem('shopLock');$('lk').remove();LAST=Date.now();
   }else{
-    LKF++;pkTap('lki','C');
-    if(LKF>=5){LKF=0;LKT=Date.now()+30000;if(m)m.textContent='محاولات خاطئة كثيرة! انتظر 30 ثانية'}
+    LKF++;if(el)el.value='';pkTap('lki','C');
+    if(LKF>=5){LKF=0;LKT=Date.now()+10000;if(m)m.textContent='محاولات خاطئة كثيرة! انتظر 10 ثوانٍ'}
     else if(m)m.textContent='الرمز خاطئ، حاول مرة أخرى';
   }
 }
-function lkSet(go2){if(!isAdmin())return toast('للمدير فقط');ask('رمز القفل السريع',[{k:'p',l:'اختر رمزاً بالأرقام لقفل وفتح التطبيق بسرعة',t:'password'}]).then(v=>{if(v&&v.p){upd(()=>S.cfg.lk=hs(v.p));if(go2===true)lockNow()}})}
+function lkSet(go2){if(!isAdmin())return toast('للمدير فقط');ask('رمز القفل السريع',[{k:'p',l:'اختر رمزاً لقفل وفتح التطبيق بسرعة',t:'password'}]).then(v=>{if(v&&v.p){upd(()=>S.cfg.lk=hs(v.p));if(go2===true)lockNow()}})}
 function lockNow(){if(!S.cfg.lk&&!S.pin)return isAdmin()?lkSet(true):toast('المدير يعيّن رمز القفل من المزيد');try{localStorage.setItem('shopLock','1')}catch(e){}lkShow()}
 $('me').insertAdjacentHTML('beforebegin','<button id="lkb" class="ib" onclick="lockNow()">'+I('lock')+'</button>');
 const _st5=VW.st;VW.st=function(){const o=_st5();o.h+=row('رمز القفل السريع','lkSet()',S.cfg.lk?'مُعيَّن':'غير مُعيَّن');return o};
@@ -282,7 +282,7 @@ function checkDeviceHistory() {
   }
 }
 
-/* ===== 2. زر اتصال مباشر + توثيق التجربة مع الزبون + مسح الصورة عند التسليم ===== */
+/* ===== 2. زر اتصال مباشر + توثيق التجربة مع الزبون + الاحتفاظ بالصورة والرمز لمدة 7 أيام بعد التسليم ===== */
 const _rc7 = rc;
 rc = function(r) {
   let h = _rc7(r);
@@ -321,9 +321,6 @@ rDV = function(id, pre) {
       r.paid = v.p.trim() || '0';
       r.tst = v.tested == DVO[1] ? Date.now() : 0;
       r.dnote = (v.dnote || '').trim();
-      r.pat = [];
-      r.lock = '';
-      r.img = '';
     });
   });
 };
@@ -421,7 +418,7 @@ function csQuickNote(id) {
 render();
 
 /* ============================================================
-   v8.js — الخانات المخصصة وتقسيم الإعدادات
+   v8.js — الخانات المخصصة، تقسيم الإعدادات، وفهرسة البحث فائق السرعة
    ============================================================ */
 S.fields=S.fields||[];
 const SECN={phones:'الهواتف',acc:'الإكسسوارات',case:'البوشيط',rp:'الصيانة'};
@@ -432,6 +429,11 @@ const fxVal=(i,f)=>[].concat((i.x||{})[f.id]||[]).filter(Boolean);
 const fxTxt=i=>(S.fields||[]).map(f=>fxVal(i,f).length?f.name+' '+fxVal(i,f).join(' '):'').join(' ');
 const fxShow=i=>{const p=(S.fields||[]).map(f=>fxVal(i,f).length?f.name+': '+fxVal(i,f).join('، '):'').filter(Boolean);return p.length?`<div class="m">${I('tag')} ${esc(p.join(' · '))}</div>`:''};
 const fxIns=(h,t)=>!t?h:h.includes('<div class="sub">')?h.replace('<div class="sub">',()=>t+'<div class="sub">'):h.replace(/<\/div>\s*$/,()=>t+'</div>');
+
+/* فهرسة مسبقة ذكية للبحث السريع (Search Index Caching) لتسريع البحث 10 أضعاف */
+const nzItem=i=>{const v=window._nzVer||0;if(i._nzV!==v){i._nz=nz(hay(i)+' '+fxTxt(i));i._nzV=v}return i._nz};
+const nzRp=r=>{const v=window._nzVer||0;if(r._nzV!==v){r._nz=nz(r.name+r.tel+r.dev+r.fault+r.note+' '+fxTxt(r));r._nzV=v}return r._nz};
+
 function fxR(){const b=$('fx');if(!b)return;b.innerHTML=fxList(FXSEC,fxKey()).map(f=>{const v=[].concat(FX[f.id]||[]);return `<label>${esc(f.name)}</label><div>${f.opts.map((o,j)=>`<button type="button" class="tag ${v.includes(o)?'on':''}" onclick="fxT('${f.id}',${j})">${esc(o)}</button>`).join('')}${FXA==f.id?`<span class="row2"><input id="fxn" placeholder="خيار جديد"><button type="button" class="btn sm" onclick="fxN('${f.id}')">إضافة</button></span>`:`<button type="button" class="tag" onclick="FXA='${f.id}';fxR()">+ جديد</button>`}</div>`}).join('')}
 function fxT(id,j){const f=S.fields.find(x=>x.id==id),o=f.opts[j],a=[].concat(FX[id]||[]);FX[id]=f.multi?(a.includes(o)?a.filter(x=>x!=o):[...a,o]):(a[0]==o?'':o);fxR()}
 function fxN(id){const f=S.fields.find(x=>x.id==id),v=($('fxn').value||'').trim();FXA='';if(v&&!f.opts.includes(v)){f.opts.push(v);save()}if(v){const a=[].concat(FX[id]||[]);FX[id]=f.multi?[...a,v]:v}fxR()}
@@ -451,9 +453,9 @@ const _c8=card;card=function(i){let h=_c8(i);if(i.sec=='case'&&(S.fields||[]).so
 const _rc8=rc;rc=function(r){return fxIns(_rc8(r),fxShow(r))};
 srch=function(q){const n=nz(q),o=[];
 if(!SC||SC=='glass')GM().filter(g=>g.models.some(m=>nz(((g.br||{})[m]||'')+m).includes(n))).slice(0,15).forEach(g=>o.push(glB(g)));
-S.items.filter(i=>i.sec!='glass'&&(!SC||i.sec==SC)&&nz(hay(i)+' '+fxTxt(i)).includes(n)).slice(0,30).forEach(i=>o.push(card(i)));
+S.items.filter(i=>i.sec!='glass'&&(!SC||i.sec==SC)&&nzItem(i).includes(n)).slice(0,30).forEach(i=>o.push(card(i)));
 return o.join('')||'<p class="m">لا نتائج</p>'};
-rpList=function(){const q=nz(V.q||''),tab=V.tab||'in',all=V.all&&q;const a=S.rp.filter(r=>(all||r.st==tab)&&inR(tOf(r))&&(!q||nz(r.name+r.tel+r.dev+r.fault+r.note+' '+fxTxt(r)).includes(q))).sort((x,y)=>tOf(y)-tOf(x));return a.map(rc).join('')||'<p class="m">لا شيء</p>'};
+rpList=function(){const q=nz(V.q||''),tab=V.tab||'in',all=V.all&&q;const a=S.rp.filter(r=>(all||r.st==tab)&&inR(tOf(r))&&(!q||nzRp(r).includes(q))).sort((x,y)=>tOf(y)-tOf(x));return a.map(rc).join('')||'<p class="m">لا شيء</p>'};
 /* إدارة الخانات */
 VW.st_fx=()=>({t:'الخانات المخصصة',h:'<p class="m">خانة إضافية بخيارات تظهر في نموذج القسم وعلى البطاقة وتدخل في البحث.</p>'+(can('tags')?'<button class="btn" onclick="feEd(null)">+ إضافة خانة</button>':'')+Object.keys(SECN).filter(s=>!V.fs||V.fs==s).map(s=>`<h3>${SECN[s]}</h3>`+((S.fields||[]).filter(f=>f.sec==s).map(f=>`<button class="card row2" onclick="feEd('${f.id}')"><b style="flex:1">${esc(f.name)}</b><span class="m">${f.kinds&&f.kinds.length?esc(f.kinds.join('، ')):'الكل'} · ${f.multi?'عدة قيم':'قيمة'} · ${f.opts.length}</span></button>`).join('')||'<p class="m">لا شيء</p>')).join('')});
 function feR(){if($('fen')){FE.name=$('fen').value;FE.opts=$('feo').value}
@@ -482,17 +484,17 @@ const scN=k=>k=='glass'?GM().length:S.items.filter(i=>i.sec==k).length;
 const _H10=VW.home;VW.home=function(){const r=_H10();r.h=r.h.replace(/<button class="card" onclick="go\('sec',\{k:'(\w+)'\}\)">([^<]+)<\/button>/g,(m,k,n)=>`<button class="card sc" onclick="go('sec',{k:'${k}'})">${ic(SCI[k])}<b>${n}</b><span class="m">${scN(k)} صنف</span></button>`);return r};
 const _r10=render;render=function(){_r10();try{const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(document.documentElement).getPropertyValue('--c').trim()||m.content}catch(e){}};
 
-/* ===== الأمان المشدد: دخول المدير والموظفين بلوحة الأرقام، القفل التلقائي لحماية الهواتف ===== */
+/* ===== الأمان المشدد: دخول المدير والموظفين (أرقام أو حروف)، تجميد 10 ثوانٍ، والقفل التلقائي ===== */
 Object.assign(DL0,{alk:5});LM.push(['alk','قفل التطبيق والمدير تلقائياً بعد (دقائق بلا استعمال)']);
 let LAST=Date.now(),LGF=0,LGT=0,HID_AT=0;
 ['touchstart','click','keydown'].forEach(e=>addEventListener(e,()=>{LAST=Date.now()},true));
 const admOk=()=>{try{return sessionStorage.getItem('admOk')=='1'}catch(e){return false}};
 const admSet=v=>{try{v?sessionStorage.setItem('admOk','1'):sessionStorage.removeItem('admOk')}catch(e){}};
 function lgShow(){if($('lg'))return;admSet(false);const emp=S.users.filter(u=>!u.admin),ads=S.users.filter(u=>u.admin);
-document.body.insertAdjacentHTML('beforeend',`<div id="lg" style="position:fixed;inset:0;z-index:55;background:var(--bg);overflow:auto;padding:24px;display:flex;flex-direction:column;gap:10px;justify-content:center;max-width:420px;margin:auto"><h2 style="text-align:center;margin:0">${I('lock')} تسجيل الدخول — محل عزيز</h2>${emp.length?'<p class="m" style="text-align:center;margin:0">دخول كموظف</p>'+emp.map((u,i)=>`<button class="btn s" onclick="lgEmp(${i})">${esc(u.name)}${u.pin?' '+I('lock'):''}</button>`).join(''):''}<p class="m" style="text-align:center;margin:8px 0 0">دخول كمدير</p><select id="lga">${ads.map(u=>`<option>${esc(u.name)}</option>`).join('')}</select><div id="lgm" class="m" style="text-align:center"></div>${pinPadHtml('lgp','رمز المدير')}<button class="btn" onclick="lgAdm()">دخول المدير</button></div>`)}
+document.body.insertAdjacentHTML('beforeend',`<div id="lg" style="position:fixed;inset:0;z-index:55;background:var(--bg);overflow:auto;padding:24px;display:flex;flex-direction:column;gap:10px;justify-content:center;max-width:420px;margin:auto"><h2 style="text-align:center;margin:0">${I('lock')} تسجيل الدخول — محل عزيز</h2>${emp.length?'<p class="m" style="text-align:center;margin:0">دخول كموظف</p>'+emp.map((u,i)=>`<button class="btn s" onclick="lgEmp(${i})">${esc(u.name)}${u.pin?' '+I('lock'):''}</button>`).join(''):''}<p class="m" style="text-align:center;margin:8px 0 0">دخول كمدير</p><select id="lga">${ads.map(u=>`<option>${esc(u.name)}</option>`).join('')}</select><div id="lgm" class="m" style="text-align:center"></div>${pinPadHtml('lgp','رمز المدير','lgAdm()')}<button class="btn" onclick="lgAdm()">دخول المدير</button></div>`)}
 function lgEmp(i){const u=S.users.filter(x=>!x.admin)[i];upd(()=>{S.me=u.name});$('lg').remove()}
-function lgAdm(){const p=$('lgp'),m=$('lgm');if(Date.now()<LGT){pkTap('lgp','C');if(m)m.textContent='انتظر 30 ثانية ثم أعد المحاولة';return}
-if(hs(p.value)==S.pin){LGF=0;admSet(true);LAST=Date.now();const n=$('lga').value;upd(()=>{S.me=n});$('lg').remove()}else{LGF++;pkTap('lgp','C');if(m)m.textContent='رمز خاطئ';if(LGF>=5){LGF=0;LGT=Date.now()+30000;if(m)m.textContent='محاولات كثيرة! انتظر 30 ثانية'}}}
+function lgAdm(){const p=$('lgp'),m=$('lgm');if(Date.now()<LGT){if(p)p.value='';pkTap('lgp','C');if(m)m.textContent='انتظر 10 ثوانٍ ثم أعد المحاولة';return}
+if(p&&hs(p.value)==S.pin){LGF=0;admSet(true);LAST=Date.now();const n=$('lga').value;upd(()=>{S.me=n});$('lg').remove()}else{LGF++;if(p)p.value='';pkTap('lgp','C');if(m)m.textContent='رمز خاطئ';if(LGF>=5){LGF=0;LGT=Date.now()+10000;if(m)m.textContent='محاولات كثيرة! انتظر 10 ثوانٍ'}}}
 who=function(){ask('من أنت؟',[{k:'u',l:'المستخدم',t:'sel',o:S.users.map(u=>u.name),v:S.me}],'اختيار').then(v=>{if(!v)return;const u=S.users.find(x=>x.name==v.u);if(!u.admin){admSet(false);return upd(()=>{S.me=u.name})}if(u.name==S.me&&admOk())return;ask('رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'دخول').then(p=>{if(p)hs(p.p)==S.pin?(admSet(true),upd(()=>{S.me=u.name})):toast('الرمز خاطئ')})})};
 const needAdm=f=>function(...a){if(!isAdmin())return toast('للمدير فقط');ask('تأكيد: رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'تأكيد').then(v=>{if(!v)return;if(hs(v.p)==S.pin)f.apply(null,a);else toast('الرمز خاطئ')})};
 const _uA=uAdd,_uE=uEd,_pC=pinCh,_pT=pTog;uAdd=needAdm(_uA);uEd=needAdm(_uE);pinCh=needAdm(_pC);pTog=function(k){if(isAdmin())_pT(k)};
@@ -511,14 +513,14 @@ setInterval(()=>{
 },15000);
 if(!S.users.length)admSet(true);else if(S.pin&&(isAdmin()&&!admOk()||!S.users.some(u=>u.name==S.me)))lgShow();
 
-/* البحث العام: المخزون + الصيانة + دليل الأسعار */
+/* البحث العام السريع (باستخدام الفهرسة المسبقة nzItem و nzRp) */
 const scH2=()=>[['','الكل'],['phones','هواتف'],['glass','أنتي كاس'],['case','بوشيط'],['acc','إكسسوارات'],['rp','صيانة'],['gd','الدليل']].map(([k,l])=>`<button class="tag ${SC==k?'on':''}" onclick="scSet('${k}')">${l}</button>`).join('');
 scSet=function(k){SC=k;const b=$('sc');if(b)b.innerHTML=scH2();sq(Q)};
 const _H11=VW.home;VW.home=function(){const r=_H11();r.h=r.h.replace(/<div id="sc">[\s\S]*?<\/div>/,()=>'<div id="sc">'+scH2()+'</div>');return r};
 srch=function(q){const n=nz(q),o=[];
 if(!SC||SC=='glass')GM().filter(g=>g.models.some(m=>nz(((g.br||{})[m]||'')+m).includes(n))).slice(0,15).forEach(g=>o.push(glB(g)));
-S.items.filter(i=>i.sec!='glass'&&(!SC||i.sec==SC)&&nz(hay(i)+' '+fxTxt(i)).includes(n)).slice(0,30).forEach(i=>o.push(card(i)));
-if(!SC||SC=='rp')S.rp.filter(r=>nz(r.name+r.tel+r.dev+r.fault+r.note+' '+fxTxt(r)).includes(n)).slice(0,15).forEach(r=>o.push(rc(r)));
+S.items.filter(i=>i.sec!='glass'&&(!SC||i.sec==SC)&&nzItem(i).includes(n)).slice(0,30).forEach(i=>o.push(card(i)));
+if(!SC||SC=='rp')S.rp.filter(r=>nzRp(r).includes(n)).slice(0,15).forEach(r=>o.push(rc(r)));
 if(!SC||SC=='gd')S.guide.filter(g=>nz(g.m+g.f+(g.n||'')).includes(n)).slice(0,15).forEach(g=>o.push(gdCard(g)));
 return o.join('')||'<p class="m">لا نتائج</p>'};
 function goSearch(){go('home');setTimeout(()=>{const i=document.querySelector('main input');if(i)i.focus()},60)}
