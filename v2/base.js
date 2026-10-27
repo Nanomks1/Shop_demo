@@ -102,9 +102,22 @@ VW.rep=function(){const L=repLines();return{t:'التقرير',h:([...new Set(L.
 render();
 
 /* ============================================================
-   الصيانة (الاستلام، التسليم، الأرشيف، الطلبات)
+   الصيانة (الاستلام، التسليم، الأرشيف، الطلبات) + تنظيف الصور والرموز بعد 7 أيام
    ============================================================ */
 S.rp=S.rp||[];S.req=S.req||[];
+/* منظف تلقائي: يمسح فقط (الصورة + PIN + النمط) بعد 7 أيام من التسليم، مع بقاء السجل كاملاً في الأرشيف */
+function cleanOldRpMedia(){
+  const now=Date.now(),wk=7*864e5;
+  let chg=0;
+  (S.rp||[]).forEach(r=>{
+    if(r.st=='dn'&&r.t2&&(now-r.t2>wk)&&(r.img||r.lock||(r.pat&&r.pat.length))){
+      r.img='';r.lock='';r.pat=[];chg=1;
+    }
+  });
+  if(chg)save();
+}
+cleanOldRpMedia();
+
 const RK=['شاشة مكسورة','بدون SIM','مطفأ لا يشتغل','البصمة لا تعمل','بدون غطاء'],TB={in:'في المحل',rd:'جاهز',dn:'الأرشيف'},FL=[['all','الكل'],['today','اليوم'],['yest','البارحة'],['week','هذا الأسبوع'],['month','هذا الشهر'],['date','تاريخ']];
 let ZP=[],ZK=[],ZI='',ZD=0,ZR={};
 const rf=id=>S.rp.find(r=>r.id==id),rnum=t=>{t=String(t||'').replace(/\D/g,'');return t[0]=='0'?'212'+t.slice(1):t},sn1=x=>/^\s*\d+(\.\d+)?\s*$/.test(x||''),d0=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
@@ -113,7 +126,7 @@ const tOf=r=>r.st=='dn'?r.t2:r.st=='rd'?(r.t1||r.t0):r.t0;
 const PI=s=>{const p=i=>[20+40*(i%3),20+40*Math.floor(i/3)];return(s.length>1?`<polyline fill="none" stroke="#3b82f6" stroke-width="4" points="${s.map(i=>p(i).join(',')).join(' ')}"/>`:'')+[...Array(9).keys()].map(i=>`<circle cx="${p(i)[0]}" cy="${p(i)[1]}" r="${s.includes(i)?7:5}" fill="${s[0]==i?'#22c55e':s.includes(i)?'#3b82f6':'#94a3b8'}"/>`).join('')};
 const RES={ok:'تم الإصلاح',fail:'تعذّر الإصلاح',ref:'رفض الإصلاح'};
 function rc(r){const n=Math.floor((Date.now()-r.t0)/864e5),w=r.st=='rd'?Math.floor((Date.now()-(r.t1||r.t0))/864e5):0,B=(t,f,p)=>`<button class="btn ${p?'':'s'} sm" onclick="${f}">${t}</button>`,i=r.id;
-return `<div class="card"><div class="row2">${r.img?`<img src="${r.img}" style="width:56px;height:56px;object-fit:cover;border-radius:10px">`:''}<div style="flex:1"><b>${esc(r.name)}</b><div class="m">${esc(r.dev)} — ${esc(r.fault)}</div></div>${r.st=='in'&&(r.pat||[]).length>1?`<svg viewBox="0 0 120 120" width="52">${PI(r.pat)}</svg>`:''}</div>
+return `<div class="card"><div class="row2">${r.img?`<img src="${r.img}" style="width:56px;height:56px;object-fit:cover;border-radius:10px">`:''}<div style="flex:1"><b>${esc(r.name)}</b><div class="m">${esc(r.dev)} — ${esc(r.fault)}</div></div>${(r.pat||[]).length>1?`<svg viewBox="0 0 120 120" width="52">${PI(r.pat)}</svg>`:''}</div>
 <div class="m"><a href="tel:${esc(r.tel)}">${esc(r.tel)}</a></div><div class="m">استلام: <bdi>${fd(r.t0)}</bdi> · ${esc(r.by)}${n&&r.st!='dn'?' · منذ '+n+' يوم':''}</div>`
 +(r.st=='dn'?`<div class="m">تسليم: <bdi>${fd(r.t2)}</bdi> · ${esc(r.dby||'')}</div>`:'')+(r.cap?`<div class="m">السعر المتفق: ${esc(r.cap)}</div>`:'')+(r.dep?`<div class="m">العربون: ${esc(r.dep)}</div>`:'')+(r.st=='dn'?`<div class="m">المقبوض: ${esc(r.paid)}</div>`:'')
 +(r.part?`<div class="rs">ينتظر قطعة: ${esc(r.part)}</div>`:'')+((r.chk||[]).length?`<div class="m">${esc(r.chk.join('، '))}</div>`:'')+(r.lock?`<div class="m">PIN: ${esc(r.lock)}</div>`:'')+(w>15?`<div class="rs">منسي منذ ${w} يوم</div>`:'')+((r.calls||[]).length?`<div class="m">اتصالات: ${r.calls.length}</div>`:'')+(r.st!='in'&&r.res?`<div class="m">${RES[r.res]}</div>`:'')+(r.note?`<div class="m">${esc(r.note)}</div>`:'')
@@ -124,7 +137,7 @@ VW.rp=function(){const tab=V.tab||'in';return{t:'الصيانة',h:`<button clas
 function rSt(id,x){const r=rf(id);commit('تم التحديث',()=>{if(x=='in'){r.st='in';r.res=''}else{r.st='rd';r.res=x;r.t1=Date.now()}r.lb=S.me})}
 function rCL(id){const r=rf(id);commit('تم تسجيل الاتصال',()=>(r.calls=r.calls||[]).push(fd(Date.now())+' '+S.me))}
 function rDel(id){const r=rf(id);del('rp',id,r.name+' — '+r.dev)}
-function rDV(id){const r=rf(id),def=r.res=='ok'&&sn1(r.cap)?r.cap.trim():'';ask('تسليم: '+r.name,[{k:'p',l:def?'هل المبلغ المقبوض هو '+def+' ؟ عدّله إن اختلف':'المبلغ المقبوض (0 إن لم يُقبض شيء)',t:'tel',v:def}],'تم التسليم').then(v=>{if(v)commit('تم التسليم',()=>{r.st='dn';r.t2=Date.now();r.dby=S.me;r.paid=v.p.trim()||'0';r.pat=[];r.lock='';r.img=''})})}
+function rDV(id){const r=rf(id),def=r.res=='ok'&&sn1(r.cap)?r.cap.trim():'';ask('تسليم: '+r.name,[{k:'p',l:def?'هل المبلغ المقبوض هو '+def+' ؟ عدّله إن اختلف':'المبلغ المقبوض (0 إن لم يُقبض شيء)',t:'tel',v:def}],'تم التسليم').then(v=>{if(v)commit('تم التسليم',()=>{r.st='dn';r.t2=Date.now();r.dby=S.me;r.paid=v.p.trim()||'0'})})}
 function rWA(id,k){const r=rf(id),c=sn1(r.cap)?' تكلفة الإصلاح: '+r.cap.trim()+(r.dep?'، العربون: '+r.dep:'')+'.':'';const s=k?(r.res=='ok'?`هاتفك ${r.dev} جاهز في المحل.${c}`:r.res=='fail'?`للأسف تعذّر إصلاح هاتفك ${r.dev}. يمكنك استلامه من المحل.`:`هاتفك ${r.dev} جاهز للاستلام بدون إصلاح.`):`استلمنا هاتفك ${r.dev} (${r.fault}).${r.dep?' العربون: '+r.dep+'.':''} سنبلغك عند جاهزيته.`;location.href='https://wa.me/'+rnum(r.tel)+'?text='+encodeURIComponent(`مرحباً ${r.name}، ${s} شكراً لثقتكم.`)}
 function rEd(id){$('sh').innerHTML='';sheetOpen(rDone);rForm(id?rf(id):{})}
 function rForm(rec){ZR=rec;ZP=[...(rec.pat||[])];ZK=[...(rec.chk||[])];ZI=rec.img||'';const f=(k,l,v,t,o)=>`<label>${l}<input id="r_${k}" ${t?`type="${t}"`:''} ${o||''} value="${esc(v||'')}"></label>`;
@@ -172,5 +185,5 @@ const rnd=()=>S.items.filter(i=>i.at&&Date.now()-i.at>(S.cfg.stale??7)*864e5).so
 function gl2(i){const g=GM().find(x=>x.id==i.gid);return g?`<div class="card"><b>زجاج ${esc(i.ty)}: ${esc(g.models.join(' / '))}</b><div class="m">المجموع ${ssum(i.stock)} · آخر تأكيد قبل ${Math.floor((Date.now()-i.at)/864e5)} يوم</div></div>`:''}
 function rCf(id){const i=find(id);upd(()=>{i.at=Date.now();i.by=S.me})}
 VW.jl=()=>{const a=rnd().slice(0,30);return{t:'الجولة اليومية',h:'<p class="m">أكّد ما لم يتغير وعدّل ما تغيّر. الأقدم أولاً.</p>'+(a.map(i=>`<div>${i.sec=='glass'?gl2(i):card(i)}<button class="btn s" onclick="rCf('${i.id}')">تأكيد: كما هو</button></div>`).join('')||'<p class="m">كل شيء مؤكد حديثاً.</p>')}};
-const _H2=VW.home;VW.home=function(){const r=_H2(),n=rnd().length,old=isAdmin()&&(S.items.length||S.rp.length)&&Date.now()-(S.cfg.lb||0)>7*864e5;r.h=(old?`<div class="card"><b>احفظ نسخة احتياطية</b><div class="m">لم تُحفظ نسخة منذ أكثر من أسبوع.</div><button class="btn s" onclick="BKP()">حفظ الآن</button></div>`:'')+r.h+(n?`<button class="btn s" onclick="go('jl')">الجولة اليومية (${n})</button>`:'');return r};
+const _H2=VW.home;VW.home=function(){const r=_H2(),n=rnd().length,old=isAdmin()&&(S.items.length||S.rp.length)&&Date.now()-(S.cfg.lb||0)>7*864e5;r.h=(old?`<div class="card"><b>احفظ نسخة احتياطية</b><div class="m">لم تُحفظ نسخة منذ أكثر من أسبوع (النسخة التلقائية الداخلية محدّثة، لكن يُنصح بحفظ ملف خارجي).</div><button class="btn s" onclick="BKP()">حفظ ملف الآن</button></div>`:'')+r.h+(n?`<button class="btn s" onclick="go('jl')">الجولة اليومية (${n})</button>`:'');return r};
 render();
