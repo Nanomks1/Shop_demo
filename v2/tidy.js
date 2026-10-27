@@ -23,7 +23,7 @@ window.generateReportText=function(mode='all'){
   if(c.tt||c.dt){o.push('*'+[c.tt,c.dt?'('+new Date().toLocaleDateString('ar-MA')+')':''].filter(Boolean).join(' ')+'*');o.push('')}
   if((mode=='all'||mode=='phones')&&c.st&&!c.hs.includes('phones')){
     const s=stkL();
-    if(s.length){o.push('*الهواتف المتوفرة حالياً*');s.forEach(i=>o.push('• '+stkN(i)+' — العدد '+i.cnt+(c.pr&&i.price?' ('+dh(i.price)+')':'')));o.push('')}
+    if(s.length){o.push('*الهواتف المتوفرة حالياً*');s.forEach(i=>o.push('• '+stkN(i)+' — العدد '+i.cnt+(window.rsQ&&rsQ(i)?' (محجوز '+rsQ(i)+')':'')+(c.pr&&i.price?' ('+dh(i.price)+')':'')));o.push('')}
   }
   secs(mode).forEach(k=>{
     const [key,title,none]=RSEC[k],ls=L.filter(x=>x[0]==key),b=[];
@@ -47,7 +47,7 @@ VW.rep=function(){
   let h=`<div style="margin-bottom:10px;display:flex;gap:6px;overflow-x:auto">${tabs.map(([k,l])=>`<button class="tag ${reportSectionFilter===k?'on':''}" onclick="reportSectionFilter='${k}';render()">${l}</button>`).join('')}</div>`;
   h+=`<div style="margin-bottom:12px;display:flex;gap:6px;align-items:center"><button class="tag ${lv=='a'?'on':''}" onclick="RLV='a';render()">النافد وقارب النفاد</button><button class="tag ${lv=='r'?'on':''}" onclick="RLV='r';render()">النافد فقط</button><button class="tag" style="margin-inline-start:auto" onclick="go('st_rep')">تخصيص التقرير</button></div>`;
   if((reportSectionFilter=='all'||reportSectionFilter=='phones')&&c.st&&!c.hs.includes('phones')&&s.length)
-    h+='<h3>الهواتف المتوفرة حالياً</h3>'+s.map(i=>`<div class="card row2"><span style="flex:1">${esc(stkN(i))}</span><span class="m">${i.cnt}${c.pr&&i.price?' · '+esc(dh(i.price)):''}</span></div>`).join('');
+    h+='<h3>الهواتف المتوفرة حالياً</h3>'+s.map(i=>`<div class="card row2"><span style="flex:1">${esc(stkN(i))}</span><span class="m">${i.cnt}${window.rsQ&&rsQ(i)?' (محجوز '+rsQ(i)+')':''}${c.pr&&i.price?' · '+esc(dh(i.price)):''}</span></div>`).join('');
   secs(reportSectionFilter).forEach(k=>{
     const [key,title,none]=RSEC[k],ls=L.filter(x=>x[0]==key);
     let b=ls.map(x=>`<div class="card row2"><span class="dotl" style="background:${DT[x[2]]}"></span><span style="flex:1">${esc(x[1])}</span><button class="btn sm" onclick="${x[3]}">تم الشراء</button></div>`).join('');

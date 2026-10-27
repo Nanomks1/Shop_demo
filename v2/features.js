@@ -26,7 +26,7 @@ const sortBar=s=>`<div class="m" style="margin-top:6px">ترتيب:</div><div>${
 function soSet(s,k){upd(()=>{S.cfg.so=S.cfg.so||{};S.cfg.so[s]=k})}
 const srt=(a,s,nm,lo,at)=>{const k=SO(s);return [...a].sort((x,y)=>k=='d'?(at(y)||0)-(at(x)||0):k=='l'?(lo(x)-lo(y))||String(nm(x)).localeCompare(String(nm(y))):String(nm(x)).localeCompare(String(nm(y))))};
 /* ===== الهواتف: حد لكل ماركة + ألوان ===== */
-const pst=i=>{const b=(S.cfg.bl||{})[i.brand],l=b??(S.cfg.low||1);return i.cnt<=0?'r':i.cnt<=l?'y':'g'};
+const pst=i=>{const b=(S.cfg.bl||{})[i.brand],l=b??(S.cfg.low||1),c=window.av?av(i):i.cnt;return c<=0?'r':c<=l?'y':'g'};
 const _c3=card;card=function(i){let h;if(i.sec=='phones'){const o=S.cfg.low,b=(S.cfg.bl||{})[i.brand];if(b!=null)S.cfg.low=b;try{h=_c3(i)}finally{S.cfg.low=o}}else h=_c3(i);return tint(h,colOf(i))};
 function phView(){let a=srt(ph(),'phones',i=>i.brand+' '+i.name,i=>i.cnt,i=>i.at);if(V.f)a=a.filter(i=>pst(i)!='g');
 return{t:'الهواتف',h:`<button class="btn" onclick="phAdd()">+ إضافة هاتف</button><div><button class="tag ${V.f?'':'on'}" onclick="V.f=0;render()">الكل (${ph().length})</button><button class="tag ${V.f?'on':''}" onclick="V.f=1;render()">يحتاج شراء</button></div>`+sortBar('phones')+(a.map(card).join('')||'<p class="m">لا شيء بعد</p>')}}
@@ -99,7 +99,7 @@ acForm=function(rec){PR=rec;CP=[['kind','النوع'],['conn','الموصل',()=
 $('sh').innerHTML=`<div class="bar"></div><h3>${rec.id?'تعديل':'إكسسوار جديد'}</h3><div id="cc"></div><label>الماركة (اختياري)<input id="ab" value="${esc(rec.brand||'')}"></label><label>السعر<input id="ap" type="tel" value="${esc(rec.price||'')}"></label><label>العدد (اختياري — فارغ = متوفر/قليل/نفد)<input id="acn" type="tel" value="${esc(rec.cnt??'')}"></label><label>الحد: «قليل» عند عدد ≤ (اختياري)<input id="acl" type="tel" value="${esc(rec.lim??'')}"></label><label>ملاحظة<textarea id="an">${esc(rec.note||'')}</textarea></label><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="acSave()">حفظ</button></div>`;ch();hideF('acc');if(!rec.id)more('acSave')};
 acSave=function(){if(!CS.kind)return toast('اختر النوع');const k=kc(CS.kind),c=$('acn').value.trim(),l=$('acl').value.trim();finish({kind:CS.kind,conn:k.conn?CS.conn:'',tier:k.tier?CS.tier:'',brand:$('ab').value.trim(),price:$('ap').value.trim()||(k.tier?CS.tier:''),note:$('an').value.trim(),cnt:c===''?undefined:Math.max(0,+c||0),lim:l===''?undefined:Math.max(0,+l||0)})};
 /* ===== التقرير ===== */
-repLines=function(){const L=[];ph().filter(i=>pst(i)!='g').forEach(i=>L.push(['الهواتف',[i.brand,i.name,i.color,i.cap].filter(Boolean).join(' ')+' — '+i.cnt,pst(i)]));
+repLines=function(){const L=[];ph().filter(i=>pst(i)!='g').forEach(i=>L.push(['الهواتف',[i.brand,i.name,i.color,i.cap].filter(Boolean).join(' ')+' — '+(window.av?av(i):i.cnt)+(window.rsQ&&rsQ(i)?' (محجوز '+rsQ(i)+')':''),pst(i)]));
 GM().forEach(g=>S.tags.glass.forEach(t=>{const i=gitem(g.id,t);if(i&&gSt(i,g)!='g')L.push(['الأنتي كاس',t+': '+g.models.join(' / ')+' — المجموع '+(gEst(i,g)?'≈':'')+gTot(i,g),gSt(i,g)])}));
 S.items.filter(i=>i.sec=='case'&&csSt(i)!='g').forEach(i=>{const z=i.v.filter(x=>x.n<=0).map(x=>[x.g,x.c].filter(Boolean).join(' '));L.push(['البوشيط',i.name+(z.length?' — ناقص: '+z.join('، '):'')+' — المتوفر '+csTot(i),csSt(i)])});
 S.items.filter(i=>i.sec=='acc'&&acSt(i)!='g').forEach(i=>L.push(['الإكسسوارات',acName(i)+(typeof i.cnt=='number'?' — العدد '+i.cnt:'')+(i.note?' — '+i.note:''),acSt(i)]));return L};
@@ -180,7 +180,7 @@ const _rDV6=rDV;rDV=function(id){const r=rf(id);if(r.res!='ok')return _rDV6(id);
 const stkL=()=>ph().filter(i=>i.cnt>0).sort((a,b)=>(a.brand+a.name).localeCompare(b.brand+b.name));
 const stkN=i=>[i.brand,i.name,i.color,i.ram,i.cap].filter(Boolean).join(' ');
 repLines=function(){const L=[];
-ph().filter(i=>pst(i)!='g').forEach(i=>L.push(['الهواتف الناقصة',[i.brand,i.name,i.color,i.cap].filter(Boolean).join(' ')+' — '+i.cnt,pst(i),`buyP('${i.id}')`]));
+ph().filter(i=>pst(i)!='g').forEach(i=>L.push(['الهواتف الناقصة',[i.brand,i.name,i.color,i.cap].filter(Boolean).join(' ')+' — '+(window.av?av(i):i.cnt)+(window.rsQ&&rsQ(i)?' (محجوز '+rsQ(i)+')':''),pst(i),`buyP('${i.id}')`]));
 GM().forEach(g=>S.tags.glass.forEach(t=>{const i=gitem(g.id,t);if(i&&gSt(i,g)!='g')L.push(['الأنتي كاس',t+': '+g.models.join(' / ')+' — المجموع '+(gEst(i,g)?'≈':'')+gTot(i,g),gSt(i,g),`buyG('${i.id}')`])}));
 S.items.filter(i=>i.sec=='case'&&csSt(i)!='g').forEach(i=>{const z=i.v.filter(x=>x.n<=0).map(x=>[x.g,x.c].filter(Boolean).join(' '));L.push(['البوشيط',i.name+(z.length?' — ناقص: '+z.join('، '):'')+' — المتوفر '+csTot(i),csSt(i),`buyC('${i.id}')`])});
 S.items.filter(i=>i.sec=='acc'&&acSt(i)!='g').forEach(i=>L.push(['الإكسسوارات',acName(i)+(typeof i.cnt=='number'?' — العدد '+i.cnt:'')+(i.note?' — '+i.note:''),acSt(i),`buyA('${i.id}')`]));return L};
@@ -208,12 +208,12 @@ rForm = function(rec) {
   _rForm7(rec);
   const vInp = $('r_v'), fInp = $('r_f'), cInp = $('r_c');
   if (vInp) {
-    vInp.insertAdjacentHTML('beforebegin', `<div id="rp_br_tags" style="margin-bottom:6px">${S.tags.brand.map(b => `<button type="button" class="tag" onclick="pickRpBrand('${esc(b)}')">${esc(b)}</button>`).join('')}</div>`);
+    vInp.insertAdjacentHTML('beforebegin', `<div id="rp_br_tags" style="margin-bottom:6px">${S.tags.brand.map((b, bj) => `<button type="button" class="tag" onclick="pickRpBrand(S.tags.brand[${bj}])">${esc(b)}</button>`).join('')}</div>`);
     vInp.insertAdjacentHTML('afterend', `<div id="rp_dev_hist" class="m" style="color:#d97706;font-weight:700"></div>`);
     vInp.addEventListener('input', () => { checkDeviceHistory(); suggestGuidePrice(); });
   }
   if (fInp) {
-    fInp.insertAdjacentHTML('beforebegin', `<div id="rp_fl_tags" style="margin-bottom:6px">${S.tags.fault.map(f => `<button type="button" class="tag" onclick="pickRpFault('${esc(f)}')">${esc(f)}</button>`).join('')}</div>`);
+    fInp.insertAdjacentHTML('beforebegin', `<div id="rp_fl_tags" style="margin-bottom:6px">${S.tags.fault.map((f, fj) => `<button type="button" class="tag" onclick="pickRpFault(S.tags.fault[${fj}])">${esc(f)}</button>`).join('')}</div>`);
     fInp.addEventListener('input', suggestGuidePrice);
   }
   if (cInp) {

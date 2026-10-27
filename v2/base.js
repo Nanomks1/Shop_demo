@@ -5,14 +5,14 @@ document.head.insertAdjacentHTML('beforeend','<style>.dotl{display:inline-block;
 const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g'};
 const KS=Object.keys(AL).sort((a,b)=>b.length-a.length);
 const nz=s=>{s=String(s||'').toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/[\u064B-\u0652]/g,'');for(const k of KS)s=s.split(k).join(AL[k]);return s.replace(/[\s\-_]/g,'')};
-const stOf=i=>i.cnt<=0?'r':i.cnt<=(S.cfg.low||1)?'y':'g';
+const stOf=i=>{const c=window.av?av(i):i.cnt;return c<=0?'r':c<=(S.cfg.low||1)?'y':'g'};
 const DT={g:'#16a34a',y:'#d97706',r:'#dc2626'},TX={g:'متوفر',y:'قارب على النفاد',r:'نفد'};
 const ph=()=>S.items.filter(i=>i.sec=='phones'),find=id=>S.items.find(i=>i.id==id);
 let PF={},PR=null,PQ='';
 function card(i){const s=stOf(i),t=[i.color,i.ram,i.cap,i.cond!='جديد'&&i.cond].filter(Boolean).map(esc).join(' · ');
-return `<div class="card"><div class="row2"><b>${esc(i.brand+' '+i.name)}</b><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]}</span></div>${t?`<div class="m">${t}</div>`:''}${i.res?`<div class="rs">محجوز: ${esc(i.res.n)}${i.res.d?' · عربون '+esc(i.res.d):''}</div>`:''}${i.note?`<div class="m">${esc(i.note)}</div>`:''}
+return `<div class="card"><div class="row2"><b>${esc(i.brand+' '+i.name)}</b><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]}</span></div>${t?`<div class="m">${t}</div>`:''}${window.rsHtml?rsHtml(i):''}${i.note?`<div class="m">${esc(i.note)}</div>`:''}
 <div class="row2" style="margin-top:8px"><b>${esc(i.price)}</b><button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button></div>
-<div class="sub"><button class="btn s sm" onclick="phEd('${i.id}')">تعديل</button><button class="btn s sm" onclick="phRs('${i.id}')">${i.res?'إلغاء الحجز':'حجز'}</button><button class="btn s sm" onclick="phDel('${i.id}')">حذف</button></div></div>`}
+<div class="sub"><button class="btn s sm" onclick="phEd('${i.id}')">تعديل</button><button class="btn s sm" onclick="phRs('${i.id}')">حجز${window.rsQ&&rsQ(i)?' ('+rsQ(i)+')':''}</button><button class="btn s sm" onclick="phDel('${i.id}')">حذف</button></div></div>`}
 function srch(q){const n=nz(q),m=S.items.filter(i=>nz(i.brand+i.name+i.color+i.ram+i.cap+i.note).includes(n)).slice(0,30);return m.map(card).join('')||'<p class="m">لا نتائج</p>'}
 sq=function(q){if(q&&!QP){QP=1;history.pushState({V,q:1},'')}Q=q;const r=$('res');if(r)r.innerHTML=q?srch(q):''};
 function phC(id,d){const i=find(id);upd(()=>{i.cnt=Math.max(0,i.cnt+d);i.by=S.me;i.at=Date.now()})}
