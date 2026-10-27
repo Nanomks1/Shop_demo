@@ -145,7 +145,7 @@ function lkTry(){
   if(Date.now()<LKT){if(m)m.textContent='انتظر 10 ثوانٍ قبل المحاولة مجدداً';if(el)el.value='';pkTap('lki','C');return}
   const c=el?el.value:'';
   const u=S.users.find(x=>x.name==S.me);
-  if(c&&(hs(c)==S.cfg.lk||hs(c)==S.pin||(u&&u.pin&&hs(c)==u.pin))){
+  if(c&&(hv(c,S.cfg.lk)||hv(c,S.pin)||(u&&u.pin&&hv(c,u.pin)))){
     LKF=0;localStorage.removeItem('shopLock');$('lk').remove();LAST=Date.now();
   }else{
     LKF++;if(el)el.value='';pkTap('lki','C');
@@ -494,9 +494,9 @@ function lgShow(){if($('lg'))return;admSet(false);const emp=S.users.filter(u=>!u
 document.body.insertAdjacentHTML('beforeend',`<div id="lg" style="position:fixed;inset:0;z-index:55;background:var(--bg);overflow:auto;padding:24px;display:flex;flex-direction:column;gap:10px;justify-content:center;max-width:420px;margin:auto"><h2 style="text-align:center;margin:0">${I('lock')} تسجيل الدخول — محل عزيز</h2>${emp.length?'<p class="m" style="text-align:center;margin:0">دخول كموظف</p>'+emp.map((u,i)=>`<button class="btn s" onclick="lgEmp(${i})">${esc(u.name)}${u.pin?' '+I('lock'):''}</button>`).join(''):''}<p class="m" style="text-align:center;margin:8px 0 0">دخول كمدير</p><select id="lga">${ads.map(u=>`<option>${esc(u.name)}</option>`).join('')}</select><div id="lgm" class="m" style="text-align:center"></div>${pinPadHtml('lgp','رمز المدير','lgAdm()')}<button class="btn" onclick="lgAdm()">دخول المدير</button></div>`)}
 function lgEmp(i){const u=S.users.filter(x=>!x.admin)[i];upd(()=>{S.me=u.name});$('lg').remove()}
 function lgAdm(){const p=$('lgp'),m=$('lgm');if(Date.now()<LGT){if(p)p.value='';pkTap('lgp','C');if(m)m.textContent='انتظر 10 ثوانٍ ثم أعد المحاولة';return}
-if(p&&hs(p.value)==S.pin){LGF=0;admSet(true);LAST=Date.now();const n=$('lga').value;upd(()=>{S.me=n});$('lg').remove()}else{LGF++;if(p)p.value='';pkTap('lgp','C');if(m)m.textContent='رمز خاطئ';if(LGF>=5){LGF=0;LGT=Date.now()+10000;if(m)m.textContent='محاولات كثيرة! انتظر 10 ثوانٍ'}}}
-who=function(){ask('من أنت؟',[{k:'u',l:'المستخدم',t:'sel',o:S.users.map(u=>u.name),v:S.me}],'اختيار').then(v=>{if(!v)return;const u=S.users.find(x=>x.name==v.u);if(!u.admin){admSet(false);return upd(()=>{S.me=u.name})}if(u.name==S.me&&admOk())return;ask('رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'دخول').then(p=>{if(p)hs(p.p)==S.pin?(admSet(true),upd(()=>{S.me=u.name})):toast('الرمز خاطئ')})})};
-const needAdm=f=>function(...a){if(!isAdmin())return toast('للمدير فقط');ask('تأكيد: رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'تأكيد').then(v=>{if(!v)return;if(hs(v.p)==S.pin)f.apply(null,a);else toast('الرمز خاطئ')})};
+if(p&&hv(p.value,S.pin)){LGF=0;admSet(true);LAST=Date.now();const n=$('lga').value;upd(()=>{S.me=n});$('lg').remove()}else{LGF++;if(p)p.value='';pkTap('lgp','C');if(m)m.textContent='رمز خاطئ';if(LGF>=5){LGF=0;LGT=Date.now()+10000;if(m)m.textContent='محاولات كثيرة! انتظر 10 ثوانٍ'}}}
+who=function(){ask('من أنت؟',[{k:'u',l:'المستخدم',t:'sel',o:S.users.map(u=>u.name),v:S.me}],'اختيار').then(v=>{if(!v)return;const u=S.users.find(x=>x.name==v.u);if(!u.admin){admSet(false);return upd(()=>{S.me=u.name})}if(u.name==S.me&&admOk())return;ask('رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'دخول').then(p=>{if(p)hv(p.p,S.pin)?(admSet(true),upd(()=>{S.me=u.name})):toast('الرمز خاطئ')})})};
+const needAdm=f=>function(...a){if(!isAdmin())return toast('للمدير فقط');ask('تأكيد: رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'تأكيد').then(v=>{if(!v)return;if(hv(v.p,S.pin))f.apply(null,a);else toast('الرمز خاطئ')})};
 const _uA=uAdd,_uE=uEd,_pC=pinCh,_pT=pTog;uAdd=needAdm(_uA);uEd=needAdm(_uE);pinCh=needAdm(_pC);pTog=function(k){if(isAdmin())_pT(k)};
 
 /* قفل تلقائي عند الخمول أو ترك التطبيق في الخلفية لحماية هواتف الموظفين */

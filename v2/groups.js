@@ -62,8 +62,8 @@ if(u.pin)F.push({k:'d',l:'حذف رمز الموظف؟',t:'sel',o:['لا','نع�
 ask(u.name,F).then(v=>{if(!v)return;if((v.x=='نعم'||v.r=='موظف')&&u.admin&&S.users.filter(x=>x.admin).length<2)return toast('يجب أن يبقى مدير واحد على الأقل');
 upd(()=>{if(v.x=='نعم')S.users.splice(i,1);else{u.admin=v.r=='مدير';if(u.admin)delete u.pin;else if(v.p)u.pin=hs(v.p);else if(v.d=='نعم')delete u.pin}})})});
 who=function(){ask('من أنت؟',[{k:'u',l:'المستخدم',t:'sel',o:S.users.map(u=>u.name),v:S.me}],'اختيار').then(v=>{if(!v)return;const u=S.users.find(x=>x.name==v.u);
-if(!u.admin){const go2=()=>{admSet(false);upd(()=>{S.me=u.name})};if(!u.pin||u.name==S.me||isAdmin())return go2();return ask('رمز '+u.name,F2,'دخول').then(p=>{if(!p)return;hs(p.p)==u.pin?go2():toast('الرمز خاطئ')})}
-if(u.name==S.me&&admOk())return;ask('رمز المدير',F2,'دخول').then(p=>{if(p)hs(p.p)==S.pin?(admSet(true),upd(()=>{S.me=u.name})):toast('الرمز خاطئ')})})};
+if(!u.admin){const go2=()=>{admSet(false);upd(()=>{S.me=u.name})};if(!u.pin||u.name==S.me||isAdmin())return go2();return ask('رمز '+u.name,F2,'دخول').then(p=>{if(!p)return;hv(p.p,u.pin)?go2():toast('الرمز خاطئ')})}
+if(u.name==S.me&&admOk())return;ask('رمز المدير',F2,'دخول').then(p=>{if(p)hv(p.p,S.pin)?(admSet(true),upd(()=>{S.me=u.name})):toast('الرمز خاطئ')})})};
 lgEmp=function(i){const u=S.users.filter(x=>!x.admin)[i],L=$('lg'),done=()=>{upd(()=>{S.me=u.name});$('lg').remove()};if(!u.pin)return done();
-L.style.zIndex=10;ask('رمز '+u.name,F2,'دخول').then(p=>{if($('lg'))$('lg').style.zIndex=55;if(!p)return;hs(p.p)==u.pin?done():toast('الرمز خاطئ')})};
+L.style.zIndex=10;ask('رمز '+u.name,F2,'دخول').then(p=>{if($('lg'))$('lg').style.zIndex=55;if(!p)return;hv(p.p,u.pin)?done():toast('الرمز خاطئ')})};
 })();

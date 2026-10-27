@@ -7,7 +7,24 @@ const DEF={me:'',users:[],pin:'',perm:{del:'a',price:'a',tags:'a',fields:'a'},cf
 function load(){let o={};try{o=JSON.parse(localStorage.getItem('shop3')||'{}')}catch(e){}const d=JSON.parse(JSON.stringify(DEF));return{...d,...o,tags:{...d.tags,...o.tags},perm:{...d.perm,...o.perm},cfg:{...d.cfg,...o.cfg}}}
 let S=load(),V={v:'home'},Q='',QP=0,SH=false,SHR=null,ARM=0,TT,AB_T=0,AB_FH=null;
 const save=()=>{try{localStorage.setItem('shop3',JSON.stringify(S));window._syDirty=1;window._nzVer=(window._nzVer||0)+1;schedAutoBk()}catch(e){toast('الذاكرة ممتلئة')}};
-const hs=s=>{let h=5381;for(const c of String(s))h=(h*33^c.charCodeAt(0))>>>0;return h.toString(36)};
+/* ===== تجزئة الرموز السرية: الجديدة قوية (SHA-256 مملّحة ومكرّرة)، والقديمة تُقبل ثم تُحدَّث تلقائياً عند أول دخول ناجح ===== */
+const hsL=s=>{let h=5381;for(const c of String(s))h=(h*33^c.charCodeAt(0))>>>0;return h.toString(36)};
+const SHK=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+function sha256(m){const l=m.length,n=((l+9+63)>>6)<<6,b=new Uint8Array(n);b.set(m);b[l]=128;const dv=new DataView(b.buffer);dv.setUint32(n-8,Math.floor(l*8/4294967296));dv.setUint32(n-4,(l*8)>>>0);
+let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];const w=new Uint32Array(64);
+for(let o=0;o<n;o+=64){for(let i=0;i<16;i++)w[i]=dv.getUint32(o+i*4);
+for(let i=16;i<64;i++){const x=w[i-15],y=w[i-2];w[i]=(w[i-16]+(((x>>>7)|(x<<25))^((x>>>18)|(x<<14))^(x>>>3))+w[i-7]+(((y>>>17)|(y<<15))^((y>>>19)|(y<<13))^(y>>>10)))|0}
+let [a,bb,cc,d,e,f,g,h]=H;
+for(let i=0;i<64;i++){const t1=(h+(((e>>>6)|(e<<26))^((e>>>11)|(e<<21))^((e>>>25)|(e<<7)))+((e&f)^(~e&g))+SHK[i]+w[i])|0,t2=((((a>>>2)|(a<<30))^((a>>>13)|(a<<19))^((a>>>22)|(a<<10)))+((a&bb)^(a&cc)^(bb&cc)))|0;h=g;g=f;f=e;e=(d+t1)|0;d=cc;cc=bb;bb=a;a=(t1+t2)|0}
+H=[H[0]+a,H[1]+bb,H[2]+cc,H[3]+d,H[4]+e,H[5]+f,H[6]+g,H[7]+h].map(v=>v|0)}
+const r=new Uint8Array(32),rv=new DataView(r.buffer);H.forEach((v,i)=>rv.setUint32(i*4,v>>>0));return r}
+let _hc=null,_hr='';
+const hs=s=>{s=String(s??'');if(s===_hc)return _hr;const E=new TextEncoder(),salt=E.encode('aziz-shop-pin-v2|');let m=sha256(E.encode('aziz-shop-pin-v2|'+s));
+for(let i=0;i<3000;i++){const x=new Uint8Array(m.length+salt.length);x.set(m);x.set(salt,m.length);m=sha256(x)}
+_hc=s;_hr='h2:'+Array.from(m,v=>v.toString(16).padStart(2,'0')).join('');return _hr};
+/* hv: يتحقق من الرمز (جديد أو قديم) وإن كان قديماً يحدّثه إلى الجديد في كل مكان خُزّن فيه */
+const hv=(p,st)=>{if(!st)return false;p=String(p??'');if(st===hs(p))return true;
+if(st===hsL(p)){const n=hs(p);let ch=0;if(S.pin===st){S.pin=n;ch=1}if(S.cfg&&S.cfg.lk===st){S.cfg.lk=n;ch=1}(S.users||[]).forEach(u=>{if(u.pin===st){u.pin=n;ch=1}});if(ch)save();return true}return false};
 const isAdmin=()=>!!(S.users.find(u=>u.name==S.me)||{}).admin;
 const can=k=>S.perm[k]=='e'||isAdmin();
 const fd=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`};
@@ -87,7 +104,7 @@ function uAdd(){ask('مستخدم جديد',[{k:'n',l:'الاسم'},{k:'r',l:'ا
 function uEd(i){const u=S.users[i];ask(u.name,[{k:'r',l:'الدور',t:'sel',o:['موظف','مدير'],v:u.admin?'مدير':'موظف'},{k:'x',l:'حذف المستخدم؟',t:'sel',o:['لا','نعم'],v:'لا'}]).then(v=>{if(!v)return;if((v.x=='نعم'||v.r=='موظف')&&u.admin&&adm()<2)return toast('يجب أن يبقى مدير واحد على الأقل');upd(()=>{if(v.x=='نعم')S.users.splice(i,1);else u.admin=v.r=='مدير'})})}
 function pTog(k){upd(()=>S.perm[k]=S.perm[k]=='a'?'e':'a')}
 function pinCh(){ask('رمز المدير الجديد',[{k:'p',l:'الرمز الجديد',t:'password'}]).then(v=>{if(v&&v.p)upd(()=>S.pin=hs(v.p))})}
-function who(){ask('من أنت؟',[{k:'u',l:'المستخدم',t:'sel',o:S.users.map(u=>u.name),v:S.me}],'اختيار').then(v=>{if(!v)return;const u=S.users.find(x=>x.name==v.u);if(!u.admin||u.name==S.me)return sw(u.name);ask('رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'دخول').then(p=>{if(p)hs(p.p)==S.pin?sw(u.name):toast('الرمز خاطئ')})})}
+function who(){ask('من أنت؟',[{k:'u',l:'المستخدم',t:'sel',o:S.users.map(u=>u.name),v:S.me}],'اختيار').then(v=>{if(!v)return;const u=S.users.find(x=>x.name==v.u);if(!u.admin||u.name==S.me)return sw(u.name);ask('رمز المدير',[{k:'p',l:'الرمز',t:'password'}],'دخول').then(p=>{if(p)hv(p.p,S.pin)?sw(u.name):toast('الرمز خاطئ')})})}
 const sw=n=>upd(()=>S.me=n);
 function tgAdd(g){ask('وسم جديد: '+TG[g],[{k:'t',l:'الاسم'}]).then(v=>{const t=v&&v.t.trim();if(t&&!S.tags[g].includes(t))upd(()=>S.tags[g].push(t))})}
 function tgDel(g,i){sure('حذف الوسم «'+S.tags[g][i]+'» ؟').then(y=>{if(!y)return;const o=[...S.tags[g]];upd(()=>S.tags[g].splice(i,1));toast('تم الحذف',()=>{S.tags[g]=o})})}
@@ -166,7 +183,7 @@ function BKP(){
   if(!isAdmin())return toast('النسخ الاحتياطي للمدير فقط');
   ask('تأكيد رمز المدير لتشفير بيانات الزبائن',[{k:'p',l:'رمز المدير (سيُستخدم لتشفير بيانات الزبائن في النسخة)',t:'password'}],'حفظ النسخة').then(async v=>{
     if(!v||!v.p)return;
-    if(hs(v.p)!==S.pin)return toast('رمز المدير خاطئ');
+    if(!hv(v.p,S.pin))return toast('رمز المدير خاطئ');
     try{
       const js=await makeSafeBackupJson(v.p);
       const a=document.createElement('a');
@@ -193,7 +210,7 @@ function RST(f){
             if(!v||!v.p)return;
             try{
               let cust;
-              try{cust=await bkDecObj(d._encCust,v.p)}catch(e1){cust=await bkDecObj(d._encCust,hs(v.p))}
+              try{cust=await bkDecObj(d._encCust,v.p)}catch(e1){try{cust=await bkDecObj(d._encCust,hs(v.p))}catch(e2){cust=await bkDecObj(d._encCust,hsL(v.p))}}
               delete d._encCust;
               d.rp=cust.rp||[];d.req=cust.req||[];
               (d.items||[]).forEach(i=>{if(cust.res&&cust.res[i.id])i.res=cust.res[i.id]});
