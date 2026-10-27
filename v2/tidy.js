@@ -4,7 +4,7 @@
    ============================================================ */
 (()=>{
 /* ---------- خيارات التقرير (تُحفظ في الإعدادات وتتزامن بين الأجهزة) ---------- */
-const RD={lv:'a',tt:'تقرير محل عزيز',dt:1,st:0,pr:0,pt:1,rq:1,pn:1,em:0,ft:'',hs:[]};
+const RD={lv:'a',tt:'تقرير محل عزيز',dt:1,st:1,pr:0,pt:1,rq:1,pn:1,em:0,ft:'',hs:[]};
 const rc=()=>({...RD,...(S.cfg.rc||{})});
 const okEdit=()=>isAdmin()||!S.users.length;
 window.rcSet=o=>{if(!okEdit())return toast('للمدير فقط');upd(()=>{S.cfg.rc={...(S.cfg.rc||{}),...o}})};
@@ -30,19 +30,23 @@ const blocks=mode=>{const c=rc(),L=lines(),out=[];
     if(c.pt){const p=partsL();out.push({k:'parts',t:'قطع الصيانة',ls:p.map(r=>({r:0,s:r.part+(r.dev&&!nz(r.part).includes(nz(r.dev))?' — '+r.dev:'')}))})}
     if(c.rq&&mode=='all'){out.push({k:'req',t:'طلبات الزبائن',ls:S.req.map(q=>({r:0,s:q.t,id:q.id}))})}}
   return out};
+/* تداخل العربي والإنجليزي: اتجاه السطر يمين-يسار، وكل مقطع لاتيني يُعزل بعلامة اتجاه */
+const bd=s=>{if(!/[A-Za-z]/.test(s))return s;
+  const w=s.replace(/[A-Za-z0-9][A-Za-z0-9+\-\/.#&' ]*/g,m=>{if(!/[A-Za-z]/.test(m))return m;const q=m.replace(/\s+$/,'');return '\u200E'+q+'\u200E'+m.slice(q.length)});
+  return s.charAt(0)=='*'?w:'\u200F'+w+'\u200F'};
 window.generateReportText=function(mode='all'){
   const c=rc(),B=blocks(mode),o=[];
   const need=B.filter(b=>b.k!='parts'&&b.k!='req').reduce((a,b)=>a+b.ls.length,0),red=B.filter(b=>b.k!='parts'&&b.k!='req').reduce((a,b)=>a+b.ls.filter(x=>x.r).length,0);
   const head=[c.tt?'*'+c.tt+'*':'',c.dt?dstr():''].filter(Boolean).join(' — ');
   if(head)o.push(head);
   o.push(need?'للشراء: '+need+(red?' (نافد '+red+')':''):'لا يوجد نقص حالياً');
+  B.forEach(b=>{if(!b.ls.length&&!c.em)return;o.push('');o.push('*'+b.t+'*');
+    if(b.ls.length)b.ls.forEach(x=>o.push('- '+x.s));else o.push('- لا نقص')});
   if((mode=='all'||mode=='phones')&&c.st&&!c.hs.includes('phones')){
     const s=stkL();
     if(s.length){o.push('');o.push('*الهواتف المتوفرة*');s.forEach(i=>o.push('- '+stkN(i)+' — '+i.cnt+(window.rsQ&&rsQ(i)?' (محجوز '+rsQ(i)+')':'')+(c.pr&&i.price?' — '+dh(i.price):'')))}}
-  B.forEach(b=>{if(!b.ls.length&&!c.em)return;o.push('');o.push('*'+b.t+'*');
-    if(b.ls.length)b.ls.forEach(x=>o.push('- '+x.s));else o.push('- لا نقص')});
   if(c.ft){o.push('');o.push(c.ft)}
-  return o.join('\n')};
+  return o.map(bd).join('\n')};
 
 /* ---------- شاشة التقرير ---------- */
 VW.rep=function(){
@@ -51,14 +55,14 @@ VW.rep=function(){
   if(!tabs.some(([k])=>k==reportSectionFilter))reportSectionFilter='all';
   let h=`<div class="rtabs">${tabs.map(([k,l])=>`<button class="tag ${reportSectionFilter===k?'on':''}" onclick="reportSectionFilter='${k}';render()">${l}</button>`).join('')}</div>`;
   h+=`<div class="rtabs"><button class="tag ${lv=='a'?'on':''}" onclick="RLV='a';render()">نافد وقارب</button><button class="tag ${lv=='r'?'on':''}" onclick="RLV='r';render()">نافد فقط</button><button class="tag" style="margin-inline-start:auto" onclick="go('st_rep')">تخصيص</button></div>`;
-  if((reportSectionFilter=='all'||reportSectionFilter=='phones')&&c.st&&!c.hs.includes('phones')&&s.length)
-    h+='<h3>الهواتف المتوفرة</h3>'+s.map(i=>`<div class="card row2"><span style="flex:1">${esc(stkN(i))}</span><span class="m">${i.cnt}${window.rsQ&&rsQ(i)?' (محجوز '+rsQ(i)+')':''}${c.pr&&i.price?' · '+esc(dh(i.price)):''}</span></div>`).join('');
   B.forEach(b=>{
     let x=b.ls.map(l=>{
       if(b.k=='parts')return `<div class="card row2"><span style="flex:1">${esc(l.s)}</span></div>`;
       if(b.k=='req')return `<div class="card row2"><span style="flex:1">${esc(l.s)}</span><button class="btn s sm" onclick="rqD('${l.id}')">مسح</button></div>`;
       return `<div class="card row2"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span style="flex:1">${esc(l.s)}</span><button class="btn sm" onclick="${l.x[3]}">تم الشراء</button></div>`}).join('');
     if(x)h+=`<h3>${b.t}</h3>`+x;else if(c.em)h+=`<h3>${b.t}</h3><p class="m">لا نقص</p>`});
+  if((reportSectionFilter=='all'||reportSectionFilter=='phones')&&c.st&&!c.hs.includes('phones')&&s.length)
+    h+='<h3>الهواتف المتوفرة</h3>'+s.map(i=>`<div class="card row2"><span style="flex:1">${esc(stkN(i))}</span><span class="m">${i.cnt}${window.rsQ&&rsQ(i)?' (محجوز '+rsQ(i)+')':''}${c.pr&&i.price?' · '+esc(dh(i.price)):''}</span></div>`).join('');
   if(!h.includes('<h3>'))h+='<p class="m" style="text-align:center;margin:24px 0">لا يوجد نقص حالياً</p>';
   h+=`<details class="card" style="margin-top:14px"><summary><b>معاينة النص</b></summary><div style="white-space:pre-wrap;margin-top:8px;line-height:1.8">${esc(generateReportText(reportSectionFilter))}</div></details>`;
   h+=`<div style="margin-top:14px;display:flex;gap:10px"><button class="btn" style="flex:1" onclick="location.href='https://wa.me/?text='+encodeURIComponent(generateReportText(reportSectionFilter))">${I('send')} إرسال بالواتساب</button><button class="btn s" onclick="navigator.clipboard.writeText(generateReportText(reportSectionFilter)).then(()=>toast('تم النسخ'))">نسخ</button></div>`;
@@ -85,7 +89,7 @@ VW.st_rep=()=>{const c=rc();
   +`<div style="display:flex;gap:6px;margin-bottom:10px"><button class="tag ${c.lv=='a'?'on':''}" onclick="rcSet({lv:'a'})">النافد وقارب النفاد</button><button class="tag ${c.lv=='r'?'on':''}" onclick="rcSet({lv:'r'})">النافد فقط</button></div>`
   +'<h3>الأقسام الظاهرة في التقرير</h3>'
   +RTABS.filter(([k])=>k!='all').map(([k,l])=>row(l,"rcHide('"+k+"')",yn(!c.hs.includes(k)))).join('')
-  +`<div style="margin-top:14px"><button class="btn s" onclick="rcSet({lv:'a',tt:'تقرير محل عزيز',dt:1,st:0,pr:0,pt:1,rq:1,pn:1,em:0,ft:'',hs:[]})">إرجاع الإعدادات الافتراضية</button></div>`}};
+  +`<div style="margin-top:14px"><button class="btn s" onclick="rcSet({lv:'a',tt:'تقرير محل عزيز',dt:1,st:1,pr:0,pt:1,rq:1,pn:1,em:0,ft:'',hs:[]})">إرجاع الإعدادات الافتراضية</button></div>`}};
 
 /* ---------- المزيد / الإعدادات: أقسام منظمة ومنطقية ---------- */
 VW.st=()=>{

@@ -57,7 +57,7 @@ window.lgOpen=id=>{const i=find(id);if(!i)return;
   +'<div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>';
   sheetOpen(()=>{})};
 const _cd=card;
-card=function(i){let h=_cd(i);
+card=function(i){let h=_cd(i);if(i.sec=='phones')h=h.replace(/<button[^>]*phDel[^>]*>[^<]*<\/button>/,'');
   if((i.sec=='phones'||i.sec=='acc')&&(i.log||[]).length)h=h.replace('<div class="sub">',()=>`<div class="sub"><button class="btn s sm" onclick="lgOpen('${i.id}')">السجل</button>`);
   return h};
 
@@ -118,5 +118,14 @@ pickRpBrand=function(b){const el=$('r_v');if(!el)return;
 const _gm=glMerge;
 glMerge=function(a,b){const keep=S.items.filter(i=>i.sec=='glass'&&i.gid==b.id).map(i=>({ty:i.ty,min:i.min,price:i.price}));
   _gm(a,b);keep.forEach(k=>{const t=gitem(a.id,k.ty);if(!t)return;if(t.min==null&&k.min!=null)t.min=k.min;if(!t.price&&k.price)t.price=k.price})};
+/* ---------- مظهر: الحذف داخل التعديل، وشريط النسخة الاحتياطية مضغوط ---------- */
+const _pf=phForm;
+phForm=function(rec){_pf(rec);
+  if(rec&&rec.id&&S.items.includes(rec)&&can('del'))$('sh').insertAdjacentHTML('beforeend',`<button class="btn s" style="color:#dc2626;margin-top:10px" onclick="phDelF('${rec.id}')">حذف هذا الهاتف</button>`)};
+window.phDelF=id=>{finish(null);setTimeout(()=>phDel(id),450)};
+window.bkHide=()=>{try{localStorage.setItem('bkHide',Date.now())}catch(e){}render()};
+const _hm=VW.home;
+VW.home=function(){const r=_hm();let hid=0;try{hid=Date.now()-(+localStorage.getItem('bkHide')||0)<864e5}catch(e){}
+  r.h=r.h.replace(/<div class="card"><b>احفظ نسخة احتياطية<\/b>.*?<\/button><\/div>/s,hid?'':'<div class="bkb"><span>لم تُحفظ نسخة خارجية منذ أسبوع</span><button class="btn sm" onclick="BKP()">حفظ</button><button class="bkx" onclick="bkHide()" aria-label="إغلاق">✕</button></div>');return r};
 render();
 })();
