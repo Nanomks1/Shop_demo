@@ -1,1 +1,12 @@
-7
+name: check
+on: [push, pull_request]
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JS syntax and missing files
+        run: |
+          for f in v3/*.js; do echo "checking $f"; node --check "$f" || exit 1; done
+          for s in $(grep -o 'src="[a-z0-9]*\.js' v3/index.html | cut -d'"' -f2); do test -f "v3/$s" || { echo "MISSING FILE: $s"; exit 1; }; done
+          echo "all good"
