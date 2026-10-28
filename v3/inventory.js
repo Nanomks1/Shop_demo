@@ -492,7 +492,7 @@ function ensureBD() {   // آيفون: تحميل ماسح بديل عند ال�
   if ('BarcodeDetector' in window) return Promise.resolve(true);
   if (BDP) return BDP;
   return BDP = new Promise(res => {
-    const s = document.createElement('script'); s.src = 'https://fastly.jsdelivr.net/npm/barcode-detector@2/dist/iife/pure.min.js';
+    const s = document.createElement('script'); s.src = 'https://fastly.jsdelivr.net/npm/barcode-detector@2.3.1/dist/iife/pure.min.js';
     s.onload = () => { if (window.BarcodeDetectorPolyfill && !('BarcodeDetector' in window)) window.BarcodeDetector = window.BarcodeDetectorPolyfill; res('BarcodeDetector' in window); };
     s.onerror = () => res(false); document.head.appendChild(s);
   });
