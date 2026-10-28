@@ -4,7 +4,7 @@
    ============================================================ */
 const SY_URL='https://jvubqqvwuonvgowqwvqa.supabase.co';
 const SY_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2dWJxcXZ3dW9udmdvd3F3dnFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NjU1MjksImV4cCI6MjEwODQ0MTUyOX0.wKnUu_HFa0eByC9ypH7kGyEeIJSUPH87hp56ZhROApw';
-const SY_ARR=['items','rp','req','gg','guide','fields','ag'],SY_ONE=['tags','perm','users','pin','cfg'],SY_ENC=['rp','req'],SY_LOC=['fs','th'],SY_E0='1970-01-01T00:00:00+00:00';
+const SY_ARR=['items','rp','req','gg','guide','fields','ag'],SY_ONE=['tags','perm','users','pin','cfg'],SY_ENC=['rp','req'],SY_LOC=['fs','th'],syIsEnc=k=>SY_ENC.includes(k.split('/')[0])||k=='one/users'||k=='one/pin',SY_E0='1970-01-01T00:00:00+00:00';
 const SYM={off:'متوقفة',ok:'متصلة',busy:'جارٍ المزامنة…',offline:'لا يوجد إنترنت (سيُعاد المحاولة)',err:'خطأ'};
 let SYS={st:'off',msg:'',busy:false,key:null,last:null,t:0,rr:0,again:0},SYR='first';
 const syLS=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
@@ -57,19 +57,23 @@ st.base[k]=val===null?{h:'',ts:r.ts,d:1}:{h:syH(JSON.stringify(cm[k])),ts:r.ts};
 async function syPull(st,force){let n=0;const cm=syCollect();for(;;){const rows=await syReq('records?srv=gt.'+encodeURIComponent(st.cur)+'&order=srv.asc&limit=100');for(const r of rows)n+=await syApply(r,st,cm,force);if(rows.length)st.cur=rows[rows.length-1].srv;syPut2(st);if(rows.length<100)break}return n}
 
 /* دورة المزامنة */
-async function syNow(){const c=syCfg();if(!c.on)return;if(SYS.busy){SYS.again=1;return}
+async function syNow(){const c=syCfg();if(!c.on||LOAD_BAD)return;if(SYS.busy){SYS.again=1;return}
 if(typeof navigator!='undefined'&&navigator.onLine===false){syStat('offline');return}
 SYS.busy=true;syStat('busy');try{await syGetKey();let st=syStt(),chg=0;
 if(st.fresh){chg+=await syPull(st,true);delete st.fresh;syPut2(st)}
+if(!syCfg().eu){const s0=syStt();delete s0.base['one/users'];delete s0.base['one/pin'];syPut2(s0);const c0=syCfg();c0.eu=1;localStorage.setItem('shopSyncCfg',JSON.stringify(c0))}
 syMark();st=syStt();const cur=syCollect(),rows=[],n=Date.now();
-for(const k in cur){const h=syH(JSON.stringify(cur[k]));if(!st.base[k]||st.base[k].h!==h){const[cc,id]=k.split('/'),enc=SY_ENC.includes(cc);let obj=cur[k];if(cc=='items'&&obj&&obj.res){obj={...obj,_resEnc:await syEnc(JSON.stringify(obj.res))};delete obj.res}const js=JSON.stringify(obj);rows.push({coll:cc,id,data:enc?await syEnc(js):js,enc,deleted:false,ts:st.dt[k]||n,who:S.me||'',_k:k,_h:h})}}
+for(const k in cur){const h=syH(JSON.stringify(cur[k]));if(!st.base[k]||st.base[k].h!==h){const[cc,id]=k.split('/'),enc=syIsEnc(k);let obj=cur[k];if(cc=='items'&&obj&&obj.res){obj={...obj,_resEnc:await syEnc(JSON.stringify(obj.res))};delete obj.res}const js=JSON.stringify(obj);rows.push({coll:cc,id,data:enc?await syEnc(js):js,enc,deleted:false,ts:st.dt[k]||n,who:S.me||'',_k:k,_h:h})}}
 for(const k in st.base){if(!(k in cur)&&!st.base[k].d){const[cc,id]=k.split('/');rows.push({coll:cc,id,data:null,enc:false,deleted:true,ts:st.dt[k]||n,who:S.me||'',_k:k,_h:'',_d:1})}}
+const dl=rows.filter(r=>r.deleted).length,tot=Object.keys(st.base).filter(k=>!st.base[k].d).length;
+if(dl>=10&&dl>tot*0.5&&!SYS.okDel){SYS.big=dl;SYS.busy=false;syStat('err','توقفت المزامنة حمايةً: اختفى '+dl+' سجلاً من هذا الجهاز');return}
+SYS.big=0;
 const lost=[];for(let i=0;i<rows.length;i+=20){const b=rows.slice(i,i+20),res=await syReq('records?on_conflict=coll,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(b.map(({_k,_h,_d,...r})=>r))}),ok=new Set(res.map(x=>x.coll+'/'+x.id));
 for(const r of b){st.base[r._k]=r._d?{h:'',ts:r.ts,d:1}:{h:r._h,ts:r.ts};delete st.dt[r._k];if(!ok.has(r._k))lost.push(r)}syPut2(st)}
 const cm=syCollect();for(const r of lost){const g=await syReq('records?coll=eq.'+encodeURIComponent(r.coll)+'&id=eq.'+encodeURIComponent(r.id));if(g[0])chg+=await syApply(g[0],st,cm,true)}
 chg+=await syPull(st,false);syPut2(st);
 if(chg){if(typeof cleanOldRpMedia=='function')cleanOldRpMedia();save();window._syDirty=0;syRender()}
-SYS.last=Date.now();syStat('ok')}catch(e){syStat(e.code=='auth'?'err':((e instanceof TypeError||e.name=='AbortError')?'offline':'err'),e.code=='auth'?'انتهت الجلسة أو بيانات الدخول خاطئة (أعد إدخال كلمة السر)':e.code=='enc'?'رمز التشفير لا يطابق رمز المحل':(e instanceof TypeError||e.name=='AbortError')?'':'تعذّرت المزامنة ('+(e.code||e.message)+')')}
+SYS.okDel=0;SYS.last=Date.now();syStat('ok')}catch(e){syStat(e.code=='auth'?'err':((e instanceof TypeError||e.name=='AbortError')?'offline':'err'),e.code=='auth'?'انتهت الجلسة أو بيانات الدخول خاطئة (أعد إدخال كلمة السر)':e.code=='enc'?'رمز التشفير لا يطابق رمز المحل':(e instanceof TypeError||e.name=='AbortError')?'':'تعذّرت المزامنة ('+(e.code||e.message)+')')}
 SYS.busy=false;if(SYS.again){SYS.again=0;syKick()}}
 function syKick(now){clearTimeout(SYS.t);SYS.t=setTimeout(syNow,now===true?0:1500)}
 function syRender(){const a=(document.activeElement||{}).tagName||'';if(SH||/INPUT|TEXTAREA|SELECT/.test(a)){SYS.rr=1;return}SYS.rr=0;render()}
@@ -95,7 +99,7 @@ try{
     if(!S.items.length&&!S.rp.length&&!(S.req||[]).length&&!(S.gg||[]).length){v={...v,r:'extra'};toast('المحل يحتوي بيانات: سيُحمَّل هذا الجهاز كجهاز إضافي')}
     else if(!(await sure('المحل يحتوي بيانات سابقة. رفع بيانات هذا الجهاز قد يستبدل الموظفين ورمز المدير والإعدادات على كل الأجهزة. هل تريد المتابعة؟','متابعة والرفع',false)))throw 'cancel';
   }
-  if(v.r=='extra'){SY_ARR.forEach(c=>{S[c]=[]})}syPut2({cur:SY_E0,base:{},dt:{},fresh:v.r=='extra'?1:0});save();syKick(true);toast('بدأت المزامنة بأمان')
+  if(v.r=='extra'){await snapPre();SY_ARR.forEach(c=>{S[c]=[]})}syPut2({cur:SY_E0,base:{},dt:{},fresh:v.r=='extra'?1:0});save();syKick(true);toast('بدأت المزامنة بأمان')
 }catch(e){
   if(old)localStorage.setItem('shopSyncCfg',old);else localStorage.removeItem('shopSyncCfg');
   if(oldTok)localStorage.setItem('shopSyncTok',oldTok);
@@ -103,7 +107,7 @@ try{
   toast(e==='cancel'?'أُلغي الإعداد':e&&e.code=='auth'?'بيانات الدخول خاطئة':e&&e.code=='enc'||e===0?'رمز التشفير لا يطابق رمز المحل':'تعذّر الاتصال');
 }}
 function syOff(){if(!isAdmin())return toast('للمدير فقط');sure('إيقاف المزامنة على هذا الجهاز؟ تبقى البيانات المحلية كما هي.','إيقاف').then(y=>{if(y){const c=syCfg();c.on=0;localStorage.setItem('shopSyncCfg',JSON.stringify(c));syStat('off');render()}})}
-VW.st_sync=()=>{const c=syCfg();return{t:'المزامنة',h:c.on?`<div class="card"><b>${SYM[SYS.st]||''}</b><div class="m">${esc(SYS.msg)}${SYS.last?' · آخر مزامنة '+new Date(SYS.last).toLocaleTimeString('ar-MA'):''}</div></div><button class="btn" onclick="syKick(true)">مزامنة الآن</button><button class="btn s" onclick="syOpen()">تغيير الإعداد</button><button class="btn s" onclick="syOff()">إيقاف المزامنة</button><p class="m">تشفير انتقائي: بيانات الزبائن (الصيانة، الطلبات، الحجوزات) مشفّرة على الجهاز قبل الرفع، بينما يبقى المخزون العام خفيفاً وسريعاً.</p>`:`<p class="m">بيانات المحل تصير واحدة على كل الأجهزة. بيانات الزبائن الحساسة تُشفَّر على الجهاز قبل الرفع.</p><button class="btn" onclick="syOpen()">إعداد المزامنة</button>`}};
+VW.st_sync=()=>{const c=syCfg();return{t:'المزامنة',h:c.on?`<div class="card"><b>${SYM[SYS.st]||''}</b><div class="m">${esc(SYS.msg)}${SYS.last?' · آخر مزامنة '+new Date(SYS.last).toLocaleTimeString('ar-MA'):''}</div></div>${SYS.big?`<button class="btn d" onclick="syOkBig()">اعتماد حذف ${SYS.big} سجلاً من كل الأجهزة</button>`:''}${SYS.big?`<button class="btn d" onclick="syOkBig()">اعتماد حذف ${SYS.big} سجلاً من كل الأجهزة</button>`:''}<button class="btn" onclick="syKick(true)">مزامنة الآن</button><button class="btn s" onclick="syOpen()">تغيير الإعداد</button><button class="btn s" onclick="syOff()">إيقاف المزامنة</button><p class="m">تشفير انتقائي: بيانات الزبائن (الصيانة، الطلبات، الحجوزات) مشفّرة على الجهاز قبل الرفع، بينما يبقى المخزون العام خفيفاً وسريعاً.</p>`:`<p class="m">بيانات المحل تصير واحدة على كل الأجهزة. بيانات الزبائن الحساسة تُشفَّر على الجهاز قبل الرفع.</p><button class="btn" onclick="syOpen()">إعداد المزامنة</button>`}};
 MORE.push({g:'data',o:10,l:'المزامنة بين الأجهزة',fn:"go('st_sync')",n:()=>syCfg().on?SYM[SYS.st]:'متوقفة'});
 HK.saved.push(()=>{window._syDirty=1});
 

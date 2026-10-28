@@ -66,13 +66,14 @@ const DEF = {
   },
   items: [], rp: [], trash: [], req: [], gg: [], guide: [], ag: []
 };
-function load() {
+let LOAD_BAD = 0;   // 1 = ملف بيانات هذا الجهاز تالف عند الإقلاع (يوقف المزامنة ويعرض استعادة نسخة تلقائية)
+function load(chk) {
   let o = {};
-  try { o = JSON.parse(localStorage.getItem('shop3') || '{}'); } catch (e) { }
+  try { o = JSON.parse(localStorage.getItem('shop3') || '{}'); } catch (e) { if (chk) LOAD_BAD = 1; }
   const d = JSON.parse(JSON.stringify(DEF));
   return { ...d, ...o, tags: { ...d.tags, ...o.tags }, perm: { ...d.perm, ...o.perm }, cfg: { ...d.cfg, ...o.cfg } };
 }
-let S = load();
+let S = load(1);
 let V = { v: 'home' }, Q = '', QP = 0, SH = false, SHR = null, ARM = 0, TT;
 
 /* ---------- مخازن IndexedDB (الصور + النسخة التلقائية) ---------- */

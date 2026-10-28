@@ -257,11 +257,23 @@ async function makeSafeBackupJson(pinOrHash){
 
 
 let AB_T = 0, AB_FH = null;
-function schedAutoBk() {   // نسخة تلقائية داخل الهاتف (IndexedDB) + ملف مرتبط اختيارياً
+/* النسخ التلقائية داخل الهاتف (IndexedDB): آخر حفظ + نسخة يومية (آخر 7 أيام) + نسخة قبل كل استعادة (آخر 3). الصور تُستثنى لخفة الحجم. */
+function bkCopy() { return JSON.parse(JSON.stringify(S, function (k, v) { return (k === 'img' && typeof v === 'string' && v.startsWith('data:') && this.id) ? 'idb:' + this.id : v; })); }
+const bkSize = d => (d.items || []).length + (d.rp || []).length + (d.gg || []).length;
+function bkPrune(pre, n) { AUTOBK.all().then(all => Object.keys(all).filter(k => k.startsWith(pre)).sort().reverse().slice(n).forEach(k => AUTOBK.del(k))).catch(() => { }); }
+function snapPre() {
+  if (!S.users.length) return Promise.resolve();
+  return AUTOBK.put('pre:' + Date.now(), { at: Date.now(), data: bkCopy() }).then(() => bkPrune('pre:', 3)).catch(() => { });
+}
+function schedAutoBk() {
   clearTimeout(AB_T);
   AB_T = setTimeout(async () => {
     try {
-      await AUTOBK.put('latest', { at: Date.now(), data: JSON.parse(JSON.stringify(S)) });
+      if (!S.users.length) return;   // لا نحفظ حالة فارغة فوق نسخة سليمة
+      const rec = { at: Date.now(), data: bkCopy() }, d = new Date(), p = n => String(n).padStart(2, '0');
+      await AUTOBK.put('latest', rec);
+      const k = 'd:' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+      if (!(await AUTOBK.get(k))) { await AUTOBK.put(k, rec); bkPrune('d:', 7); }
       if (AB_FH && S.pin) { const w = await AB_FH.createWritable(); await w.write(await makeSafeBackupJson(S.pin)); await w.close(); }
     } catch (e) { }
   }, 5000);
@@ -275,12 +287,23 @@ async function linkAutoFile() {
     schedAutoBk(); render(); toast('تم ربط ملف الحفظ التلقائي بنجاح');
   } catch (e) { }
 }
-function restAutoIdb() {
+function restSnap(key) {
   if (!isAdmin()) return toast('للمدير فقط');
-  AUTOBK.get('latest').then(rec => {
-    if (!rec || !rec.data) return toast('لا توجد نسخة تلقائية محفوظة بعد');
-    sure('استعادة النسخة التلقائية المحفوظة بتاريخ ' + fd(rec.at) + ' ؟', 'استعادة').then(y => { if (y) { S = { ...load(), ...rec.data }; save(); location.reload(); } });
-  }).catch(() => toast('تعذر قراءة النسخة التلقائية'));
+  AUTOBK.get(key).then(rec => {
+    if (!rec || !rec.data) return toast('لا توجد هذه النسخة');
+    sure('استعادة نسخة ' + fd(rec.at) + ' (' + bkSize(rec.data) + ' سجلاً)؟ يُحفظ وضعك الحالي أولاً كنسخة «قبل استعادة».', 'استعادة').then(y => {
+      if (y) snapPre().then(() => { LOAD_BAD = 0; S = { ...load(), ...rec.data }; save(); location.reload(); });
+    });
+  }).catch(() => toast('تعذر قراءة النسخة'));
+}
+VW.st_snap = () => ({ t: 'النسخ التلقائية', h: '<p class="m">نسخ داخل الهاتف تُحفظ تلقائياً. الصور لا تدخل فيها. لا تغني عن ملف النسخة الأسبوعي.</p><div id="snl" class="m">جارٍ التحميل…</div>', a: snapList });
+function snapList() {
+  AUTOBK.all().then(all => {
+    const L = Object.keys(all).filter(k => all[k] && all[k].data).sort((x, y) => all[y].at - all[x].at);
+    const nm = k => k == 'latest' ? 'آخر حفظ' : k.startsWith('d:') ? 'يومية' : 'قبل استعادة';
+    const el = $('snl'); if (!el) return;
+    el.innerHTML = L.map(k => { const r = all[k]; return `<div class="card row2"><div style="flex:1"><b>${nm(k)}</b><div class="m"><bdi>${fd(r.at)}</bdi> · ${bkSize(r.data)} سجلاً</div></div><button class="btn s sm" onclick="restSnap('${k}')">استعادة</button></div>`; }).join('') || 'لا توجد نسخ بعد';
+  }).catch(() => { const el = $('snl'); if (el) el.textContent = 'تعذر قراءة النسخ'; });
 }
 function BKP() {
   if (!isAdmin()) return toast('النسخ الاحتياطي للمدير فقط');
@@ -304,7 +327,8 @@ function RST(f) {
       const d = JSON.parse(r.result); if (!d.users) throw 0;
       sure('استبدال كل البيانات الحالية بالنسخة؟', 'استعادة').then(y => {
         if (!y) return;
-        if (!d._encCust) { S = { ...load(), ...d }; save(); location.reload(); return; }
+        const pre = snapPre();
+        if (!d._encCust) { pre.then(() => { S = { ...load(), ...d }; save(); location.reload(); }); return; }
         ask('فك تشفير بيانات الزبائن', [{ k: 'p', l: 'أدخل رمز المدير الذي حُفظت به النسخة', t: 'password' }], 'فك التشفير والاستعادة').then(async v => {
           if (!v || !v.p) return;
           try {
@@ -331,7 +355,7 @@ VW.st_bk = () => {
     h: '<p class="m">يتم تشفير بيانات الزبائن الحساسة (الصيانة، الطلبات، الحجوزات) داخل ملف النسخة الاحتياطية لحمايتها من التسريب.</p>'
       + '<button class="btn" onclick="BKP()">حفظ ملف النسخة في الهاتف (محمي)</button>'
       + (window.showSaveFilePicker ? `<button class="btn s" onclick="linkAutoFile()">${AB_FH ? '✅ مرتبط بملف تلقائي (اضغط لتغييره)' : 'ربط ملف حفظ تلقائي مباشر بالهاتف'}</button>` : '')
-      + '<button class="btn s" onclick="restAutoIdb()">استرجاع النسخة التلقائية الداخلية</button>'
+      + '<button class="btn s" onclick="go(\'st_snap\')">النسخ التلقائية الداخلية (آخر 7 أيام)</button>'
       + '<label>استعادة من ملف خارجي<input type="file" accept=".json" onchange="RST(this.files[0])"></label>'
       + `<h3>المساحة المستعملة</h3><div class="card"><div class="row2"><b>${p}%</b><span class="m">${(n / 1e6).toFixed(1)} مليون حرف من نحو 5</span></div><div class="meter"><div style="width:${Math.min(100, p)}%;background:${p > 70 ? '#dc2626' : 'var(--p)'}"></div></div>${p > 70 ? '<p class="m">اقتربت المساحة من الامتلاء. خذ نسخة احتياطية الآن.</p>' : ''}</div>`
       + `<div class="card"><b>خزنة الصور (IndexedDB)</b><div class="m">صور الصيانة المحفوظة خارج ذاكرة المتصفح الضيقة: <b>${Object.keys(IMG).length}</b> (لا تستهلك من حد الـ 5 ميجابايت).</div></div>`
@@ -345,7 +369,28 @@ S.trash = S.trash.filter(t => Date.now() - t.t < 2592e6);
 try { navigator.storage.persist(); } catch (e) { }
 startHistory();
 render();
-if (!S.users.length) { admSet(true); setup(); }
-else if (S.pin && ((isAdmin() && !admOk()) || !S.users.some(u => u.name == S.me))) lgShow();
-try { if (localStorage.getItem('shopLock') == '1' && (S.cfg.lk || S.pin)) lkShow(); } catch (e) { }
+function boot2() {
+  if (!S.users.length) { admSet(true); setup(); }
+  else if (S.pin && ((isAdmin() && !admOk()) || !S.users.some(u => u.name == S.me))) lgShow();
+  try { if (localStorage.getItem('shopLock') == '1' && (S.cfg.lk || S.pin)) lkShow(); } catch (e) { }
+}
+function bkBest() {
+  return AUTOBK.all().then(all => {
+    let b = null;
+    Object.keys(all).forEach(k => { const r = all[k]; if (r && r.data && (r.data.users || []).length) { const z = bkSize(r.data); if (!b || z > b.z || (z == b.z && r.at > b.rec.at)) b = { k, rec: r, z }; } });
+    return b;
+  });
+}
+function bootRescue() {
+  const go2 = () => { LOAD_BAD = 0; boot2(); };
+  if (!(LOAD_BAD || !S.users.length)) return boot2();
+  bkBest().then(b => {
+    if (!b) return go2();
+    sure('لا توجد بيانات سليمة على هذا الجهاز، لكن وُجدت نسخة تلقائية بتاريخ ' + fd(b.rec.at) + ' فيها ' + b.z + ' سجلاً. استعادتها؟', 'استعادة', false).then(y => {
+      if (!y) return go2();
+      LOAD_BAD = 0; S = { ...load(), ...b.rec.data }; save(); location.reload();
+    });
+  }).catch(go2);
+}
+bootRescue();
 imgInit();
