@@ -70,8 +70,8 @@ function rc(r) {
     + fxShow(r) + (r.imei ? `<div class="m">IMEI: <bdi>${esc(r.imei)}</bdi></div>` : '') + (wi ? `<div class="m" style="color:${wi.active ? '#16a34a' : '#64748b'};font-weight:700">${I('shield')} ${esc(wi.label)}</div>` : '')
     + (r.st == 'dn' ? (r.tst ? `<div class="m" style="color:#16a34a;font-weight:700">${I('check')} جُرِّب مع الزبون وسُلِّم مصلوحاً (${esc(r.dby || '')})</div>` : (r.res == 'ok' ? '<div class="m">سُلِّم بدون توثيق التجربة</div>' : '')) + (r.dnote ? `<div class="m">ملاحظة التسليم: ${esc(r.dnote)}</div>` : '') : '')
     + `<div class="sub">${r.tel ? `<a href="tel:${esc(r.tel)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a>` : ''}`
-    + (r.st == 'in' ? B('تم الإصلاح', `rSt('${i}','ok')`, 1) + B('تعذّر', `rSt('${i}','fail')`) + B('رفض', `rSt('${i}','ref')`) + B('وصل واتساب', `rWA('${i}',0)`)
-      : r.st == 'rd' ? B('إبلاغ واتساب', `rWA('${i}',1)`, 1) + B('اتصلت', `rCL('${i}')`) + B('تسليم', `rDV('${i}')`, 1) + B('إرجاع للمحل', `rSt('${i}','in')`) : '')
+    + (r.st == 'in' ? B('تم الإصلاح', `rSt('${i}','ok')`, 1) + B('تعذّر', `rSt('${i}','fail')`) + B('رفض', `rSt('${i}','ref')`)
+      : r.st == 'rd' ? B('إبلاغ واتساب', `rWA('${i}')`, 1) + B('اتصلت', `rCL('${i}')`) + B('تسليم', `rDV('${i}')`, 1) + B('إرجاع للمحل', `rSt('${i}','in')`) : '')
     + B('تعديل', `rEd('${i}')`) + B('حذف', `rDel('${i}')`) + `</div></div>`;
 }
 function rpList() {
@@ -115,18 +115,15 @@ function rDV(id, pre) {
     commit('تم التسليم', () => { r.st = 'dn'; r.t2 = Date.now(); r.dby = S.me; r.paid = v.p.trim() || '0'; r.tst = v.tested == DVO[1] ? Date.now() : 0; if (r.res == 'ok') r.war = lblToWar(v.war); r.dnote = (v.dnote || '').trim(); });
   });
 }
-/* واتساب: استلام / جاهزية (مع IMEI والضمان وملاحظة الجهاز المكسور) */
-function rWA(id, k) {
+/* واتساب: إبلاغ الزبون بجاهزية الهاتف فقط (مع IMEI والضمان) */
+function rWA(id) {
   const r = rf(id); if (!r || !rnum(r.tel)) return toast('لا يوجد رقم لهذا الزبون: عدّل السجل وأضف الرقم');
   const c = sn1(r.cap) ? ' تكلفة الإصلاح: ' + r.cap.trim() + (r.dep ? '، العربون: ' + r.dep : '') + '.' : '';
-  const dev = r.dev + (r.imei ? ` [IMEI: ${r.imei}]` : '') + ((+r.war > 0 && (!k || r.res == 'ok')) ? ` (الضمان: ${r.war} يوم)` : '');
-  const ck = r.chk || [], legal = (!k && (ck.includes('مطفأ لا يشتغل') || ck.includes('شاشة مكسورة'))) ? '\n*(ملاحظة: استُلم الجهاز بشاشة مكسورة/منطفئ مما يتعذر معه فحص باقي الوظائف كالكاميرا والشبكة قبل الإصلاح)*.' : '';
-  const s = k ? (r.res == 'ok' ? `هاتفك ${dev} جاهز في المحل.${c}` : r.res == 'fail' ? `للأسف تعذّر إصلاح هاتفك ${dev}. يمكنك استلامه من المحل.` : `هاتفك ${dev} جاهز للاستلام بدون إصلاح.`)
-    : `استلمنا هاتفك ${dev} (${r.fault}).${r.dep ? ' العربون: ' + r.dep + '.' : ''} سنبلغك عند جاهزيته.${legal}`;
-  location.href = 'https://wa.me/' + rnum(r.tel) + '?text=' + encodeURIComponent(`مرحباً ${r.name}، ${s}\nشكراً لثقتكم — محل عزيز.`);
+  const dev = r.dev + (r.imei ? ` [IMEI: ${r.imei}]` : '') + ((+r.war > 0 && r.res == 'ok') ? ` (الضمان: ${r.war} يوم)` : '');
+  const s = r.res == 'ok' ? `هاتفك ${dev} جاهز في المحل.${c}` : r.res == 'fail' ? `للأسف تعذّر إصلاح هاتفك ${dev}. يمكنك استلامه من المحل.` : `هاتفك ${dev} جاهز للاستلام بدون إصلاح.`;
+  location.href = 'https://wa.me/' + rnum(r.tel) + '?text=' + encodeURIComponent(`مرحباً ${r.name}، ${s}\n— محل عزيز`);
 }
 
-/* ---------- نموذج الاستلام/التعديل ---------- */
 function rEd(id) { const rec = id ? rf(id) : {}; $('sh').innerHTML = ''; sheetOpen(v => rDone(v, rec)); rForm(rec); }
 function rForm(rec) {
   ZR = rec; ZP = [...(rec.pat || [])]; ZK = [...(rec.chk || [])]; ZI = rec.img || ''; ZW = +(rec.war ?? 0);
