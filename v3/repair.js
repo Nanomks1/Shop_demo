@@ -51,7 +51,7 @@ function cleanOldRpMedia() {
   S.rp.forEach(r => {
     if (r.st != 'dn' || !r.t2) return;
     if (now - r.t2 > Math.max(base, ((+r.war || 0) + 3) * 864e5) && (r.img || r.lock || (r.pat && r.pat.length))) {
-      r.img = ''; r.lock = ''; r.pat = []; MEDIA.del(r.id).catch(() => { }); delete IMG[r.id]; chg = 1;
+      r.img = ''; r.lock = ''; r.pat = []; MEDIA.del(r.id).catch(e => errLog('حذف صورة قديمة: ' + (e && e.message || e))); delete IMG[r.id]; chg = 1;
     }
   });
   if (chg) save();
@@ -219,5 +219,15 @@ HOME.after.push(() => '<button class="btn s" onclick="rq()">زبون سأل ول
 function bcNewRp() { $('sh').innerHTML = ''; const rec = { imei: BCODE }; sheetOpen(v => rDone(v, rec)); rForm(rec); }
 BCX.push(() => `<button class="btn s sm" onclick="bcNewRp()">${I('tool')} + استلام صيانة</button>`);
 BCM.push(c => { const nc = nz(c); return S.rp.filter(r => r.imei && nz(r.imei).includes(nc)).map(rc).join(''); });
-CATS.rp = ['الصيانة', [tg('أعطال الصيانة', 'fault'), ['دليل أسعار الإصلاح', "go('gd')"], ['مدة حفظ الصورة والرمز بعد التسليم', "limEd('rpKeep')", () => lim('rpKeep') + ' يوم']], 'rp'];
+/* ---------- أرشفة: حذف الصيانات المسلّمة منذ أكثر من سنة وانتهى ضمانها (يدوياً وللمدير فقط) ---------- */
+const rpOld = () => { const n = Date.now(); return S.rp.filter(r => r.st == 'dn' && r.t2 && n - r.t2 > Math.max(365, (+r.war || 0) + 30) * 864e5); };
+function rpArch() {
+  if (!isAdmin()) return toast('للمدير فقط');
+  const a = rpOld(); if (!a.length) return toast('لا توجد صيانات مسلّمة أقدم من سنة');
+  sure('حذف ' + a.length + ' صيانة مسلّمة منذ أكثر من سنة (انتهى ضمانها) من كل الأجهزة؟ يُفضّل أخذ ملف نسخة احتياطية قبل ذلك. تُحفظ نسخة تلقائية داخل الهاتف أولاً.', 'أرشفة').then(y => {
+    if (!y) return;
+    snapPre().then(() => { const ids = new Set(a.map(x => x.id)); S.rp = S.rp.filter(x => !ids.has(x.id)); save(); render(); toast('تمت أرشفة ' + a.length + ' صيانة'); });
+  });
+}
+CATS.rp = ['الصيانة', [tg('أعطال الصيانة', 'fault'), ['دليل أسعار الإصلاح', "go('gd')"], ['مدة حفظ الصورة والرمز بعد التسليم', "limEd('rpKeep')", () => lim('rpKeep') + ' يوم'], ['أرشفة الصيانات المسلّمة القديمة', "rpArch()", () => rpOld().length + ' صيانة']], 'rp'];
 MORE.push({ g: 'sec', o: 50, l: 'الصيانة', fn: "go('st_c',{c:'rp'})" });

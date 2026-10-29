@@ -275,7 +275,7 @@ function schedAutoBk() {
       const k = 'd:' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
       if (!(await AUTOBK.get(k))) { await AUTOBK.put(k, rec); bkPrune('d:', 7); }
       if (AB_FH && S.pin) { const w = await AB_FH.createWritable(); await w.write(await makeSafeBackupJson(S.pin)); await w.close(); }
-    } catch (e) { }
+    } catch (e) { errLog('نسخة تلقائية: ' + (e && e.message || e)); }
   }, 5000);
 }
 HK.saved.push(schedAutoBk);
@@ -348,6 +348,14 @@ function RST(f) {
   };
   r.readAsText(f);
 }
+function abStatus() {
+  AUTOBK.get('latest').then(r => {
+    const el = $('st_ab'); if (!el) return;
+    const old = !r || Date.now() - r.at > 2 * 864e5;
+    el.innerHTML = r ? (old ? '⚠️ آخر نسخة تلقائية قديمة: <bdi>' + fd(r.at) + '</bdi>' : '✅ آخر نسخة تلقائية: <bdi>' + fd(r.at) + '</bdi>') : '⚠️ لا توجد نسخة تلقائية بعد';
+    if (old) el.style.color = '#dc2626';
+  }).catch(() => { const el = $('st_ab'); if (el) { el.textContent = '⚠️ تعذر قراءة النسخ التلقائية'; el.style.color = '#dc2626'; } });
+}
 VW.st_bk = () => {
   const n = (localStorage.getItem('shop3') || '').length, p = Math.round(n / 5e4), er = JSON.parse(localStorage.getItem('shopErr') || '[]');
   return {
@@ -359,7 +367,9 @@ VW.st_bk = () => {
       + '<label>استعادة من ملف خارجي<input type="file" accept=".json" onchange="RST(this.files[0])"></label>'
       + `<h3>المساحة المستعملة</h3><div class="card"><div class="row2"><b>${p}%</b><span class="m">${(n / 1e6).toFixed(1)} مليون حرف من نحو 5</span></div><div class="meter"><div style="width:${Math.min(100, p)}%;background:${p > 70 ? '#dc2626' : 'var(--p)'}"></div></div>${p > 70 ? '<p class="m">اقتربت المساحة من الامتلاء. خذ نسخة احتياطية الآن.</p>' : ''}</div>`
       + `<div class="card"><b>خزنة الصور (IndexedDB)</b><div class="m">صور الصيانة المحفوظة خارج ذاكرة المتصفح الضيقة: <b>${Object.keys(IMG).length}</b> (لا تستهلك من حد الـ 5 ميجابايت).</div></div>`
+      + '<div id="st_ab" class="m" style="margin:8px 0"></div>'
       + (er.length ? '<h3>آخر الأخطاء (للتشخيص)</h3>' + er.map(x => `<div class="m">${esc(x)}</div>`).join('') : '')
+    , a: abStatus
   };
 };
 

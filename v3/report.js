@@ -49,6 +49,7 @@
     const need = N.reduce((a, b) => a + b.ls.length, 0), red = N.reduce((a, b) => a + b.ls.filter(x => x.r).length, 0);
     const head = [c.tt ? '*' + c.tt + '*' : '', c.dt ? dstr() : ''].filter(Boolean).join(' — '); if (head) o.push(head);
     o.push(need ? 'للشراء: ' + need + (red ? ' (نافد ' + red + ')' : '') : 'لا يوجد نقص حالياً');
+    { const stl = rnd().length; if (stl) o.push('تنبيه: ' + stl + ' صنف لم يُؤكَّد منذ أكثر من ' + lim('stale') + ' أيام'); }
     B.forEach(b => { if (!b.ls.length && !c.em) return; o.push(''); o.push('*' + b.t + '*'); if (b.ls.length) b.ls.forEach(x => o.push('- ' + x.s)); else o.push('- لا نقص'); });
     if ((mode == 'all' || mode == 'phones') && c.st && !c.hs.includes('phones')) {
       const s = stkL();
@@ -66,6 +67,7 @@
     const F = window.reportSectionFilter, B = blocks(F);
     let h = `<div class="rtabs">${tabs.map(([k, l]) => `<button class="tag ${F === k ? 'on' : ''}" onclick="reportSectionFilter='${k}';render()">${l}</button>`).join('')}</div>`
       + `<div class="rtabs"><button class="tag ${lv == 'a' ? 'on' : ''}" onclick="RLV='a';render()">نافد وقارب</button><button class="tag ${lv == 'r' ? 'on' : ''}" onclick="RLV='r';render()">نافد فقط</button><button class="tag" style="margin-inline-start:auto" onclick="go('st_rep')">تخصيص</button></div>`;
+    { const stl = rnd().length; if (stl) h += `<div class="card row2"><span style="flex:1">⚠️ ${stl} صنف لم يُؤكَّد منذ أكثر من ${lim('stale')} أيام</span><button class="btn sm" onclick="go('jl')">افتح الجولة</button></div>`; }
     B.forEach(b => {
       const x = b.ls.map(l => b.k == 'parts' ? `<div class="card row2"><span style="flex:1">${esc(l.s)}</span></div>`
         : b.k == 'req' ? `<div class="card row2"><span style="flex:1">${esc(l.s)}</span><button class="btn s sm" onclick="rqD('${l.id}')">مسح</button></div>`

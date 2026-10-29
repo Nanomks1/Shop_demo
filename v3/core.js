@@ -105,8 +105,8 @@ const MEDIA = kvStore('AzizShopMedia', 'imgs'), AUTOBK = kvStore('AzizShopAutoBa
 
 /* خزنة الصور: الصورة تعيش في IndexedDB، والسجل في localStorage يحمل الوسم 'idb:المعرّف' فقط */
 const IMG = {};
-const putImg = (id, d) => { if (!id || !d) return; IMG[id] = d; MEDIA.put(id, d).catch(() => { }); };
-const delImg = id => { if (!id || !(id in IMG)) return; delete IMG[id]; MEDIA.del(id).catch(() => { }); };
+const putImg = (id, d) => { if (!id || !d) return; IMG[id] = d; MEDIA.put(id, d).catch(e => errLog('حفظ صورة: ' + (e && e.message || e))); };
+const delImg = id => { if (!id || !(id in IMG)) return; delete IMG[id]; MEDIA.del(id).catch(e => errLog('حذف صورة: ' + (e && e.message || e))); };
 function imgReplacer(k, v) {              // يُستعمل مع JSON.stringify عند الحفظ فقط
   if (k === 'img' && this && this.id && typeof this.st === 'string') {   // سجل صيانة
     if (typeof v === 'string' && v.startsWith('data:image')) { putImg(this.id, v); return 'idb:' + this.id; }
@@ -123,7 +123,7 @@ function imgInit() {
     S.rp.forEach(r => { if (r.img && r.img.startsWith('idb:') && IMG[r.id]) { r.img = IMG[r.id]; ch = 1; } });
     if (moved) save();
     if (ch) render();
-  }).catch(() => { });
+  }).catch(e => errLog('قراءة الصور: ' + (e && e.message || e)));
 }
 
 /* ---------- الحفظ ---------- */
