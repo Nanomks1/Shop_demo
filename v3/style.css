@@ -100,8 +100,26 @@ nav button.on .ic{background:var(--ab)}
 /* ---- تثبيت شريط الفلاتر والترتيب أثناء التمرير (Sticky Sub-header) ---- */
 .stk-bar,main>.rtabs:first-of-type{position:sticky;top:calc(59px + env(safe-area-inset-top));z-index:4;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:6px 0;margin-inline:-2px}
 
+/* ---- العرض المضغوط وكبسولات البوشيط ---- */
+.card.cmp{padding:10px 12px;margin:6px 0;border-radius:13px}
+.cmp-main{flex:1;min-width:0;cursor:pointer}
+.cmp-main b{display:block;font-size:.94rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-main .m{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-pr{font-weight:700;font-size:.9rem;color:var(--p);white-space:nowrap;margin-inline:4px}
+.cs-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cs-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:10px;background:var(--bg);border:1px solid var(--b);font-size:.83rem}
+.cs-chip.low{border-color:#fca5a5;background:color-mix(in srgb,#dc2626 8%,var(--bg))}
+.cs-chip button{width:26px;height:26px;border-radius:7px;border:1px solid var(--b);background:var(--c);color:var(--t);font:inherit;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.cs-chip b{min-width:1.2rem;text-align:center}
+
+/* ---- الحواف الجانبية الملونة لبطاقات الصيانة ---- */
+.card.rp-in{border-inline-start:4px solid var(--p)}
+.card.rp-ok{border-inline-start:4px solid #16a34a}
+.card.rp-wait{border-inline-start:4px solid #d97706}
+.card.rp-late{border-inline-start:4px solid #dc2626}
+
 /* ---- الأيقونة العائمة السريعة (FAB) ---- */
-#fab{position:fixed;bottom:calc(74px + env(safe-area-inset-bottom));inset-inline-end:16px;z-index:12;display:flex;flex-direction:column;align-items: center;gap:10px}
+#fab{position:fixed;bottom:calc(74px + env(safe-area-inset-bottom));inset-inline-end:16px;z-index:12;display:flex;flex-direction:column;align-items:center;gap:10px}
 .fab-b{width:52px;height:52px;border-radius:16px;border:0;background:var(--p);color:var(--onp);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(37,99,235,.32);cursor:pointer;font:inherit}
 .fab-b.s{width:42px;height:42px;border-radius:13px;background:var(--c);color:var(--t);border:1px solid var(--b);box-shadow:0 4px 12px rgba(15,23,42,.1)}
 .fab-b .ic{width:1.45rem;height:1.45rem}
