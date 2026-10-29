@@ -1,6 +1,6 @@
 /* ============================================================
    report.js — التقرير اليومي: شاشة التقرير، نص الواتساب، وإعدادات التقرير.
-   يعتمد على invLines() و stkL() من inventory.js، و dh من repair.js.
+   يعتمد على invLines() و stkL() من inventory.js، و dh/rqTel/rqWA من repair.js.
    ============================================================ */
 (() => {
   const RTABS = [['all', 'الشامل'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['pochette', 'البوشيط'], ['acc', 'الإكسسوارات']];
@@ -67,11 +67,16 @@
     const F = window.reportSectionFilter, B = blocks(F);
     let h = `<div class="rtabs">${tabs.map(([k, l]) => `<button class="tag ${F === k ? 'on' : ''}" onclick="reportSectionFilter='${k}';render()">${l}</button>`).join('')}</div>`
       + `<div class="rtabs"><button class="tag ${lv == 'a' ? 'on' : ''}" onclick="RLV='a';render()">نافد وقارب</button><button class="tag ${lv == 'r' ? 'on' : ''}" onclick="RLV='r';render()">نافد فقط</button><button class="tag" style="margin-inline-start:auto" onclick="go('st_rep')">تخصيص</button></div>`;
-    { const stl = rnd().length; if (stl) h += `<div class="card row2"><span style="flex:1">⚠️ ${stl} صنف لم يُؤكَّد منذ أكثر من ${lim('stale')} أيام</span><button class="btn sm" onclick="go('jl')">افتح الجولة</button></div>`; }
+    { const stl = rnd().length; if (stl) h += `<div class="card row2"><span style="flex:1">${I('alert')} ${stl} صنف لم يُؤكَّد منذ أكثر من ${lim('stale')} أيام</span><button class="btn sm" onclick="go('jl')">افتح الجولة</button></div>`; }
     B.forEach(b => {
-      const x = b.ls.map(l => b.k == 'parts' ? `<div class="card row2"><span style="flex:1">${esc(l.s)}</span></div>`
-        : b.k == 'req' ? `<div class="card row2"><span style="flex:1">${esc(l.s)}</span><button class="btn s sm" onclick="rqD('${l.id}')">مسح</button></div>`
-          : `<div class="card row2"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span style="flex:1">${esc(l.s)}</span><button class="btn sm" onclick="${l.x[3]}">تم الشراء</button></div>`).join('');
+      const x = b.ls.map(l => {
+        if (b.k == 'parts') return `<div class="card row2"><span style="flex:1">${esc(l.s)}</span></div>`;
+        if (b.k == 'req') {
+          const ph = typeof rqTel == 'function' ? rqTel(l.s) : '';
+          return `<div class="card"><div class="row2"><span style="flex:1">${esc(l.s)}</span><button class="btn s sm" onclick="rqD('${l.id}')">مسح</button></div>${ph ? `<div class="sub"><a href="tel:${esc(ph)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a><button class="btn sm" onclick="rqWA('${l.id}')">${I('send')} إبلاغ واتساب</button></div>` : ''}</div>`;
+        }
+        return `<div class="card row2"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span style="flex:1">${esc(l.s)}</span><button class="btn sm" onclick="${l.x[3]}">تم الشراء</button></div>`;
+      }).join('');
       if (x) h += `<h3>${b.t}</h3>` + x; else if (c.em) h += `<h3>${b.t}</h3><p class="m">لا نقص</p>`;
     });
     if ((F == 'all' || F == 'phones') && c.st && !c.hs.includes('phones') && s.length)
