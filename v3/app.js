@@ -1,8 +1,39 @@
 /* ============================================================
    app.js — الهيكل: الرئيسية، البحث، المزيد، المستخدمون، القفل،
-   النسخ الاحتياطي، الإعدادات العامة، والإقلاع.
+   النسخ الاحتياطي، الإعدادات العامة، الأيقونة العائمة، والإقلاع.
    يُحمَّل آخر ملف (بعد ملفات الأقسام).
    ============================================================ */
+
+/* ---------- أيقونات SVG إضافية حديثة (بدون إيموجي) ---------- */
+Object.assign(IC, {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
+  palette: '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.12-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.56-2.5 5.56-5.55C21.97 6.01 17.46 2 12 2z"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  keyboard: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/>',
+  hash: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>'
+});
+if (typeof SY_LOC !== 'undefined' && !SY_LOC.includes('fab')) SY_LOC.push('fab');
+
+/* تحديث زر التبديل في لوحة الأرقام ليستخدم أيقونات SVG بدل الإيموجي */
+window.pinPadHtml = function (id, ph = 'أدخل الرمز', onEnter = '') {
+  return `<div class="pin-wrap" id="${id}_wrap"><input id="${id}" type="hidden" value="" autocomplete="off" ${onEnter ? `onkeydown="if(event.key==='Enter')${onEnter}"` : ''}><div id="${id}_pad"><div id="${id}_dots" class="pin-dots" data-ph="${esc(ph)}"><span class="pin-ph">${esc(ph)}</span></div><div class="pin-grid">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" class="pkb" onclick="pkTap('${id}','${n}')">${n}</button>`).join('')}<button type="button" class="pkb fn" onclick="pkTap('${id}','C')">مسح</button><button type="button" class="pkb" onclick="pkTap('${id}','0')">0</button><button type="button" class="pkb fn" onclick="pkTap('${id}','B')">⌫</button></div></div><button type="button" id="${id}_sw" class="pin-sw" onclick="pkMode('${id}')">${I('keyboard')} الرمز فيه حروف؟ اضغط هنا للكتابة</button></div>`;
+};
+window.pkMode = function (id) {
+  const el = $(id), pad = $(id + '_pad'), sw = $(id + '_sw'), d = $(id + '_dots');
+  if (!el || !pad || !sw) return;
+  const ph = (d && d.getAttribute('data-ph')) || 'أدخل الرمز';
+  if (el.type === 'hidden') {
+    pad.hidden = true; el.type = 'password'; el.placeholder = ph + ' (حروف وأرقام)'; el.style.marginBottom = '8px';
+    sw.innerHTML = I('hash') + ' العودة للوحة الأرقام السريعة'; setTimeout(() => el.focus(), 50);
+  } else {
+    el.type = 'hidden'; pad.hidden = false; sw.innerHTML = I('keyboard') + ' الرمز فيه حروف؟ اضغط هنا للكتابة'; pkTap(id, '');
+  }
+};
 
 /* ---------- الأقسام ---------- */
 const SECS = [['phones', 'الهواتف', 'mobile'], ['glass', 'الأنتي كاس', 'shield'], ['case', 'البوشيط', 'box'], ['acc', 'الإكسسوارات', 'plug']];
@@ -27,17 +58,30 @@ function sq(q) {
 }
 function goSearch() { go('home'); setTimeout(() => { const i = document.querySelector('main input'); if (i) i.focus(); }, 60); }
 
+/* ---------- شريط النظرة السريعة في الرئيسية ---------- */
+function homeQuickBar() {
+  const rpIn = S.rp.filter(r => r.st == 'in').length;
+  const rpRd = S.rp.filter(r => r.st == 'rd').length;
+  const rpTot = rpIn + rpRd;
+  const need = typeof invLines == 'function' ? invLines(false).length : 0;
+  return `<div class="qbar">`
+    + `<button class="qpill rp" onclick="go('rp',{tab:'${rpRd ? 'rd' : 'in'}'})"><div class="qic">${ic('tool')}</div><div class="qtxt"><b>الصيانة: ${rpTot}</b><span>${rpRd ? rpRd + ' جاهز للتسليم' : (rpIn ? rpIn + ' قيد الإصلاح' : 'لا أجهزة حالياً')}</span></div></button>`
+    + `<button class="qpill ${need ? 'al' : 'ok'}" onclick="go('rep')"><div class="qic">${ic(need ? 'alert' : 'check')}</div><div class="qtxt"><b>${need ? 'نواقص: ' + need : 'المخزون مكتمل'}</b><span>${need ? 'تحتاج للشراء' : 'لا توجد نواقص'}</span></div></button>`
+    + `</div>`;
+}
+HOME.top.push(homeQuickBar);
+
 /* ---------- الرئيسية ---------- */
 const bkHide = () => { try { localStorage.setItem('bkHide', Date.now()); } catch (e) { } render(); };
 VW.home = () => {
   const old = isAdmin() && (S.items.length || S.rp.length) && Date.now() - (S.cfg.lb || 0) > 7 * 864e5;
   let hid = 0; try { hid = Date.now() - (+localStorage.getItem('bkHide') || 0) < 864e5; } catch (e) { }
-  const bk = old && !hid ? `<div class="bkb"><span>لم تُحفظ نسخة خارجية منذ أسبوع</span><button class="btn sm" onclick="BKP()">حفظ</button><button class="bkx" onclick="bkHide()" aria-label="إغلاق">✕</button></div>` : '';
+  const bk = old && !hid ? `<div class="bkb">${I('alert')}<span>لم تُحفظ نسخة خارجية منذ أسبوع</span><button class="btn sm" onclick="BKP()">حفظ</button><button class="bkx" onclick="bkHide()" aria-label="إغلاق">✕</button></div>` : '';
   const call = L => L.map(f => f()).join('');
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
-      + `<input placeholder="ابحث..." value="${esc(Q)}" oninput="sq(this.value)"><div id="sc">${scopeChips()}</div>`
+      + `<input placeholder="ابحث عن هاتف، زجاج، بوشيط، صيانة..." value="${esc(Q)}" oninput="sq(this.value)"><div id="sc">${scopeChips()}</div>`
       + call(HOME.tools) + '<div id="res"></div><h3>الأقسام</h3>'
       + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc" onclick="go('sec',{k:'${k}'})">${ic(i)}<b>${n}</b><span class="m">${secCount(k)} صنف</span></button>`).join('')}</div>`
       + call(HOME.after),
@@ -45,32 +89,90 @@ VW.home = () => {
   };
 };
 
-/* ---------- المزيد ---------- */
-const MG = [['sec', 'أقسام المحل', 'الوسوم والحدود والخانات الخاصة بكل قسم'], ['rep', 'التقرير'], ['look', 'الشكل والنماذج'], ['lim', 'الحدود والتنبيهات'], ['usr', 'المستخدمون والأمان'], ['data', 'البيانات والنسخ']];
+/* ---------- المزيد (منظم بأقسام مستقلة) ---------- */
+const MG = [
+  ['sec', 'أقسام المحل والوسوم', 'إعدادات الهواتف، الزجاج، البوشيط، الإكسسوارات، الصيانة، والوسوم', 'grid'],
+  ['look', 'المظهر والعرض', 'الثيم، حجم الخط، الأيقونة العائمة، تلوين البطاقات، والحقول', 'palette'],
+  ['rep', 'التقرير والحدود', 'تخصيص التقرير اليومي وحدود التنبيه والقفل التلقائي', 'bell'],
+  ['usr', 'المستخدمون والأمان', 'حسابات الموظفين، الصلاحيات، ورمز القفل السريع', 'users'],
+  ['data', 'المزامنة والنسخ الاحتياطي', 'المزامنة بين الأجهزة، حفظ واستعادة النسخ، والنسخ التلقائية', 'database']
+];
 VW.st = () => ({
   t: 'المزيد',
-  h: MG.map(([k, t, d]) => {
-    const L = MORE.filter(x => x.g == k).sort((a, b) => (a.o || 50) - (b.o || 50));
-    return L.length ? `<h3>${t}</h3>` + (d ? `<p class="m">${d}</p>` : '') + L.map(x => row(x.l, x.fn, x.n ? x.n() : '')).join('') : '';
+  h: MG.map(([k, t, d, icon]) => {
+    const L = MORE.filter(x => x.g == k || (k == 'rep' && x.g == 'lim'));
+    if (!L.length) return '';
+    return `<button class="card st-card" onclick="go('st_grp',{g:'${k}'})"><div class="st-ic">${ic(icon)}</div><div class="st-txt"><b>${t}</b><div class="m">${d}</div></div><span class="st-arr">${ic('back')}</span></button>`;
   }).join('')
+  + `<button class="card st-card" onclick="go('st_trash')"><div class="st-ic">${ic('trash')}</div><div class="st-txt"><b>سلة المحذوفات</b><div class="m">استرجاع ما حُذف خلال آخر 30 يوماً${S.trash.length ? ' (' + S.trash.length + ')' : ''}</div></div><span class="st-arr">${ic('back')}</span></button>`
 });
+VW.st_grp = () => {
+  const g = V.g || 'sec', info = MG.find(x => x[0] == g) || MG[0];
+  const L = MORE.filter(x => x.g == g || (g == 'rep' && x.g == 'lim')).sort((a, b) => (a.o || 50) - (b.o || 50));
+  return {
+    t: info[1],
+    h: `<p class="m">${info[2]}</p>` + L.map(x => row(x.l, x.fn, x.n ? x.n() : '')).join('')
+  };
+};
 MORE.push(
-  { g: 'look', o: 10, l: 'المظهر', fn: "go('st_look')" },
-  { g: 'lim', o: 10, l: 'حدود النفاد والقفل التلقائي', fn: "go('st_lim')" },
+  { g: 'look', o: 10, l: 'الثيم وحجم الخط والأيقونة العائمة', fn: "go('st_look')" },
+  { g: 'lim', o: 20, l: 'حدود النفاد والقفل التلقائي', fn: "go('st_lim')" },
   { g: 'usr', o: 10, l: 'المستخدمون والصلاحيات', fn: "go('st_users')" },
   { g: 'usr', o: 20, l: 'رمز القفل السريع', fn: 'lkSet()', n: () => S.cfg.lk ? 'مُعيَّن' : 'غير مُعيَّن' },
   { g: 'data', o: 20, l: 'النسخ الاحتياطي والاستعادة', fn: "go('st_bk')" },
-  { g: 'data', o: 30, l: 'المحذوفات', fn: "go('st_trash')", n: () => S.trash.length || '' },
-  { g: 'data', o: 40, l: 'كل الوسوم (قائمة كاملة)', fn: "go('st_tags')" }
+  { g: 'sec', o: 60, l: 'كل الوسوم (قائمة كاملة)', fn: "go('st_tags')" }
 );
 
-/* ---------- المظهر ---------- */
-const THM=[['a','تلقائي','يتبدّل بين النهاري والليلي مع الهاتف',['#f4f6fa','#0b1220','#2563eb']],['l','نقي','فاتح · أزرق',['#f4f6fa','#ffffff','#2563eb']],['d','ليل','داكن · أزرق',['#0b1220','#131c2e','#4f8cff']],['g','زمرد','فاتح · أخضر',['#f2f7f4','#ffffff','#059669']],['v','بنفسجي','داكن · بنفسجي',['#130f1f','#1c1630','#8b5cf6']],['w','دافئ','ورقي · برتقالي',['#f8f3ea','#fffdf8','#d9480f']]];
-VW.st_look = () => ({
-  t: 'المظهر',
-  h: '<h3>الثيم (لهذا الجهاز فقط)</h3>' + THM.map(([k, n, d, c]) => { const on = (S.cfg.th || 'a') == k; return `<button class="card row2 ${on ? 'sel' : ''}" onclick="upd(()=>S.cfg.th='${k}')"><span class="sw3">${c.map(x => `<i style="background:${x}"></i>`).join('')}</span><b>${n}<div class="m" style="font-weight:400">${d}</div></b>${on ? I('check') : ''}</button>`; }).join('')
-    + '<h3>حجم الخط</h3>' + [[15, 'صغير'], [17, 'عادي'], [19, 'كبير'], [21, 'أكبر']].map(([v, l]) => `<button class="tag ${S.cfg.fs == v ? 'on' : ''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')
-});
+/* ---------- المظهر والأيقونة العائمة ---------- */
+const THM = [['a', 'تلقائي', 'يتبدّل بين النهاري والليلي مع الهاتف', ['#f4f6fa', '#0b1220', '#2563eb']], ['l', 'نقي', 'فاتح · أزرق', ['#f4f6fa', '#ffffff', '#2563eb']], ['d', 'ليل', 'داكن · أزرق', ['#0b1220', '#131c2e', '#4f8cff']], ['g', 'زمرد', 'فاتح · أخضر', ['#f2f7f4', '#ffffff', '#059669']], ['v', 'بنفسجي', 'داكن · بنفسجي', ['#130f1f', '#1c1630', '#8b5cf6']], ['w', 'دافئ', 'ورقي · برتقالي', ['#f8f3ea', '#fffdf8', '#d9480f']]];
+VW.st_look = () => {
+  const fabOn = S.cfg.fab !== 0;
+  return {
+    t: 'المظهر والعرض',
+    h: '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
+      + `<button class="card row2" onclick="upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة والبحث السريع</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
+      + '<h3>الثيم (لهذا الجهاز فقط)</h3>' + THM.map(([k, n, d, c]) => { const on = (S.cfg.th || 'a') == k; return `<button class="card row2 ${on ? 'sel' : ''}" onclick="upd(()=>S.cfg.th='${k}')"><span class="sw3">${c.map(x => `<i style="background:${x}"></i>`).join('')}</span><b>${n}<div class="m" style="font-weight:400">${d}</div></b>${on ? I('check') : ''}</button>`; }).join('')
+      + '<h3>حجم الخط</h3>' + [[15, 'صغير'], [17, 'عادي'], [19, 'كبير'], [21, 'أكبر']].map(([v, l]) => `<button class="tag ${S.cfg.fs == v ? 'on' : ''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')
+  };
+};
+
+/* ---------- الأيقونة العائمة الذكية (FAB) ---------- */
+function fabAct() {
+  if (V.v == 'sec') {
+    if (V.k == 'phones') return phAdd();
+    if (V.k == 'glass') return glAdd();
+    if (V.k == 'case') return csAdd();
+    if (V.k == 'acc') return acAdd();
+  }
+  if (V.v == 'rp') return rEd(null);
+  if (V.v == 'gd') return gdEd(null);
+  $('sh').innerHTML = `<div class="bar"></div><h3>إجراء سريع</h3>`
+    + `<button class="btn" onclick="finish(1)">${I('mobile')} + إضافة هاتف</button>`
+    + `<button class="btn s" onclick="finish(2)">${I('tool')} + استلام صيانة</button>`
+    + `<button class="btn s" onclick="finish(3)">${I('scan')} مسح باركود أو IMEI</button>`
+    + `<button class="btn s" onclick="finish(4)">${I('chat')} تسجيل طلب زبون</button>`
+    + `<button class="btn s" onclick="finish(null)">إلغاء</button>`;
+  sheetOpen(w => {
+    if (w == 1) phAdd();
+    else if (w == 2) rEd(null);
+    else if (w == 3) bcHome();
+    else if (w == 4) rq();
+  });
+}
+function fabUpd() {
+  let el = $('fab');
+  if (!el) {
+    document.body.insertAdjacentHTML('beforeend', '<div id="fab" hidden></div>');
+    el = $('fab');
+  }
+  const show = S.cfg.fab !== 0 && ['home', 'sec', 'rp', 'gd'].includes(V.v);
+  el.hidden = !show;
+  if (!show) return;
+  el.innerHTML = (V.v != 'home' ? `<button class="fab-b s" onclick="goSearch()" aria-label="بحث">${ic('search')}</button>` : '')
+    + `<button class="fab-b" onclick="fabAct()" aria-label="إضافة">${ic('plus')}</button>`;
+}
+const _origRender = render;
+render = function () { _origRender(); fabUpd(); };
 
 /* ---------- الحدود ---------- */
 VW.st_lim = () => ({
@@ -231,34 +333,33 @@ setInterval(() => {
 
 /* ---------- النسخ الاحتياطي ---------- */
 /* تشفير بيانات الزبائن داخل ملف النسخة */
-async function bkKey(pin){
-  const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveKey']);
-  return crypto.subtle.deriveKey({name:'PBKDF2',salt:new TextEncoder().encode('aziz-bk-v1'),iterations:150000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+async function bkKey(pin) {
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: new TextEncoder().encode('aziz-bk-v1'), iterations: 150000, hash: 'SHA-256' }, k, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
-async function bkEncObj(obj,pin){
-  const key=await bkKey(pin),iv=crypto.getRandomValues(new Uint8Array(12));
-  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(obj))));
-  const out=new Uint8Array(12+ct.length);out.set(iv);out.set(ct,12);
-  let s='';for(let i=0;i<out.length;i+=8192)s+=String.fromCharCode.apply(null,out.subarray(i,i+8192));
+async function bkEncObj(obj, pin) {
+  const key = await bkKey(pin), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(obj))));
+  const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
+  let s = ''; for (let i = 0; i < out.length; i += 8192)s += String.fromCharCode.apply(null, out.subarray(i, i + 8192));
   return btoa(s);
 }
-async function bkDecObj(b64,pin){
-  const key=await bkKey(pin),u=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
-  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:u.subarray(0,12)},key,u.subarray(12));
+async function bkDecObj(b64, pin) {
+  const key = await bkKey(pin), u = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, key, u.subarray(12));
   return JSON.parse(new TextDecoder().decode(pt));
 }
-async function makeSafeBackupJson(pinOrHash){
-  const copy=JSON.parse(JSON.stringify(S));
-  const resMap={};
-  (copy.items||[]).forEach(i=>{if(i.res){resMap[i.id]=i.res;delete i.res}});
-  const custData={rp:copy.rp||[],req:copy.req||[],res:resMap,trash:(copy.trash||[]).filter(t=>t.coll=='rp')};
-  copy._encCust=await bkEncObj(custData,pinOrHash);
-  copy.rp=[];copy.req=[];copy.trash=(copy.trash||[]).filter(t=>t.coll!='rp');
-  delete copy.pin;if(copy.cfg)delete copy.cfg.lk;
-  (copy.users||[]).forEach(u=>delete u.pin);
+async function makeSafeBackupJson(pinOrHash) {
+  const copy = JSON.parse(JSON.stringify(S));
+  const resMap = {};
+  (copy.items || []).forEach(i => { if (i.res) { resMap[i.id] = i.res; delete i.res; } });
+  const custData = { rp: copy.rp || [], req: copy.req || [], res: resMap, trash: (copy.trash || []).filter(t => t.coll == 'rp') };
+  copy._encCust = await bkEncObj(custData, pinOrHash);
+  copy.rp = []; copy.req = []; copy.trash = (copy.trash || []).filter(t => t.coll != 'rp');
+  delete copy.pin; if (copy.cfg) delete copy.cfg.lk;
+  (copy.users || []).forEach(u => delete u.pin);
   return JSON.stringify(copy);
 }
-
 
 let AB_T = 0, AB_FH = null;
 /* النسخ التلقائية داخل الهاتف (IndexedDB): آخر حفظ + نسخة يومية (آخر 7 أيام) + نسخة قبل كل استعادة (آخر 3). الصور تُستثنى لخفة الحجم. */
@@ -356,9 +457,9 @@ function abStatus() {
   AUTOBK.get('latest').then(r => {
     const el = $('st_ab'); if (!el) return;
     const old = !r || Date.now() - r.at > 2 * 864e5;
-    el.innerHTML = r ? (old ? '⚠️ آخر نسخة تلقائية قديمة: <bdi>' + fd(r.at) + '</bdi>' : '✅ آخر نسخة تلقائية: <bdi>' + fd(r.at) + '</bdi>') : '⚠️ لا توجد نسخة تلقائية بعد';
+    el.innerHTML = r ? (old ? I('alert') + ' آخر نسخة تلقائية قديمة: <bdi>' + fd(r.at) + '</bdi>' : I('check') + ' آخر نسخة تلقائية: <bdi>' + fd(r.at) + '</bdi>') : I('alert') + ' لا توجد نسخة تلقائية بعد';
     if (old) el.style.color = '#dc2626';
-  }).catch(() => { const el = $('st_ab'); if (el) { el.textContent = '⚠️ تعذر قراءة النسخ التلقائية'; el.style.color = '#dc2626'; } });
+  }).catch(() => { const el = $('st_ab'); if (el) { el.innerHTML = I('alert') + ' تعذر قراءة النسخ التلقائية'; el.style.color = '#dc2626'; } });
 }
 VW.st_bk = () => {
   const n = (localStorage.getItem('shop3') || '').length, p = Math.round(n / 5e4), er = JSON.parse(localStorage.getItem('shopErr') || '[]');
@@ -366,7 +467,7 @@ VW.st_bk = () => {
     t: 'النسخ الاحتياطي',
     h: '<p class="m">يتم تشفير بيانات الزبائن الحساسة (الصيانة، الطلبات، الحجوزات) داخل ملف النسخة الاحتياطية لحمايتها من التسريب.</p>'
       + '<button class="btn" onclick="BKP()">حفظ ملف النسخة في الهاتف (محمي)</button>'
-      + (window.showSaveFilePicker ? `<button class="btn s" onclick="linkAutoFile()">${AB_FH ? '✅ مرتبط بملف تلقائي (اضغط لتغييره)' : 'ربط ملف حفظ تلقائي مباشر بالهاتف'}</button>` : '')
+      + (window.showSaveFilePicker ? `<button class="btn s" onclick="linkAutoFile()">${AB_FH ? I('check') + ' مرتبط بملف تلقائي (اضغط لتغييره)' : 'ربط ملف حفظ تلقائي مباشر بالهاتف'}</button>` : '')
       + '<button class="btn s" onclick="go(\'st_snap\')">النسخ التلقائية الداخلية (آخر 7 أيام)</button>'
       + '<label>استعادة من ملف خارجي<input type="file" accept=".json" onchange="RST(this.files[0])"></label>'
       + `<h3>المساحة المستعملة</h3><div class="card"><div class="row2"><b>${p}%</b><span class="m">${(n / 1e6).toFixed(1)} مليون حرف من نحو 5</span></div><div class="meter"><div style="width:${Math.min(100, p)}%;background:${p > 70 ? '#dc2626' : 'var(--p)'}"></div></div>${p > 70 ? '<p class="m">اقتربت المساحة من الامتلاء. خذ نسخة احتياطية الآن.</p>' : ''}</div>`
