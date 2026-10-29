@@ -51,7 +51,7 @@ function cleanOldRpMedia() {
   S.rp.forEach(r => {
     if (r.st == 'dn' && (r.lock || (r.pat && r.pat.length))) { r.lock = ''; r.pat = []; chg = 1; }   // رمز/نمط قفل الزبون يُمحى فور التسليم
     if (r.st != 'dn' || !r.t2) return;
-    if (now - r.t2 > Math.max(base, ((+r.war || 0) + 3) * 864e5) && (r.img || r.lock || (r.pat && r.pat.length))) {
+    if (now - r.t2 > base && (r.img || IMG[r.id] || r.lock || (r.pat && r.pat.length))) {
       r.img = ''; r.lock = ''; r.pat = []; MEDIA.del(r.id).catch(e => errLog('حذف صورة قديمة: ' + (e && e.message || e))); delete IMG[r.id]; chg = 1;
     }
   });
