@@ -131,15 +131,18 @@ function rForm(rec) {
   fsInit([], {}, 'rp', rec);
   const f = (k, l, v, t, o) => `<label${hh('rp', { c: 'cap', d: 'dep', p: 'part', l: 'lock', o: 'note' }[k] || '')}>${l}<input id="r_${k}" ${t ? `type="${t}"` : ''} ${o || ''} value="${esc(v || '')}"></label>`;
   const shownImg = ZI.startsWith('data:') ? ZI : (rec.id && IMG[rec.id]) || '';
-  $('sh').innerHTML = `<div class="bar"></div><h3>${rec.id ? 'تعديل' : 'استلام هاتف'}</h3>${f('n', 'اسم الزبون', rec.name)}${f('t', 'رقم الهاتف', rec.tel, 'tel', 'oninput="rH()"')}<div id="rh" class="m"></div>`
-    + `<div style="margin-bottom:6px">${S.tags.brand.map((b, j) => `<button type="button" class="tag" onclick="pickRpBrand(${j})">${esc(b)}</button>`).join('')}</div>${f('v', 'نوع الهاتف', rec.dev, '', 'oninput="checkDeviceHistory();suggestGuidePrice()"')}<div id="rp_dev_hist" class="m" style="color:#d97706;font-weight:700"></div>`
+  const lockOpen = rec.part || rec.lock || (rec.pat && rec.pat.length) ? ' open' : '';
+  $('sh').innerHTML = `<div class="bar"></div><h3 style="color:var(--t)">${rec.id ? 'تعديل' : 'استلام هاتف'}</h3>`
+    + `<h3>الزبون</h3>${f('n', 'اسم الزبون', rec.name)}${f('t', 'رقم الهاتف', rec.tel, 'tel', 'oninput="rH()"')}<div id="rh" class="m"></div>`
+    + `<h3>الجهاز</h3><div style="margin-bottom:6px">${S.tags.brand.map((b, j) => `<button type="button" class="tag" onclick="pickRpBrand(${j})">${esc(b)}</button>`).join('')}</div>${f('v', 'نوع الهاتف', rec.dev, '', 'oninput="checkDeviceHistory();suggestGuidePrice()"')}<div id="rp_dev_hist" class="m" style="color:#d97706;font-weight:700"></div>`
     + `<label${hh('rp', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="r_imei" value="${esc(rec.imei || '')}" placeholder="امسح باركود العلبة أو *#06#" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('r_imei')">${I('scan')} مسح</button></div></label>`
-    + `<div style="margin-bottom:6px">${S.tags.fault.map((x, j) => `<button type="button" class="tag" onclick="pickRpFault(${j})">${esc(x)}</button>`).join('')}</div>${f('f', 'العطل (المشكل)', rec.fault, '', 'oninput="suggestGuidePrice()"')}`
-    + `<div${hh('rp', 'chk')}><label>حالة الجهاز عند الاستلام</label><div id="rk"></div></div>${f('c', 'السعر المتفق (رقم، أو: اتصل، أو من 100 إلى 150)', rec.cap)}<div id="rp_price_hint" style="margin-top:4px"></div>${f('d', 'العربون', rec.dep, 'tel')}`
+    + `<div${hh('rp', 'img')}><label>صورة الهاتف</label><div class="row2"><button type="button" class="btn s sm" onclick="rCam()">التقاط صورة</button><button type="button" id="r_imx" class="btn s sm" onclick="rImDel()" ${shownImg ? '' : 'hidden'}>حذف الصورة</button></div><img id="r_im" ${shownImg ? `src="${shownImg}"` : 'hidden'} style="width:100%;border-radius:10px;margin-top:8px"><input id="r_i" type="file" accept="image/*" capture="environment" hidden onchange="rIM(this.files[0])"></div>`
+    + `<h3>العطل</h3><div style="margin-bottom:6px">${S.tags.fault.map((x, j) => `<button type="button" class="tag" onclick="pickRpFault(${j})">${esc(x)}</button>`).join('')}</div>${f('f', 'العطل (المشكل)', rec.fault, '', 'oninput="suggestGuidePrice()"')}`
+    + `<div${hh('rp', 'chk')}><label>حالة الجهاز عند الاستلام</label><div id="rk"></div></div>`
+    + `<h3>السعر والضمان</h3>${f('c', 'السعر المتفق (رقم، أو: اتصل، أو من 100 إلى 150)', rec.cap)}<div id="rp_price_hint" style="margin-top:4px"></div>${f('d', 'العربون', rec.dep, 'tel')}`
     + `<label${hh('rp', 'war')}>ضمان الإصلاح (يبدأ من تاريخ التسليم)<div style="margin:4px 0">${WAR_OPTS.map(([d, l]) => `<button type="button" class="tag war-tg ${ZW === d ? 'on' : ''}" onclick="setRpWar(${d})">${l}</button>`).join('')}</div><input id="r_war" type="tel" value="${ZW || ''}" placeholder="أو اكتب عدد أيام الضمان (0 = بدون ضمان)" oninput="setRpWar(+this.value||0,1)"></label>`
-    + `${f('p', 'ينتظر قطعة (اختياري)', rec.part)}${f('l', 'رمز PIN (إن وجد)', rec.lock)}`
-    + `<div${hh('rp', 'pat')}><label>نمط القفل (ارسمه بإصبعك)</label><svg id="zsv" viewBox="0 0 120 120" width="150" style="touch-action:none;background:var(--bg);border-radius:12px" onpointerdown="ZD=1;rP(event,1)" onpointermove="if(ZD)rP(event)" onpointerup="ZD=0" onpointercancel="ZD=0">${PI(ZP)}</svg> <button class="btn s sm" onclick="ZP=[];$('zsv').innerHTML=PI(ZP)">مسح</button></div>`
-    + `<div${hh('rp', 'img')}><label>التقاط صورة الهاتف<input id="r_i" type="file" accept="image/*" capture="environment" onchange="rIM(this.files[0])"></label><img id="r_im" ${shownImg ? `src="${shownImg}"` : 'hidden'} style="width:100%;border-radius:10px"></div>`
+    + `<details class="card" style="padding:10px 12px;margin-top:16px"${lockOpen}><summary><b>خيارات إضافية</b> <span class="m">(قطعة منتظرة، PIN، نمط القفل)</span></summary>${f('p', 'ينتظر قطعة (اختياري)', rec.part)}${f('l', 'رمز PIN (إن وجد)', rec.lock)}`
+    + `<div${hh('rp', 'pat')}><label>نمط القفل (ارسمه بإصبعك)</label><svg id="zsv" viewBox="0 0 120 120" width="150" style="touch-action:none;background:var(--bg);border-radius:12px" onpointerdown="ZD=1;rP(event,1)" onpointermove="if(ZD)rP(event)" onpointerup="ZD=0" onpointercancel="ZD=0">${PI(ZP)}</svg> <button type="button" class="btn s sm" onclick="ZP=[];$('zsv').innerHTML=PI(ZP)">مسح</button></div></details>`
     + `<div id="fx"></div>${f('o', 'ملاحظة', '', '', '').replace(/<input id="r_o"[^>]*>/, `<textarea id="r_o">${esc(rec.note || '')}</textarea>`)}<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="rSave()">حفظ</button></div>`;
   rKc(); rH(); fxR(); checkDeviceHistory(); suggestGuidePrice();
 }
@@ -148,7 +151,26 @@ function setRpWar(d, typing) {
   document.querySelectorAll('.war-tg').forEach((b, k) => b.classList.toggle('on', WAR_OPTS[k] && WAR_OPTS[k][0] === ZW));
 }
 function rP(e, d) { const b = $('zsv').getBoundingClientRect(), x = (e.clientX - b.left) / b.width * 120, y = (e.clientY - b.top) / b.height * 120; if (d) ZP = []; for (let i = 0; i < 9; i++) if (!ZP.includes(i) && Math.hypot(20 + 40 * (i % 3) - x, 20 + 40 * Math.floor(i / 3) - y) < 14) ZP.push(i); $('zsv').innerHTML = PI(ZP); }
-function rIM(f) { if (!f) return; const im = new Image(); im.onload = () => { const k = Math.min(1, 560 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = im.width * k; c.height = im.height * k; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ZI = c.toDataURL('image/jpeg', .55); $('r_im').src = ZI; $('r_im').hidden = false; }; im.src = URL.createObjectURL(f); }
+function rShowIm() { const m = $('r_im'); if (!m) return; m.src = ZI; m.hidden = false; if ($('r_imx')) $('r_imx').hidden = false; }
+function rImDel() { ZI = ''; const m = $('r_im'); if (m) { m.hidden = true; m.removeAttribute('src'); } if ($('r_imx')) $('r_imx').hidden = true; }
+function rIM(f) { if (!f) return; const im = new Image(); im.onload = () => { const k = Math.min(1, 560 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = im.width * k; c.height = im.height * k; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ZI = c.toDataURL('image/jpeg', .55); rShowIm(); }; im.src = URL.createObjectURL(f); }
+/* كاميرا داخل النموذج (بدل اختيار ملف) — إن لم تُمنح الصلاحية نعود لاختيار الملف */
+let CAMS = null;
+function camStop() { if (CAMS) { CAMS.getTracks().forEach(t => t.stop()); CAMS = null; } const b = $('cam_box'); if (b) b.remove(); }
+function rCam() {
+  if ($('cam_box')) return camStop();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return $('r_i').click();
+  $('r_im').insertAdjacentHTML('beforebegin', '<div id="cam_box" class="card" style="margin:8px 0;padding:10px;text-align:center"><video id="cam_v" autoplay playsinline muted style="width:100%;border-radius:12px"></video><div class="row2" style="margin-top:8px"><button type="button" class="btn sm" style="flex:1" onclick="camSnap()">التقاط</button><button type="button" class="btn s sm" onclick="camStop()">إلغاء</button></div></div>');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(s => {
+    const v = $('cam_v'); if (!v) { s.getTracks().forEach(t => t.stop()); return; } CAMS = s; v.srcObject = s;
+  }).catch(() => { camStop(); toast('تعذر فتح الكاميرا: اختر صورة من الجهاز'); $('r_i').click(); });
+}
+function camSnap() {
+  const v = $('cam_v'); if (!v || !v.videoWidth) return toast('انتظر ظهور الصورة ثم اضغط التقاط');
+  const k = Math.min(1, 560 / Math.max(v.videoWidth, v.videoHeight)), c = document.createElement('canvas'); c.width = v.videoWidth * k; c.height = v.videoHeight * k;
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); ZI = c.toDataURL('image/jpeg', .55); camStop(); rShowIm();
+}
+HK.hide.push(camStop);
 function rKc() { $('rk').innerHTML = RK.map(k => `<button class="tag ${ZK.includes(k) ? 'on' : ''}" onclick="rKt('${k}')">${k}</button>`).join(''); }
 function rKt(k) { ZK = ZK.includes(k) ? ZK.filter(x => x != k) : [...ZK, k]; rKc(); }
 function rH() {   // زبون سابق + تنبيه ضمان ساري
