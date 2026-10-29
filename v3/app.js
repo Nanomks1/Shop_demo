@@ -123,21 +123,25 @@ VW.st_users = () => {
 };
 const adm = () => S.users.filter(u => u.admin).length;
 const uAdd = needAdm(function () {
-  ask('مستخدم جديد', [{ k: 'n', l: 'الاسم' }, { k: 'r', l: 'الدور', t: 'sel', o: ['موظف', 'مدير'], v: 'موظف' }, { k: 'p', l: 'رمز الموظف بالأرقام (اختياري)', t: 'password' }]).then(v => {
-    if (v && v.n.trim()) upd(() => { const u = { name: v.n.trim(), admin: v.r == 'مدير' }; if (v.p && !u.admin) u.pin = hs(v.p); S.users.push(u); });
+  ask('مستخدم جديد', [{ k: 'n', l: 'الاسم' }, { k: 'r', l: 'الدور', t: 'sel', o: ['موظف', 'مدير'], v: 'موظف' }, { k: 'p', l: 'رمز الموظف بالأرقام (إجباري للموظف، 4 على الأقل)', t: 'password' }]).then(v => {
+    if (!v || !v.n.trim()) return;
+    const isA = v.r == 'مدير';
+    if (!isA && !(v.p && v.p.length >= 4)) return toast('رمز الموظف إجباري (4 أرقام على الأقل)');
+    upd(() => { const u = { name: v.n.trim(), admin: isA }; if (!isA) u.pin = hs(v.p); S.users.push(u); });
   });
 });
 const uEd = needAdm(function (i) {
   const u = S.users[i];
   const F = [{ k: 'r', l: 'الدور', t: 'sel', o: ['موظف', 'مدير'], v: u.admin ? 'مدير' : 'موظف' }, { k: 'p', l: 'رمز جديد للموظف (فارغ = بلا تغيير)' + (u.pin ? ' — له رمز حالياً' : ''), t: 'password' }];
-  if (u.pin) F.push({ k: 'd', l: 'حذف رمز الموظف؟', t: 'sel', o: ['لا', 'نعم'], v: 'لا' });
   F.push({ k: 'x', l: 'حذف المستخدم؟', t: 'sel', o: ['لا', 'نعم'], v: 'لا' });
   ask(u.name, F).then(v => {
     if (!v) return;
     if ((v.x == 'نعم' || v.r == 'موظف') && u.admin && adm() < 2) return toast('يجب أن يبقى مدير واحد على الأقل');
+    if (v.x != 'نعم' && v.r == 'موظف' && v.p && v.p.length < 4) return toast('الرمز 4 أرقام على الأقل');
+    if (v.x != 'نعم' && v.r == 'موظف' && !u.pin && !v.p) return toast('رمز الموظف إجباري: اكتب رمزاً جديداً للموظف');
     upd(() => {
       if (v.x == 'نعم') S.users.splice(i, 1);
-      else { u.admin = v.r == 'مدير'; if (u.admin) delete u.pin; else if (v.p) u.pin = hs(v.p); else if (v.d == 'نعم') delete u.pin; }
+      else { u.admin = v.r == 'مدير'; if (u.admin) delete u.pin; else if (v.p) u.pin = hs(v.p); }
     });
   });
 });

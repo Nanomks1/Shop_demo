@@ -49,6 +49,7 @@ const lblToWar = s => { const m = String(s || '').match(/\d+/); return m ? +m[0]
 function cleanOldRpMedia() {
   const now = Date.now(), base = lim('rpKeep') * 864e5; let chg = 0;
   S.rp.forEach(r => {
+    if (r.st == 'dn' && (r.lock || (r.pat && r.pat.length))) { r.lock = ''; r.pat = []; chg = 1; }   // رمز/نمط قفل الزبون يُمحى فور التسليم
     if (r.st != 'dn' || !r.t2) return;
     if (now - r.t2 > Math.max(base, ((+r.war || 0) + 3) * 864e5) && (r.img || r.lock || (r.pat && r.pat.length))) {
       r.img = ''; r.lock = ''; r.pat = []; MEDIA.del(r.id).catch(e => errLog('حذف صورة قديمة: ' + (e && e.message || e))); delete IMG[r.id]; chg = 1;
@@ -112,7 +113,7 @@ function rDV(id, pre) {
     const again = e => rDV(id, { p: v.p, dnote: v.dnote, tested: v.tested, war: lblToWar(v.war), err: e });
     if (r.res == 'ok' && v.tested == DVO[0]) return again(1);
     if (v.p.trim() !== '' && !sn1(v.p)) { toast('اكتب المبلغ رقماً فقط (مثال 100)'); return again(0); }
-    commit('تم التسليم', () => { r.st = 'dn'; r.t2 = Date.now(); r.dby = S.me; r.paid = v.p.trim() || '0'; r.tst = v.tested == DVO[1] ? Date.now() : 0; if (r.res == 'ok') r.war = lblToWar(v.war); r.dnote = (v.dnote || '').trim(); });
+    commit('تم التسليم', () => { r.st = 'dn'; r.t2 = Date.now(); r.dby = S.me; r.lock = ''; r.pat = []; r.paid = v.p.trim() || '0'; r.tst = v.tested == DVO[1] ? Date.now() : 0; if (r.res == 'ok') r.war = lblToWar(v.war); r.dnote = (v.dnote || '').trim(); });
   });
 }
 /* واتساب: إبلاغ الزبون بجاهزية الهاتف فقط (مع IMEI والضمان) */
