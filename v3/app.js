@@ -325,9 +325,10 @@ async function makeSafeBackupJson(pinOrHash) {
   const copy = JSON.parse(JSON.stringify(S));
   const resMap = {};
   (copy.items || []).forEach(i => { if (i.res) { resMap[i.id] = i.res; delete i.res; } });
-  const custData = { rp: copy.rp || [], req: copy.req || [], res: resMap, trash: (copy.trash || []).filter(t => t.coll == 'rp') };
+  const CC = ['rp', 'used', 'debt'];
+  const custData = { rp: copy.rp || [], req: copy.req || [], used: copy.used || [], debt: copy.debt || [], res: resMap, trash: (copy.trash || []).filter(t => CC.includes(t.coll)) };
   copy._encCust = await bkEncObj(custData, pinOrHash);
-  copy.rp = []; copy.req = []; copy.trash = (copy.trash || []).filter(t => t.coll != 'rp');
+  copy.rp = []; copy.req = []; copy.used = []; copy.debt = []; copy.trash = (copy.trash || []).filter(t => !CC.includes(t.coll));
   delete copy.pin; if (copy.cfg) delete copy.cfg.lk;
   (copy.users || []).forEach(u => delete u.pin);
   return JSON.stringify(copy);
@@ -412,7 +413,7 @@ function RST(f) {
             let cust;
             try { cust = await bkDecObj(d._encCust, v.p); } catch (e1) { try { cust = await bkDecObj(d._encCust, hs(v.p)); } catch (e2) { cust = await bkDecObj(d._encCust, hsL(v.p)); } }
             delete d._encCust;
-            d.rp = cust.rp || []; d.req = cust.req || [];
+            d.rp = cust.rp || []; d.req = cust.req || []; d.used = cust.used || []; d.debt = cust.debt || [];
             (d.items || []).forEach(i => { if (cust.res && cust.res[i.id]) i.res = cust.res[i.id]; });
             d.trash = [...(d.trash || []), ...(cust.trash || [])];
             d.pin = d.pin || S.pin;

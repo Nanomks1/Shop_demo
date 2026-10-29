@@ -154,3 +154,10 @@ nav button.on .ic{background:var(--ab)}
 .qpill .qs{font-size:.72rem;color:var(--m)}
 /* الأسعار أوضح */
 .cmp-pr{font-size:1.05rem;font-weight:800}
+
+/* الإحصائيات: أعمدة بسيطة */
+.brow{display:flex;align-items:center;gap:8px;margin:7px 0}
+.brow .bl{flex:0 0 38%;font-size:.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .bt{flex:1;height:12px;background:var(--ab);border-radius:8px;overflow:hidden}
+.brow .bt i{display:block;height:100%;background:var(--p);border-radius:8px}
+.brow b{min-width:1.6rem;text-align:end;font-size:.88rem}
