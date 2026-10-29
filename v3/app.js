@@ -33,11 +33,13 @@ function goSearch() { go('home'); setTimeout(() => { const i = document.querySel
 function homeQuickBar() {
   const rpIn = S.rp.filter(r => r.st == 'in').length;
   const rpRd = S.rp.filter(r => r.st == 'rd').length;
-  const rpTot = rpIn + rpRd;
   const need = typeof invLines == 'function' ? invLines(false).length : 0;
+  const rq = (S.req || []).length;
+  const P = (cls, on, icn, n, l, sub) => `<button class="qpill ${cls}" onclick="${on}"><div class="qic">${ic(icn)}</div><div class="qn">${n}</div><div class="ql">${l}</div>${sub ? `<div class="qs">${sub}</div>` : ''}</button>`;
   return `<div class="qbar">`
-    + `<button class="qpill rp" onclick="go('rp',{tab:'${rpRd ? 'rd' : 'in'}'})"><div class="qic">${ic('tool')}</div><div class="qtxt"><b>الصيانة: ${rpTot}</b><span>${rpRd ? rpRd + ' جاهز للتسليم' : (rpIn ? rpIn + ' قيد الإصلاح' : 'لا أجهزة حالياً')}</span></div></button>`
-    + `<button class="qpill ${need ? 'al' : 'ok'}" onclick="go('rep')"><div class="qic">${ic(need ? 'alert' : 'check')}</div><div class="qtxt"><b>${need ? 'نواقص: ' + need : 'المخزون مكتمل'}</b><span>${need ? 'تحتاج للشراء' : 'لا توجد نواقص'}</span></div></button>`
+    + P('rp', `go('rp',{tab:'${rpRd ? 'rd' : 'in'}'})`, 'tool', rpIn + rpRd, 'في الصيانة', rpRd ? rpRd + ' جاهز للتسليم' : '')
+    + P(need ? 'al' : 'ok', "go('rep')", need ? 'alert' : 'check', need, 'نواقص المخزون', need ? '' : 'مكتمل')
+    + P(rq ? 'rp' : 'ok', "go('rep')", 'chat', rq, 'طلبات الزبائن', '')
     + `</div>`;
 }
 HOME.top.push(homeQuickBar);

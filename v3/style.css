@@ -144,3 +144,13 @@ nav button.on .ic{background:var(--ab)}
 .lockbox h2{text-align:center;margin:0}
 .m.c{text-align:center;margin:0}
 .meter{height:8px;border-radius:4px;background:var(--b);margin-top:8px;overflow:hidden}.meter div{height:8px;border-radius:4px}
+
+/* الشريط السريع: ثلاث بطاقات بأرقام كبيرة */
+.qbar{grid-template-columns:repeat(3,1fr);gap:8px}
+.qpill{flex-direction:column;justify-content:center;text-align:center;gap:3px;padding:12px 6px}
+.qpill .qic{width:2rem;height:2rem}
+.qpill .qn{font-size:1.7rem;font-weight:800;line-height:1.1}
+.qpill .ql{font-size:.78rem;font-weight:600;line-height:1.2}
+.qpill .qs{font-size:.72rem;color:var(--m)}
+/* الأسعار أوضح */
+.cmp-pr{font-size:1.05rem;font-weight:800}
