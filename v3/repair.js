@@ -59,11 +59,12 @@ function cleanOldRpMedia() {
 }
 cleanOldRpMedia();
 
-/* ---------- بطاقة الصيانة ---------- */
+/* ---------- بطاقة الصيانة (مع التمييز البصري للحالة) ---------- */
 function rc(r) {
   const n = Math.floor((Date.now() - r.t0) / 864e5), w = r.st == 'rd' ? Math.floor((Date.now() - (r.t1 || r.t0)) / 864e5) : 0, i = r.id, im = rImg(r), wi = warInfo(r);
+  const bCls = w > 15 || (r.st == 'rd' && r.res == 'fail') ? 'rp-late' : r.st == 'rd' && r.res == 'ok' ? 'rp-ok' : r.part && r.st == 'in' ? 'rp-wait' : r.st == 'in' ? 'rp-in' : '';
   const B = (t, f, p) => `<button class="btn ${p ? '' : 's'} sm" onclick="${f}">${t}</button>`;
-  return `<div class="card"><div class="row2">${im ? `<img onclick="rpZoom('${i}')" src="${im}" style="cursor:pointer;width:56px;height:56px;object-fit:cover;border-radius:10px">` : ''}<div style="flex:1"><b>${esc(r.name)}</b><div class="m">${esc(r.dev)} — ${esc(r.fault)}</div></div>${(r.pat || []).length > 1 ? `<svg viewBox="0 0 120 120" width="52">${PI(r.pat)}</svg>` : ''}</div>`
+  return `<div class="card ${bCls}"><div class="row2">${im ? `<img onclick="rpZoom('${i}')" src="${im}" style="cursor:pointer;width:56px;height:56px;object-fit:cover;border-radius:10px">` : ''}<div style="flex:1"><b>${esc(r.name)}</b><div class="m">${esc(r.dev)} — ${esc(r.fault)}</div></div>${(r.pat || []).length > 1 ? `<svg viewBox="0 0 120 120" width="52">${PI(r.pat)}</svg>` : ''}</div>`
     + `<div class="m"><a href="tel:${esc(r.tel)}">${esc(r.tel)}</a></div><div class="m">استلام: <bdi>${fd(r.t0)}</bdi> · ${esc(r.by)}${n && r.st != 'dn' ? ' · منذ ' + n + ' يوم' : ''}</div>`
     + (r.st == 'dn' ? `<div class="m">تسليم: <bdi>${fd(r.t2)}</bdi> · ${esc(r.dby || '')}</div>` : '') + (r.cap ? `<div class="m">السعر المتفق: ${esc(r.cap)}</div>` : '') + (r.dep ? `<div class="m">العربون: ${esc(r.dep)}</div>` : '') + (r.st == 'dn' ? `<div class="m">المقبوض: ${esc(r.paid)}</div>` : '')
     + (r.part ? `<div class="rs">ينتظر قطعة: ${esc(r.part)}</div>` : '') + ((r.chk || []).length ? `<div class="m">${esc(r.chk.join('، '))}</div>` : '') + (r.lock ? `<div class="m">PIN: ${esc(r.lock)}</div>` : '') + (w > 15 ? `<div class="rs">منسي منذ ${w} يوم</div>` : '')
@@ -85,7 +86,7 @@ VW.rp = () => {
   const tab = V.tab || 'in';
   return {
     t: 'الصيانة',
-    h: `<button class="btn" onclick="rEd(null)">+ استلام هاتف</button><button class="btn s" onclick="go('gd')">دليل أسعار الإصلاح</button><div>${Object.keys(TB).map(k => `<button class="tag ${tab == k ? 'on' : ''}" onclick="V.tab='${k}';render()">${TB[k]} (${S.rp.filter(r => r.st == k).length})</button>`).join('')}</div>`
+    h: `<button class="btn" onclick="rEd(null)">+ استلام هاتف</button><button class="btn s" onclick="go('gd')">دليل أسعار الإصلاح</button><div class="stk-bar"><div>${Object.keys(TB).map(k => `<button class="tag ${tab == k ? 'on' : ''}" onclick="V.tab='${k}';render()">${TB[k]} (${S.rp.filter(r => r.st == k).length})</button>`).join('')}</div></div>`
       + `<input placeholder="ابحث: اسم، رقم، جهاز، عطل" value="${esc(V.q)}" oninput="V.q=this.value;rpL()"><div>${FL.map(([k, l]) => `<button class="tag ${(V.d || 'all') == k ? 'on' : ''}" onclick="V.d='${k}';render()">${l}</button>`).join('')}<button class="tag ${V.all ? 'on' : ''}" onclick="V.all=!V.all;render()">كل التبويبات</button></div>`
       + `${V.d == 'date' ? `<input type="date" value="${V.dt || ''}" onchange="V.dt=this.value;render()">` : ''}<div id="rl">${rpList()}</div>`
   };
@@ -233,9 +234,20 @@ function gdEd(id) {
 }
 function gdDel(id) { const g = S.guide.find(x => x.id == id); del('guide', id, g.m + ' ' + g.f); }
 
-/* ---------- طلبات الزبائن («زبون سأل ولم نجد») ---------- */
+/* ---------- طلبات الزبائن («زبون سأل ولم نجد») + التقاط الرقم للاتصال والواتساب ---------- */
 function rq() { ask('طلب زبون', [{ k: 't', l: 'ماذا طلب؟ (مع رقمه إن أمكن)', t: 'area' }]).then(v => { const t = v && v.t.trim(); if (t) commit('تم التسجيل', () => S.req.push({ id: uid(), t, by: S.me, at: Date.now() })); }); }
 function rqD(id) { commit('تم', () => { S.req = S.req.filter(r => r.id != id); }); }
+function rqTel(txt) {
+  const s = String(txt || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  const m = s.match(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/);
+  return m ? m[0].replace(/\D/g, '') : '';
+}
+function rqWA(id) {
+  const q = S.req.find(x => x.id == id); if (!q) return;
+  const ph = rqTel(q.t); if (!ph) return toast('لا يوجد رقم هاتف في هذا الطلب');
+  const clean = q.t.replace(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/, '').replace(/[-–—:،.]/g, ' ').trim();
+  location.href = 'https://wa.me/' + rnum(ph) + '?text=' + encodeURIComponent(`مرحباً، بخصوص طلبك (${clean || 'السلعة المطلوبة'}) فقد توفرت لدينا في محل عزيز. مرحباً بك!`);
+}
 HOME.after.push(() => '<button class="btn s" onclick="rq()">زبون سأل ولم نجد</button>');
 
 /* ---------- ربط الباركود/IMEI، الإعدادات ---------- */
