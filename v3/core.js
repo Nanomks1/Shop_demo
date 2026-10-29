@@ -18,9 +18,23 @@ Object.assign(IC,{search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3
 const ic = n => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
 const I = n => ic(n).replace('class="ic"', 'class="ic s"');
 
+/* ---------- أيقونات SVG إضافية حديثة (بدون إيموجي) ---------- */
+Object.assign(IC, {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
+  palette: '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.12-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.56-2.5 5.56-5.55C21.97 6.01 17.46 2 12 2z"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  keyboard: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/>',
+  hash: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>'
+});
+
 /* ---------- السجلات (تسجّل فيها الملفات الأخرى بدل تعديل بعضها) ---------- */
 const VW = {};                                  // الشاشات: VW.name = () => ({t:'العنوان', h:'html', a:()=>{}})
-const HK = { save: [], saved: [], hide: [] };   // save: قبل الحفظ · saved: بعده · hide: عند إغلاق النافذة
+const HK = { save: [], saved: [], hide: [], render: [] };   // save: قبل الحفظ · saved: بعده · hide: عند إغلاق النافذة
 const HOME = { top: [], tools: [], after: [] }; // دوال تعيد html لأزرار الرئيسية
 const MORE = [];                                // عناصر قائمة المزيد: {g, l, fn, n, o}
 const SRCH = [];                                // مصادر البحث: {k, l, run(n) -> [html]}
@@ -208,8 +222,8 @@ function hideSheet() {
 const finish = v => { if (SHR) SHR.val = v; history.back(); };
 
 /* ---------- لوحة الأرقام (مع التبديل إلى لوحة الحروف) ---------- */
-function pinPadHtml(id, ph = 'أدخل الرمز', onEnter = '') {
-  return `<div class="pin-wrap" id="${id}_wrap"><input id="${id}" type="hidden" value="" autocomplete="off" ${onEnter ? `onkeydown="if(event.key==='Enter')${onEnter}"` : ''}><div id="${id}_pad"><div id="${id}_dots" class="pin-dots" data-ph="${esc(ph)}"><span class="pin-ph">${esc(ph)}</span></div><div class="pin-grid">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" class="pkb" onclick="pkTap('${id}','${n}')">${n}</button>`).join('')}<button type="button" class="pkb fn" onclick="pkTap('${id}','C')">مسح</button><button type="button" class="pkb" onclick="pkTap('${id}','0')">0</button><button type="button" class="pkb fn" onclick="pkTap('${id}','B')">⌫</button></div></div><button type="button" id="${id}_sw" class="pin-sw" onclick="pkMode('${id}')">⌨️ الرمز فيه حروف؟ اضغط هنا للكتابة</button></div>`;
+function pinPadHtml (id, ph = 'أدخل الرمز', onEnter = '') {
+  return `<div class="pin-wrap" id="${id}_wrap"><input id="${id}" type="hidden" value="" autocomplete="off" ${onEnter ? `onkeydown="if(event.key==='Enter')${onEnter}"` : ''}><div id="${id}_pad"><div id="${id}_dots" class="pin-dots" data-ph="${esc(ph)}"><span class="pin-ph">${esc(ph)}</span></div><div class="pin-grid">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" class="pkb" onclick="pkTap('${id}','${n}')">${n}</button>`).join('')}<button type="button" class="pkb fn" onclick="pkTap('${id}','C')">مسح</button><button type="button" class="pkb" onclick="pkTap('${id}','0')">0</button><button type="button" class="pkb fn" onclick="pkTap('${id}','B')">⌫</button></div></div><button type="button" id="${id}_sw" class="pin-sw" onclick="pkMode('${id}')">${I('keyboard')} الرمز فيه حروف؟ اضغط هنا للكتابة</button></div>`;
 }
 function pkTap(id, k) {
   const el = $(id); if (!el) return;
@@ -222,15 +236,15 @@ function pkTap(id, k) {
     d.innerHTML = el.value.length ? Array(el.value.length).fill('<span class="pin-dot"></span>').join('') : `<span class="pin-ph">${esc(ph)}</span>`;
   }
 }
-function pkMode(id) {
+function pkMode (id) {
   const el = $(id), pad = $(id + '_pad'), sw = $(id + '_sw'), d = $(id + '_dots');
   if (!el || !pad || !sw) return;
   const ph = (d && d.getAttribute('data-ph')) || 'أدخل الرمز';
   if (el.type === 'hidden') {
     pad.hidden = true; el.type = 'password'; el.placeholder = ph + ' (حروف وأرقام)'; el.style.marginBottom = '8px';
-    sw.textContent = '🔢 العودة للوحة الأرقام السريعة'; setTimeout(() => el.focus(), 50);
+    sw.innerHTML = I('hash') + ' العودة للوحة الأرقام السريعة'; setTimeout(() => el.focus(), 50);
   } else {
-    el.type = 'hidden'; pad.hidden = false; sw.textContent = '⌨️ الرمز فيه حروف؟ اضغط هنا للكتابة'; pkTap(id, '');
+    el.type = 'hidden'; pad.hidden = false; sw.innerHTML = I('keyboard') + ' الرمز فيه حروف؟ اضغط هنا للكتابة'; pkTap(id, '');
   }
 }
 
@@ -296,5 +310,6 @@ function render() {
   de.dataset.th = S.cfg.th; de.style.setProperty('--fs', S.cfg.fs + 'px');
   try { const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = getComputedStyle(de).getPropertyValue('--c').trim() || m.content; } catch (e) { }
   r.a && r.a();
+  HK.render.forEach(f => { try { f(); } catch (e) { } });   // بعد كل رسم (مثل الزر العائم)
 }
 $('ov').onclick = e => { if (e.target.id == 'ov') finish(null); };

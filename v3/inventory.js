@@ -29,6 +29,8 @@ LM.push(
 /* ---------- طيّ القوائم الطويلة + وضع العرض المضغوط ---------- */
 const EXP = {};   // حفظ حالة فتح القوائم المطوية أثناء الجلسة
 function toggleExp(id) { EXP[id] = !EXP[id]; render(); }
+/* البيع السريع: لهذا الجهاز فقط، وينطفئ وحده بعد 15 دقيقة بلا مسح */
+const bcQ = () => !!S.cfg.bcQuick && Date.now() - S.cfg.bcQuick < 9e5;
 const isCmp = s => !!((S.cfg.cmp || {})[s]);
 function cmpTog(s) { upd(() => { S.cfg.cmp = S.cfg.cmp || {}; S.cfg.cmp[s] = S.cfg.cmp[s] ? 0 : 1; }); }
 
@@ -565,20 +567,24 @@ const isImei = c => /^\d{14,17}$/.test(c);
 /* تنفيذ البيع السريع (-1) عند مسح باركود صنف واحد موجود */
 function bcQuickSell(it) {
   if (it.sec == 'phones') {
-    if (av(it) <= 0) return toast('لا توجد قطع متاحة للبيع من ' + bcLbl(it));
+    if (av(it) <= 0) return !toast('لا توجد قطع متاحة للبيع من ' + bcLbl(it));
     commit('بيع سريع (−1): ' + bcLbl(it) + ' ← بقي ' + (it.cnt - 1), () => { it.cnt = Math.max(0, it.cnt - 1); touch(it); });
+    return true;
   } else if (it.sec == 'acc') {
     if (typeof it.cnt == 'number') {
-      if (it.cnt <= 0) return toast('العدد 0 بالفعل في ' + bcLbl(it));
+      if (it.cnt <= 0) return !toast('العدد 0 بالفعل في ' + bcLbl(it));
       commit('بيع سريع (−1): ' + bcLbl(it) + ' ← بقي ' + (it.cnt - 1), () => { it.cnt = Math.max(0, it.cnt - 1); touch(it); });
+      return true;
     } else {
       toast('هذا الإكسسوار بدون عدد رقمي — حُدِّثت البطاقة أمامك');
     }
   } else if (it.sec == 'case' && (it.v || []).length) {
     const v = it.v.find(x => x.n > 0) || it.v[0];
-    if (v.n <= 0) return toast('نفد هذا البوشيط بالفعل');
+    if (v.n <= 0) return !toast('نفد هذا البوشيط بالفعل');
     commit('بيع سريع (−1): بوشيط ' + it.name, () => { v.n = Math.max(0, v.n - 1); touch(it); });
+    return true;
   }
+  return false;
 }
 
 function bcHome() {
@@ -586,8 +592,10 @@ function bcHome() {
     BCODE = String(c || '').trim(); const nc = nz(BCODE), r = $('res'); if (!r) return;
     const m = S.items.filter(i => i.sec != 'glass' && (i.code == BCODE || (i.imei && nz(i.imei).includes(nc)))), x = BCM.map(f => f(BCODE)).join('');
     if (m.length || x) {
-      if (S.cfg.bcQuick && m.length == 1 && !x) bcQuickSell(m[0]);
-      r.innerHTML = m.map(itemCard).join('') + x;
+      let sold = false;
+      if (bcQ() && m.length == 1 && !x && bcQuickSell(m[0])) { sold = true; S.cfg.bcQuick = Date.now(); }
+      const r2 = $('res') || r;   // الرسم بعد البيع يستبدل الشاشة، فنجلب المنطقة من جديد
+      r2.innerHTML = (sold ? `<div class="card row2">${I('zap')}<span style="flex:1">تم خصم قطعة واحدة (التراجع من الشريط أسفل الشاشة)</span></div>` : '') + m.map(itemCard).join('') + x;
       return;
     }
     const im = isImei(BCODE), B = (fn, ic2, l, p) => `<button class="btn ${p ? '' : 's'} sm" onclick="${fn}()">${I(ic2)} ${l}</button>`;
@@ -606,7 +614,7 @@ function bcSet(id) {
   upd(() => { if (i.sec == 'phones' && isImei(BCODE)) i.imei = i.imei ? (i.imei.includes(BCODE) ? i.imei : i.imei + ' · ' + BCODE) : BCODE; i.code = i.code || BCODE; touch(i); });
   finish(null); toast('تم ربط الباركود بنجاح');
 }
-HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1;margin:0" onclick="bcHome()">${I('scan')} مسح باركود</button><button class="btn ${S.cfg.bcQuick ? '' : 's'} sm" style="min-height:50px" onclick="upd(()=>S.cfg.bcQuick=S.cfg.bcQuick?0:1)" title="خصم قطعة تلقائياً عند المسح">${I('zap')} بيع سريع −1</button></div>`);
+HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1;margin:0" onclick="bcHome()">${I('scan')} مسح باركود</button><button class="btn ${bcQ() ? '' : 's'} sm" style="min-height:50px" onclick="upd(()=>S.cfg.bcQuick=bcQ()?0:Date.now())" title="خصم قطعة تلقائياً عند المسح (15 دقيقة)">${I('zap')} ${bcQ() ? 'البيع السريع مفعّل' : 'بيع سريع −1'}</button></div>`);
 
 /* ============================ البحث الموحّد ============================ */
 SRCH.push(
