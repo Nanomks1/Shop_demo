@@ -161,3 +161,20 @@ nav button.on .ic{background:var(--ab)}
 .brow .bt{flex:1;height:12px;background:var(--ab);border-radius:8px;overflow:hidden}
 .brow .bt i{display:block;height:100%;background:var(--p);border-radius:8px}
 .brow b{min-width:1.6rem;text-align:end;font-size:.88rem}
+
+/* التقرير: ملخص + صفوف مضغوطة + شريط إرسال ثابت */
+.rsum .qpill{cursor:default}
+.rsum .al .qn{color:#dc2626}.rsum .wn .qn{color:#d97706}
+.rsent{font-size:.8rem;color:var(--m);margin:-2px 4px 10px;text-align:center}
+.rsent.w{color:#d97706;font-weight:700}
+.rlist{padding:4px 12px}
+.rrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--b)}
+.rrow:last-child{border-bottom:0}
+.rrow.col{flex-direction:column;align-items:stretch;gap:6px}
+.rrow .rt{flex:1;min-width:0;line-height:1.5}
+.rrow.r .rt{font-weight:700}
+.rck{flex:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--b);background:var(--c);color:var(--p);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rck:active{transform:scale(.92)}
+.rbar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:6;display:flex;gap:10px;margin-top:14px;padding:8px;border-radius:16px;background:color-mix(in srgb,var(--c) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--b)}
+.rbar .btn{margin:0;flex:1}
+.rbar .btn.s{flex:0 0 28%}
