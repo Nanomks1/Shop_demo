@@ -3,12 +3,13 @@
    يعتمد على invLines() و stkL() من inventory.js، و dh/rqTel/rqWA من repair.js.
    ============================================================ */
 (() => {
-  const RTABS = [['all', 'الشامل'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['pochette', 'البوشيط'], ['acc', 'الإكسسوارات']];
-  const RSEC = { phones: ['الهواتف الناقصة', 'الهواتف'], glass: ['الأنتي كاس', 'الأنتي كاس'], pochette: ['البوشيط', 'البوشيط'], acc: ['الإكسسوارات', 'الإكسسوارات'] };
+  const RTABS = [['all', 'الشامل'], ['topup', 'التعبئة'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['pochette', 'البوشيط'], ['acc', 'الإكسسوارات']];
+  const RSEC = { topup: ['التعبئة', '📶 التعبئة'], phones: ['الهواتف الناقصة', '📱 الهواتف'], glass: ['الأنتي كاس', '🛡️ الأنتي كاس'], pochette: ['البوشيط', '🎒 البوشيط'], acc: ['الإكسسوارات', '🔌 الإكسسوارات'] };
+  const SCOL = { topup: '#0891b2', phones: '#2563eb', glass: '#0d9488', pochette: '#db2777', acc: '#7c3aed', parts: '#64748b', req: '#64748b' };
   const RD = { lv: 'a', tt: 'تقرير محل عزيز', dt: 1, st: 1, pr: 0, pt: 1, rq: 1, pn: 1, em: 0, ft: '', hs: [], rr: 0, rd: 0, rm: 1, nd: [], rh: 16 };
   const rcf = () => ({ ...RD, ...(S.cfg.rc || {}) });
   const okEdit = () => isAdmin() || !S.users.length;
-  const rSecs = m => m == 'all' ? ['phones', 'glass', 'pochette', 'acc'] : [m];
+  const rSecs = m => m == 'all' ? ['topup', 'phones', 'glass', 'pochette', 'acc'] : [m];
   window.reportSectionFilter = 'all'; window.RLV = null;
 
   window.rcSet = o => { if (!okEdit()) return toast('للمدير فقط'); upd(() => { S.cfg.rc = { ...(S.cfg.rc || {}), ...o }; }); };
@@ -16,7 +17,7 @@
   window.rcTt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عنوان التقرير', [{ k: 't', l: 'العنوان (فارغ = بدون عنوان)', v: rcf().tt }]).then(v => { if (v) rcSet({ tt: v.t.trim() }); }); };
   window.rcFt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عبارة آخر التقرير', [{ k: 't', l: 'مثال: شكراً — فارغ = بدون عبارة', v: rcf().ft }]).then(v => { if (v) rcSet({ ft: v.t.trim() }); }); };
 
-  const lines = () => { const c = rcf(); let L = invLines(!!c.pn); if ((window.RLV || c.lv) == 'r') L = L.filter(x => x[2] == 'r'); return L; };
+  const lines = () => { const c = rcf(); let L = invLines(!!c.pn).concat(typeof tpLines == 'function' ? tpLines() : []); if ((window.RLV || c.lv) == 'r') L = L.filter(x => x[2] == 'r'); return L; };
   const secs = m => rSecs(m).filter(k => !rcf().hs.includes(k));
   const partsL = () => S.rp.filter(r => r.st == 'in' && r.part);
   const dstr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); };
@@ -39,7 +40,7 @@
     const c = rcf(), L = lines(), out = [];
     secs(mode).forEach(k => {
       const ls = L.filter(x => x[0] == RSEC[k][0]).sort((a, b) => (a[2] == 'r' ? 0 : 1) - (b[2] == 'r' ? 0 : 1));
-      out.push({ k, t: RSEC[k][1], ls: ls.map(x => ({ r: x[2] == 'r', s: fmtT(x), x })) });
+      out.push({ k, t: RSEC[k][1], ls: ls.map(x => ({ r: x[2] == 'r', s: k == 'topup' ? x[1] : fmtT(x), x })) });
     });
     if (mode == 'all' || mode == 'acc') {
       if (c.pt) out.push({ k: 'parts', t: 'قطع الصيانة', ls: partsL().map(r => ({ r: 0, s: r.part + (r.dev && !nz(r.part).includes(nz(r.dev)) ? ' — ' + r.dev : '') })) });
@@ -57,7 +58,8 @@
     const c = rcf(), B = blocks(mode), o = [], N = B.filter(b => b.k != 'parts' && b.k != 'req');
     const need = N.reduce((a, b) => a + b.ls.length, 0), red = N.reduce((a, b) => a + b.ls.filter(x => x.r).length, 0);
     const head = [c.tt ? '*' + c.tt + '*' : '', c.dt ? dstr() : ''].filter(Boolean).join(' — '); if (head) o.push(head);
-    o.push(need ? 'للشراء: ' + need + (red ? ' (نافد ' + red + ')' : '') : 'لا يوجد نقص حالياً');
+    o.push(need ? 'المطلوب: ' + need + (red ? ' (نافد ' + red + ')' : '') : 'لا يوجد نقص حالياً');
+    { const W = N.filter(b => b.ls.length); if (W.length > 1) o.push(W.map(b => b.t.split(' ')[0] + b.ls.length).join('  ·  ')); }
     if (c.rr) { const x = rpLine(); if (x) o.push(x); }
     if (c.rd) { const x = dbLine(); if (x) o.push(x); }
     { const stl = rnd().length; if (stl) o.push('تنبيه: ' + stl + ' صنف لم يُؤكَّد منذ أكثر من ' + lim('stale') + ' أيام'); }
@@ -77,7 +79,7 @@
     const tabs = RTABS.filter(([k]) => k == 'all' || !c.hs.includes(k));
     if (!tabs.some(([k]) => k == f)) window.reportSectionFilter = 'all';
     const F = window.reportSectionFilter, B = blocks(F);
-    const AL = invLines(!!c.pn).filter(x => secs('all').some(k => RSEC[k][0] == x[0])), red = AL.filter(x => x[2] == 'r').length, yel = AL.length - red, sl = sentLine();
+    const AL = invLines(!!c.pn).concat(typeof tpLines == 'function' ? tpLines() : []).filter(x => secs('all').some(k => RSEC[k][0] == x[0])), red = AL.filter(x => x[2] == 'r').length, yel = AL.length - red, sl = sentLine();
     let h = `<div class="qbar rsum"><div class="qpill al"><div class="qn">${red}</div><div class="ql">نافد</div></div><div class="qpill wn"><div class="qn">${yel}</div><div class="ql">قارب النفاد</div></div><div class="qpill ${S.req.length ? 'rp' : 'ok'}"><div class="qn">${S.req.length}</div><div class="ql">طلبات الزبائن</div></div></div>`
       + `<div class="rsent ${sl[1] ? 'w' : ''}">${esc(sl[0])}</div>`;
     if (c.rr) { const x = rpLine(); if (x) h += `<div class="card row2">${I('tool')}<span style="flex:1">${esc(x)}</span><button class="btn s sm" onclick="go('rp')">افتح</button></div>`; }
@@ -96,7 +98,7 @@
         const ex = EXP['r_' + b.k], L = !ex && b.ls.length > 6 ? b.ls.slice(0, 5) : b.ls;
         x = L.map(rrow).join('') + (b.ls.length > 6 ? `<button class="tag" style="width:100%;justify-content:center;margin:6px 0 0" onclick="toggleExp('r_${b.k}')">${ex ? 'طيّ ▴' : 'عرض الباقي (+' + (b.ls.length - 5) + ') ▾'}</button>` : '');
       }
-      if (x) h += `<h3>${b.t} <span class="m">(${b.ls.length})</span></h3><div class="card rlist">${x}</div>`; else if (c.em) h += `<h3>${b.t}</h3><p class="m">لا نقص</p>`;
+      if (x) h += `<h3 class="sch" style="--sc:${SCOL[b.k] || '#64748b'}">${b.t} <span class="m">(${b.ls.length})</span></h3><div class="card rlist sx" style="--sc:${SCOL[b.k] || '#64748b'}">${x}</div>`; else if (c.em) h += `<h3>${b.t}</h3><p class="m">لا نقص</p>`;
     });
     if ((F == 'all' || F == 'phones') && c.st && !c.hs.includes('phones') && s.length)
       h += '<h3>الهواتف المتوفرة</h3><div class="card rlist">' + s.map(i => `<div class="rrow"><span class="rt">${esc(stkN(i))}</span><span class="m">${i.cnt}${rsQ(i) ? ' (محجوز ' + rsQ(i) + ')' : ''}${c.pr && i.price ? ' · ' + esc(dh(i.price)) : ''}</span></div>`).join('') + '</div>';
