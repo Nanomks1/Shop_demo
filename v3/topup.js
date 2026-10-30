@@ -8,7 +8,7 @@
   Object.assign(IC, { topup: '<path d="M5 20v-4M10 20v-8M15 20V8M20 20V4"/>' });
 
   const OPS = [['IAM', '#2563eb'], ['ORANGE', '#ea580c'], ['INWI', '#9333ea']];
-  const CARDS = [5, 10, 20, 50], PH = [1, 2, 3], TOTAL = OPS.length * (CARDS.length + PH.length);
+  const CARDS = [5, 10, 20, 50], PH = [1], TOTAL = OPS.length * (CARDS.length + PH.length);
   const D0 = { bo: 30, br: 10, cl: { 5: 3, 10: 3, 20: 3, 50: 3 }, rh: 10 };
   const GREY = '#94a3b8';
 
@@ -44,14 +44,14 @@
     each((op, k, n, s) => {
       if (s != 'r' && s != 'y') return;
       const v = val(op, k, n), id = rid(op, k, n);
-      L.push(['التعبئة', k == 'p' ? op + ' — هاتف ' + n + ' — الرصيد ' + dm(v) : op + ' — بطاقة ' + n + ' — ' + (v <= 0 ? 'نفد' : 'باقي ' + v), s, `tpFix('${id}')`]);
+      L.push(['التعبئة', k == 'p' ? op + ' — رصيد الهاتف ' + dm(v) : op + ' — بطاقة ' + n + ' — ' + (v <= 0 ? 'نفد' : 'باقي ' + v), s, `tpFix('${id}')`]);
     });
     return L;
   };
   /* «تم» في التقرير: هاتف ← الرصيد الجديد · بطاقة ← الكمية التي وصلت */
   window.tpFix = id => {
     const p = id.split('_'), op = p[1], k = p[2][0], n = +p[2].slice(1);
-    if (k == 'p') ask(op + ' — هاتف ' + n, [{ k: 'v', l: 'الرصيد الجديد بعد التعبئة (درهم)', t: 'tel' }], 'تم').then(v => { const x = v && num(v.v); if (x != null) { put(op, 'p', n, x); render(); toast('تم تحديث الرصيد'); } });
+    if (k == 'p') ask(op + ' — الهاتف', [{ k: 'v', l: 'الرصيد الجديد بعد التعبئة (درهم)', t: 'tel' }], 'تم').then(v => { const x = v && num(v.v); if (x != null) { put(op, 'p', n, x); render(); toast('تم تحديث الرصيد'); } });
     else ask(op + ' — بطاقة ' + n, [{ k: 'v', l: 'الكمية التي وصلت', t: 'tel' }], 'تم الشراء').then(v => { const x = v && num(v.v); if (x > 0) { put(op, 'c', n, (val(op, 'c', n) || 0) + Math.round(x)); render(); toast('تمت الإضافة'); } });
   };
 
@@ -87,7 +87,7 @@
   /* ---------- الشاشة ---------- */
   const row1 = (op, k, n) => {
     const v = val(op, k, n), id = op + '_' + k + n, ph = k == 'p';
-    return `<div class="tpr" id="tpr_${id}"><span class="dotl" id="tpd_${id}"></span><span class="tpn">${ph ? 'هاتف ' + n : 'بطاقة ' + n + ' درهم'}</span><span class="tpt" id="tpt_${id}"></span>`
+    return `<div class="tpr" id="tpr_${id}"><span class="dotl" id="tpd_${id}"></span><span class="tpn">${ph ? 'رصيد الهاتف' : 'بطاقة ' + n + ' درهم'}</span><span class="tpt" id="tpt_${id}"></span>`
       + (ph ? '' : `<button class="tpb" aria-label="نقص" onclick="tpStep('${op}',${n},-1)">−</button>`)
       + `<input class="tpi" id="tpi_${id}" inputmode="${ph ? 'decimal' : 'numeric'}" placeholder="—" value="${v == null ? '' : esc(v)}" oninput="tpIn('${op}','${k}',${n},this)" onchange="tpIn('${op}','${k}',${n},this,1)" onfocus="this.select()">`
       + (ph ? '<span class="m tpu">درهم</span>' : `<button class="tpb" aria-label="زيادة" onclick="tpStep('${op}',${n},1)">+</button>`) + '</div>';
@@ -98,7 +98,7 @@
       + `<div id="tpl" class="rsent ${l[1] ? 'w' : ''}">${esc(l[0])}</div>`;
     OPS.forEach(([op, col]) => {
       h += `<div class="card tpop" style="--oc:${col}"><div class="tpoh"><b>${op}</b><span class="m" id="tpu_${op}"></span></div>`
-        + '<div class="tpl">هواتف التعبئة — الرصيد المتبقي</div>' + PH.map(n => row1(op, 'p', n)).join('')
+        + '<div class="tpl">هاتف التعبئة</div>' + PH.map(n => row1(op, 'p', n)).join('')
         + '<div class="tpl">بطاقات التعبئة — العدد المتبقي</div>' + CARDS.map(n => row1(op, 'c', n)).join('') + '</div>';
     });
     h += `<div class="row2" style="margin-top:12px"><button class="btn s" onclick="reportSectionFilter='topup';go('rep')">عرض في التقرير</button><button class="btn s" onclick="go('st_tp')">الحدود</button></div>`;
@@ -119,7 +119,7 @@
     const c = cf();
     return {
       t: 'حدود التعبئة',
-      h: '<p class="m">تحدد متى يصير اللون برتقالياً أو أحمر في شاشة التعبئة والتقرير.</p><h3>أرصدة الهواتف</h3>'
+      h: '<p class="m">تحدد متى يصير اللون برتقالياً أو أحمر في شاشة التعبئة والتقرير.</p><h3>رصيد هاتف التعبئة</h3>'
         + row(LB.bo, "tpLim('bo')", c.bo) + row(LB.br, "tpLim('br')", c.br)
         + '<h3>بطاقات التعبئة (الأحمر عند 0 دائماً)</h3>' + CARDS.map(n => row('بطاقة ' + n + ' درهم: «قارب» عند ≤', "tpLim('cl" + n + "')", c.cl[n])).join('')
         + '<h3>التذكير</h3>' + row(LB.rh, "tpLim('rh')", c.rh + ':00')
