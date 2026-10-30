@@ -10,7 +10,7 @@
   const OPS = [['IAM', '#2563eb'], ['ORANGE', '#ea580c'], ['INWI', '#9333ea']];
   const CARDS = [5, 10, 20, 50], PH = [1], TOTAL = OPS.length * (CARDS.length + PH.length);
   const D0 = { bo: 30, br: 10, cl: { 5: 3, 10: 3, 20: 3, 50: 3 }, rh: 10 };
-  const GREY = '#94a3b8';
+  const GREY = '#94a3b8', DC = { 5: '#0d9488', 10: '#2563eb', 20: '#7c3aed', 50: '#db2777' };
 
   const T = () => (S.tp = S.tp || []);
   const cf = () => { const c = (S.cfg && S.cfg.tp) || {}; return { ...D0, ...c, cl: { ...D0.cl, ...(c.cl || {}) } }; };
@@ -65,7 +65,7 @@
     each((op, k, n, s) => {
       const id = op + '_' + k + n, d = $('tpd_' + id), r = $('tpr_' + id); if (!d || !r) return;
       d.style.background = s == 'u' ? GREY : DT[s];
-      r.className = 'tpr' + (s == 'r' || s == 'y' ? ' ' + s : '');
+      r.className = 'tpr' + (k == 'c' ? ' c' : '') + (s == 'r' || s == 'y' ? ' ' + s : '');
       setT('tpt_' + id, s == 'r' ? (k == 'p' ? 'منخفض' : 'نفد') : s == 'y' ? 'قارب' : '');
     });
     const t = tally(); setT('tps_r', t.r); setT('tps_y', t.y); setT('tps_u', t.u);
@@ -87,7 +87,8 @@
   /* ---------- الشاشة ---------- */
   const row1 = (op, k, n) => {
     const v = val(op, k, n), id = op + '_' + k + n, ph = k == 'p';
-    return `<div class="tpr" id="tpr_${id}"><span class="dotl" id="tpd_${id}"></span><span class="tpn">${ph ? 'رصيد الهاتف' : 'بطاقة ' + n + ' درهم'}</span><span class="tpt" id="tpt_${id}"></span>`
+    return `<div class="tpr${ph ? '' : ' c'}" id="tpr_${id}"${ph ? '' : ` style="--dc:${DC[n]}"`}><span class="dotl" id="tpd_${id}"></span>`
+      + (ph ? '<span class="tpn">رصيد الهاتف</span>' : `<span class="tpd">${n}<small>درهم</small></span>`) + `<span class="tpt" id="tpt_${id}"></span>`
       + (ph ? '' : `<button class="tpb" aria-label="نقص" onclick="tpStep('${op}',${n},-1)">−</button>`)
       + `<input class="tpi" id="tpi_${id}" inputmode="${ph ? 'decimal' : 'numeric'}" placeholder="—" value="${v == null ? '' : esc(v)}" oninput="tpIn('${op}','${k}',${n},this)" onchange="tpIn('${op}','${k}',${n},this,1)" onfocus="this.select()">`
       + (ph ? '<span class="m tpu">درهم</span>' : `<button class="tpb" aria-label="زيادة" onclick="tpStep('${op}',${n},1)">+</button>`) + '</div>';
@@ -155,9 +156,14 @@
 .tpr.y{background:color-mix(in srgb,#d97706 12%,transparent)}
 .tpr .dotl{background:${GREY}}
 .tpn{flex:1;min-width:0;font-weight:600}
-.tpt{font-size:.76rem;font-weight:700;min-width:2.8rem;text-align:center}
+.tpt{flex:1;font-size:.78rem;font-weight:700;text-align:start}
+.tpr.c{border-inline-start:5px solid var(--dc);padding-inline-start:6px}
+.tpd{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:3.4rem;padding:3px 8px;border-radius:12px;background:var(--dc);color:#fff;font-size:1.3rem;font-weight:800;line-height:1.1}
+.tpd small{font-size:.62rem;font-weight:600;opacity:.95}
+.tpr.c .tpb{border-color:var(--dc);color:var(--dc);background:color-mix(in srgb,var(--dc) 12%,var(--c))}
+.tpr.c .tpi{border-color:var(--dc)}
 .tpr.r .tpt{color:#dc2626}.tpr.y .tpt{color:#d97706}
-.tpi{width:5.2rem;min-height:44px;margin:0;padding:0 6px;text-align:center;direction:ltr;font:inherit;font-weight:700;font-size:1.1rem;border:1px solid var(--b);border-radius:12px;background:var(--bg);color:var(--t)}
+.tpi{width:4.6rem;min-height:44px;margin:0;padding:0 6px;text-align:center;direction:ltr;font:inherit;font-weight:700;font-size:1.1rem;border:1px solid var(--b);border-radius:12px;background:var(--bg);color:var(--t)}
 .tpb{width:44px;height:44px;flex:none;border:1px solid var(--b);border-radius:12px;background:var(--c);color:var(--t);font:inherit;font-size:1.4rem;font-weight:700;line-height:1;cursor:pointer}
 .tpb:active{transform:scale(.92)}
 .tpu{width:2.6rem;font-size:.8rem}
