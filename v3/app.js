@@ -26,7 +26,7 @@ SRCH.push(
 function scSet(k) { SC = k; const b = $('sc'); if (b) b.innerHTML = scopeChips(); sq(Q); }
 function srch(q) {
   const n = nz(q); if (!n) return '';
-  const o = []; SRCH.forEach(p => { if (!SC || SC == p.k) o.push(...p.run(n)); });
+  const o = []; SRCH.forEach(p => { if (SC && SC != p.k) return; const r = p.run(n); if (r.length) o.push((SC ? '' : `<h3>${p.l} <span class="m">(${r.length})</span></h3>`) + r.join('')); });
   return o.join('') || '<p class="m">لا نتائج</p>';
 }
 function sq(q) {
