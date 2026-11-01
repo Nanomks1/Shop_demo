@@ -17,6 +17,12 @@ VW.rep = VW.rep || (() => soon('التقرير'));
 /* ---------- البحث الموحّد ---------- */
 let SC = '';   // نطاق البحث الحالي
 const scopeChips = () => [['', 'الكل'], ...SRCH.map(p => [p.k, p.l])].map(([k, l]) => `<button class="tag ${SC == k ? 'on' : ''}" onclick="scSet('${k}')">${l}</button>`).join('');
+/* مصادر بحث إضافية: الصيانة، طلبات الزبائن، دليل أسعار الإصلاح */
+SRCH.push(
+  { k: 'rp', l: 'صيانة', run: n => S.rp.filter(r => nzOf(r, rpText).includes(n)).sort((x, y) => (y.t0 || 0) - (x.t0 || 0)).slice(0, 20).map(rc) },
+  { k: 'req', l: 'طلبات الزبائن', run: n => S.req.filter(q => nz(q.t).includes(n)).slice(0, 20).map(q => `<div class="card"><div class="m">${fd(q.at)} · ${esc(q.by || '')}</div><div>${esc(q.t)}</div><div class="sub">${rqTel(q.t) ? `<button class="btn s sm" onclick="rqWA('${q.id}')">واتساب</button>` : ''}<button class="btn s sm" onclick="rqD('${q.id}')">مسح</button></div></div>`) },
+  { k: 'gd', l: 'أسعار الإصلاح', run: n => S.guide.filter(g => nz(g.m + ' ' + g.f + ' ' + (g.n || '')).includes(n)).slice(0, 20).map(gdCard) }
+);
 function scSet(k) { SC = k; const b = $('sc'); if (b) b.innerHTML = scopeChips(); sq(Q); }
 function srch(q) {
   const n = nz(q); if (!n) return '';
@@ -36,13 +42,18 @@ function homeQuickBar() {
   const need = typeof invLines == 'function' ? invLines(false).length : 0;
   const rq = (S.req || []).length;
   const P = (cls, on, icn, n, l, sub) => `<button class="qpill ${cls}" onclick="${on}"><div class="qic">${ic(icn)}</div><div class="qn">${n}</div><div class="ql">${l}</div>${sub ? `<div class="qs">${sub}</div>` : ''}</button>`;
-  return `<div class="qbar">`
+  return `<div class="qbar cmp">`
     + P('rp', `go('rp',{tab:'${rpRd ? 'rd' : 'in'}'})`, 'tool', rpIn + rpRd, 'في الصيانة', rpRd ? rpRd + ' جاهز للتسليم' : '')
     + P(need ? 'al' : 'ok', "go('rep')", need ? 'alert' : 'check', need, 'نواقص المخزون', need ? '' : 'مكتمل')
     + P(rq ? 'rp' : 'ok', "go('rep')", 'chat', rq, 'طلبات الزبائن', '')
     + `</div>`;
 }
-HOME.top.push(homeQuickBar);
+(() => {
+  const s = document.createElement('style');
+  s.textContent = `.qbar.cmp{gap:6px;margin:8px 0}.qbar.cmp .qic{display:none}.qbar.cmp .qpill{padding:7px 4px;gap:1px}.qbar.cmp .qn{font-size:1.4rem}
+.grid .card.cs2{flex-direction:row;align-items:center;gap:10px;padding:10px 12px}.cs2 .ic{width:2.3rem;height:2.3rem;padding:.5rem;margin:0;flex:none}.cs2 .ct{display:flex;flex-direction:column;min-width:0}.cs2 .ct b{font-size:.95rem}`;
+  document.head.appendChild(s);
+})();
 
 /* ---------- الرئيسية ---------- */
 const bkHide = () => { try { localStorage.setItem('bkHide', Date.now()); } catch (e) { } render(); };
@@ -51,41 +62,71 @@ VW.home = () => {
   let hid = 0; try { hid = Date.now() - (+localStorage.getItem('bkHide') || 0) < 864e5; } catch (e) { }
   const bk = old && !hid ? `<div class="bkb">${I('alert')}<span>لم تُحفظ نسخة خارجية منذ أسبوع</span><button class="btn sm" onclick="BKP()">حفظ</button><button class="bkx" onclick="bkHide()" aria-label="إغلاق">✕</button></div>` : '';
   const call = L => L.map(f => f()).join('');
+  const T = HOME.tools.map(f => f()), A = HOME.after.map(f => f());
+  const scan = T.filter(h => h.includes('bcHome()')).join('').replace('بيع سريع −1', 'بيع سريع (خصم 1)');
+  const topup = A.filter(h => h.includes('tph')).join('');
+  const more = T.filter(h => !h.includes('bcHome()')).join('') + A.filter(h => !h.includes('tph')).join('');
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
-      + `<input placeholder="ابحث عن هاتف، زجاج، بوشيط، صيانة..." value="${esc(Q)}" oninput="sq(this.value)"><div id="sc">${scopeChips()}</div>`
-      + call(HOME.tools) + '<div id="res"></div><h3>الأقسام</h3>'
-      + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc" onclick="go('sec',{k:'${k}'})">${ic(i)}<b>${n}</b><span class="m">${secCount(k)} صنف</span></button>`).join('')}</div>`
-      + call(HOME.after),
+      + `<input placeholder="ابحث في كل شيء: هاتف، زجاج، بوشيط، صيانة، زبون..." value="${esc(Q)}" oninput="sq(this.value)"><div id="sc">${scopeChips()}</div><div id="res"></div>`
+      + homeQuickBar() + scan + topup
+      + '<h3>الأقسام</h3>'
+      + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="go('sec',{k:'${k}'})">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secCount(k)} صنف</span></span></button>`).join('')}</div>`
+      + more,
     a: () => sq(Q)
   };
 };
 
 /* ---------- المزيد (منظم بأقسام مستقلة) ---------- */
 const MG = [
-  ['sec', 'أقسام المحل', 'الهواتف، الزجاج، البوشيط، الإكسسوارات، الصيانة، والوسوم والحقول', 'grid'],
-  ['lim', 'الحدود والتنبيهات', 'متى يصير المنتج «قارب على النفاد» أو «نفد» في كل قسم', 'bell'],
-  ['rep', 'التقرير والإحصائيات', 'محتوى التقرير اليومي وتذكير الإرسال والإحصائيات', 'chart'],
-  ['look', 'المظهر والعرض', 'الثيم، حجم الخط، الأيقونة العائمة، وتلوين البطاقات', 'palette'],
-  ['usr', 'المستخدمون والأمان', 'حسابات الموظفين، الصلاحيات، رمز القفل السريع، والقفل التلقائي', 'users'],
-  ['data', 'المزامنة والنسخ الاحتياطي', 'المزامنة بين الأجهزة، حفظ واستعادة النسخ، والنسخ التلقائية', 'database']
+  ['shop', 'المحل', 'كل ما يخص الأقسام: الهواتف والأنتي كاس والبوشيط والإكسسوارات والصيانة والتعبئة والتقرير. لكل قسم صفحة واحدة تجمع وسومه وحدوده.', 'grid'],
+  ['dev', 'المظهر والقفل', 'الثيم وحجم الخط والزر العائم، ورمز القفل السريع والقفل التلقائي.', 'palette'],
+  ['adm', 'الإدارة والبيانات', 'المستخدمون والصلاحيات، المزامنة بين الأجهزة، النسخ الاحتياطي، وسلة المحذوفات.', 'users']
 ];
+/* مواضع أعمق تظهر في بحث الإعدادات: [الاسم, الدالة, القسم, كلمات مساعدة] */
+const STX = [
+  ['ساعة تذكير التقرير', "go('st_rep')", 'التقرير اليومي', 'موعد تنبيه إرسال'],
+  ['أيام بلا تذكير', "go('st_rep')", 'التقرير اليومي', 'عطلة'],
+  ['عنوان التقرير وعبارة الختام', "go('st_rep')", 'التقرير اليومي', 'توقيع'],
+  ['ما يظهر في التقرير', "go('st_rep')", 'التقرير اليومي', 'أسعار طلبات ديون'],
+  ['الثيم (فاتح / ليلي)', "go('st_look')", 'المظهر والقفل', 'لون داكن ليل'],
+  ['حجم الخط', "go('st_look')", 'المظهر والقفل', 'كبير صغير'],
+  ['الزر العائم (+)', "go('st_look')", 'المظهر والقفل', 'أيقونة إضافة'],
+  ['حد «متوفر» و«قارب» لبطاقات التعبئة', "go('st_tp')", 'التعبئة', '5 10 20 50 درهم'],
+  ['حدود رصيد هاتف التعبئة', "go('st_tp')", 'التعبئة', 'منخفض نافد'],
+  ['ساعة تذكير التعبئة', "go('st_tp')", 'التعبئة', 'صباح']
+];
+const stItems = () => {
+  const o = [];
+  MG.forEach(([k, t]) => MORE.filter(x => x.g == k).forEach(x => o.push({ l: x.l, fn: x.fn, p: t, kw: x.d || '' })));
+  Object.values(CATS).forEach(c => c[1].forEach(([l, fn]) => o.push({ l, fn, p: c[0], kw: '' })));
+  LM.forEach(([k, l]) => o.push({ l, fn: `limEd('${k}')`, p: 'الحدود', kw: '' }));
+  STX.forEach(([l, fn, p, kw]) => o.push({ l, fn, p, kw }));
+  return o;
+};
+function stQ(q) {
+  const n = nz(q), g = $('stg'), r = $('str'); if (!g || !r) return;
+  g.style.display = n ? 'none' : '';
+  if (!n) { r.innerHTML = ''; return; }
+  const seen = {}, L = stItems().filter(x => { const k = x.l + x.fn; if (seen[k]) return false; seen[k] = 1; return nz(x.l + ' ' + x.kw + ' ' + x.p).includes(n); });
+  r.innerHTML = L.map(x => `<button class="card row2" onclick="${x.fn}"><b>${esc(x.l)}</b><span class="m">${esc(x.p)}</span></button>`).join('') || '<p class="m">لا نتائج</p>';
+}
 VW.st = () => ({
   t: 'المزيد',
-  h: MG.map(([k, t, d, icon]) => {
-    const L = MORE.filter(x => x.g == k);
-    if (!L.length) return '';
-    return `<button class="card st-card" onclick="go('st_grp',{g:'${k}'})"><div class="st-ic">${ic(icon)}</div><div class="st-txt"><b>${t}</b><div class="m">${d}</div></div><span class="st-arr">${ic('back')}</span></button>`;
-  }).join('')
-  + `<button class="card st-card" onclick="go('st_trash')"><div class="st-ic">${ic('trash')}</div><div class="st-txt"><b>سلة المحذوفات</b><div class="m">استرجاع ما حُذف خلال آخر 30 يوماً${S.trash.length ? ' (' + S.trash.length + ')' : ''}</div></div><span class="st-arr">${ic('back')}</span></button>`
+  h: `<input placeholder="ابحث في الإعدادات: حد، لون، قفل، تقرير..." oninput="stQ(this.value)"><div id="str"></div><div id="stg">`
+    + MG.map(([k, t, d, icon]) => `<button class="card st-card" onclick="go('st_grp',{g:'${k}'})"><div class="st-ic">${ic(icon)}</div><div class="st-txt"><b>${t}</b><div class="m">${d}</div></div><span class="st-arr">${ic('back')}</span></button>`).join('')
+    + '</div>'
 });
 VW.st_grp = () => {
-  const g = V.g || 'sec', info = MG.find(x => x[0] == g) || MG[0];
+  const g = V.g || 'shop', info = MG.find(x => x[0] == g) || MG[0];
   const L = MORE.filter(x => x.g == g).sort((a, b) => (a.o || 50) - (b.o || 50));
+  const R = x => row(x.l, x.fn, x.n ? x.n() : '') + (x.d ? `<p class="m" style="margin:2px 8px 12px;font-size:.8rem">${x.d}</p>` : '');
+  const A = L.filter(x => x.adv), B = L.filter(x => !x.adv);
   return {
     t: info[1],
-    h: `<p class="m">${info[2]}</p>` + L.map(x => row(x.l, x.fn, x.n ? x.n() : '') + (x.d ? `<p class="m" style="margin:2px 8px 12px;font-size:.8rem">${x.d}</p>` : '')).join('')
+    h: `<p class="m">${info[2]}</p>` + B.map(R).join('')
+      + (A.length ? `<details class="card" style="margin-top:12px"><summary><b>خيارات متقدمة</b> <span class="m">(${A.length}) — نادراً ما تحتاجها</span></summary><div style="margin-top:8px">${A.map(R).join('')}</div></details>` : '')
   };
 };
 MORE.push(
@@ -98,20 +139,30 @@ MORE.push(
   { g: 'sec', o: 60, l: 'كل الوسوم (قائمة كاملة)', d: 'كل القوائم (ماركات، ألوان، سعات...) في مكان واحد', fn: "go('st_tags')" }
 );
 
-/* نقل وشرح عناصر سجّلتها ملفات أخرى (بدون تعديل تلك الملفات) */
+/* إعادة ترتيب عناصر سجّلتها ملفات أخرى (بدون تعديل تلك الملفات): [القسم, الترتيب, متقدم؟, اسم جديد] */
 (() => {
+  MORE.push({ g: 'adm', o: 40, l: 'سلة المحذوفات', d: 'استرجاع ما حُذف خلال آخر 30 يوماً', fn: "go('st_trash')", n: () => S.trash.length || '' });
+  const P = {
+    'الهواتف': ['shop', 10], 'الأنتي كاس': ['shop', 20], 'البوشيط': ['shop', 30], 'الإكسسوارات': ['shop', 40], 'الصيانة': ['shop', 50],
+    'حدود التعبئة': ['shop', 60, 0, 'التعبئة'], 'إعدادات التقرير': ['shop', 70, 0, 'التقرير اليومي'],
+    'إحصائيات: الأعطال وطلبات الزبائن': ['shop', 80],
+    'كل الوسوم (قائمة كاملة)': ['shop', 90, 1], 'الحقول في النماذج': ['shop', 91, 1], 'الخانات المخصصة': ['shop', 92, 1], 'تلوين البطاقات': ['shop', 93, 1], 'حدود النفاد': ['shop', 94, 1, 'حدود النفاد العامة'],
+    'الثيم وحجم الخط والأيقونة العائمة': ['dev', 10], 'رمز القفل السريع': ['dev', 20], 'القفل التلقائي': ['dev', 30],
+    'المستخدمون والصلاحيات': ['adm', 10], 'المزامنة بين الأجهزة': ['adm', 20], 'النسخ الاحتياطي والاستعادة': ['adm', 30]
+  };
   const D = {
-    'الهواتف': 'الماركات والألوان والسعات وألوان الماركات', 'الأنتي كاس': 'أنواع الزجاج والمستويات',
-    'البوشيط': 'أنواع البوشيط وإعداداته', 'الإكسسوارات': 'أنواع الإكسسوارات وما يظهر في نماذجها',
-    'الصيانة': 'خيارات استلام وتسليم الصيانة', 'تلوين البطاقات': 'ألوان خفيفة للتمييز بين الماركات والأقسام',
+    'الهواتف': 'الماركات والألوان والسعات وألوان الماركات وحدود النفاد', 'الأنتي كاس': 'أنواع الزجاج والمستويات والحدود',
+    'البوشيط': 'الجنس والألوان', 'الإكسسوارات': 'الأنواع والموصلات والفئات وحدود كل نوع',
+    'الصيانة': 'أعطال الصيانة، دليل الأسعار، مدة حفظ الصور، والأرشفة', 'تلوين البطاقات': 'ألوان خفيفة للتمييز بين الماركات والأقسام',
     'الحقول في النماذج': 'اختر الحقول التي تظهر عند إضافة هاتف أو غيره', 'الخانات المخصصة': 'أضف خانة خاصة بك (مثل: الضمان) لأي قسم',
     'المزامنة بين الأجهزة': 'ربط هاتفين أو أكثر ليتطابقوا في البيانات',
     'إحصائيات: الأعطال وطلبات الزبائن': 'أكثر الأعطال تكراراً وما يطلبه الزبائن ولا نملكه'
   };
   MORE.forEach(x => {
+    const p = P[x.l];
     if (D[x.l] && !x.d) x.d = D[x.l];
-    if (x.l == 'الحقول في النماذج') { x.g = 'sec'; x.o = 70; }
-    if (x.l == 'الخانات المخصصة') { x.g = 'sec'; x.o = 80; }
+    if (p) { x.g = p[0]; x.o = p[1]; x.adv = p[2] || 0; if (p[3]) x.l = p[3]; }
+    else if (!MG.some(m => m[0] == x.g)) { x.g = 'shop'; x.o = 99; x.adv = 1; }
   });
 })();
 
