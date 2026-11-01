@@ -126,10 +126,16 @@
         + `<div style="margin-top:14px"><button class="btn s" onclick="rcSet({lv:'a',tt:'تقرير محل عزيز',dt:1,st:1,pr:0,pt:1,rq:1,pn:1,em:0,ft:'',hs:[],rr:0,rd:0,rm:1,nd:[],rh:16})">إرجاع الإعدادات الافتراضية</button></div>`
     };
   };
+  /* إلغاء تذكير اليوم (لا تقرير اليوم) مع تأكيد وتراجع؛ يعود التذكير غداً تلقائياً */
+  window.rcSkip = () => sure('لن يُرسل تقرير اليوم؟ سيختفي التذكير حتى الغد.', 'نعم، لا تقرير اليوم', false).then(ok => {
+    if (!ok) return;
+    S.cfg.rx = new Date().toDateString(); save(); render();
+    toast('أُلغي تذكير اليوم', () => { delete S.cfg.rx; });
+  });
   HOME.top.push(() => {
     const c = rcf(), d = new Date();
-    if (!c.rm || sentToday() || c.nd.includes(d.getDay()) || d.getHours() < c.rh) return '';
-    return `<div class="card row2">${I('alert')}<span style="flex:1">لم يُرسل تقرير اليوم بعد</span><button class="btn sm" onclick="go('rep')">افتح التقرير</button></div>`;
+    if (!c.rm || sentToday() || c.nd.includes(d.getDay()) || d.getHours() < c.rh || S.cfg.rx == d.toDateString()) return '';
+    return `<div class="card row2">${I('alert')}<span style="flex:1">لم يُرسل تقرير اليوم بعد</span><button class="btn sm" onclick="go('rep')">افتح التقرير</button><button class="btn s sm" aria-label="لا تقرير اليوم" onclick="rcSkip()">✕</button></div>`;
   });
-  MORE.push({ g: 'rep', o: 10, l: 'إعدادات التقرير', fn: "go('st_rep')" });
+  MORE.push({ g: 'rep', o: 10, l: 'إعدادات التقرير', d: 'ما يظهر في التقرير ونص الواتساب، وتذكير الإرسال', fn: "go('st_rep')" });
 })();

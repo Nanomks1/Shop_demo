@@ -13,7 +13,7 @@
   const GREY = '#94a3b8', DC = { 5: '#0d9488', 10: '#2563eb', 20: '#7c3aed', 50: '#db2777' };
 
   const T = () => (S.tp = S.tp || []);
-  const cf = () => { const c = (S.cfg && S.cfg.tp) || {}; return { ...D0, ...c, cl: { ...D0.cl, ...(c.cl || {}) } }; };
+  const cf = () => { const c = (S.cfg && S.cfg.tp) || {}, o = { ...D0, ...c, cl: { ...D0.cl, ...(c.cl || {}) } }; o.gm = {}; CARDS.forEach(n => { o.gm[n] = (c.gm && c.gm[n] != null) ? c.gm[n] : o.gv; }); return o; };
   const okE = () => isAdmin() || !S.users.length;
   const rid = (op, k, n) => 'tp_' + op + '_' + k + n;
   const rec = (op, k, n) => T().find(r => r.id == rid(op, k, n));
@@ -39,7 +39,7 @@
     r.val = v; r.est = est ? 1 : 0; r.at = Date.now(); r.by = S.me || '';
     clearTimeout(svT); svT = setTimeout(save, 150);   // الحفظ بعد الرسم حتى لا يتأخر الضغط
   }
-  const gvOf = n => Math.max(cf().gv, cf().cl[n] + 1);
+  const gvOf = n => Math.max(cf().gm[n], cf().cl[n] + 1);
 
   /* ---------- أسطر التقرير: [القسم, النص, الحالة, دالة «تم»] ---------- */
   window.tpLines = () => {
@@ -109,7 +109,7 @@
         + '<div class="tpl">هاتف التعبئة</div>' + PH.map(n => row1(op, 'p', n)).join('')
         + '<div class="tpl">بطاقات التعبئة — اضغط الحالة أو اكتب العدد</div>' + CARDS.map(n => row1(op, 'c', n)).join('') + '</div>';
     });
-    h += `<div class="row2" style="margin-top:12px"><button class="btn s" onclick="reportSectionFilter='topup';go('rep')">عرض في التقرير</button><button class="btn s" onclick="go('st_tp')">الحدود</button></div>`;
+    h += `<div class="row2" style="margin-top:12px"><button class="btn s" onclick="reportSectionFilter='topup';go('rep')">عرض في التقرير</button></div>`;
     return { t: 'التعبئة', h, a: paint };
   };
 
@@ -117,10 +117,10 @@
   const LB = { bo: 'رصيد الهاتف: «قارب» عند ≤ (درهم)', br: 'رصيد الهاتف: «منخفض» عند ≤ (درهم)', gv: 'بطاقات: زر «متوفر» يعني أكثر من (عدد)', rh: 'ساعة بدء تذكير الصباح (0 إلى 23)' };
   window.tpLim = k => {
     if (!okE()) return toast('للمدير فقط');
-    const c = cf(), isC = k.startsWith('cl'), cur = isC ? c.cl[k.slice(2)] : c[k];
-    ask('الحدود', [{ k: 'v', l: isC ? 'بطاقة ' + k.slice(2) + ': «قارب» عند عدد ≤' : LB[k], t: 'tel', v: String(cur) }]).then(v => {
+    const c = cf(), isC = k.startsWith('cl'), isG = k.startsWith('gm'), cur = isC ? c.cl[k.slice(2)] : isG ? c.gm[k.slice(2)] : c[k];
+    ask('الحدود', [{ k: 'v', l: isC ? 'بطاقة ' + k.slice(2) + ': «قارب» عند عدد ≤' : isG ? 'بطاقة ' + k.slice(2) + ': زر «متوفر» يعني أكثر من (عدد)' : LB[k], t: 'tel', v: String(cur) }]).then(v => {
       const x = v && num(v.v); if (x == null || (k == 'rh' && x > 23)) return;
-      upd(() => { const o = { ...(S.cfg.tp || {}) }; if (isC) o.cl = { ...(o.cl || {}), [k.slice(2)]: x }; else o[k] = x; S.cfg.tp = o; });
+      upd(() => { const o = { ...(S.cfg.tp || {}) }; if (isC) o.cl = { ...(o.cl || {}), [k.slice(2)]: x }; else if (isG) o.gm = { ...(o.gm || {}), [k.slice(2)]: x }; else o[k] = x; S.cfg.tp = o; });
     });
   };
   VW.st_tp = () => {
@@ -129,7 +129,7 @@
       t: 'حدود التعبئة',
       h: '<p class="m">تحدد متى يصير اللون برتقالياً أو أحمر في شاشة التعبئة والتقرير.</p><h3>رصيد هاتف التعبئة</h3>'
         + row(LB.bo, "tpLim('bo')", c.bo) + row(LB.br, "tpLim('br')", c.br)
-        + '<h3>بطاقات التعبئة (الأحمر عند 0 دائماً)</h3>' + row(LB.gv, "tpLim('gv')", c.gv) + CARDS.map(n => row('بطاقة ' + n + ' درهم: «قارب» عند ≤', "tpLim('cl" + n + "')", c.cl[n])).join('')
+        + '<h3>بطاقات التعبئة (الأحمر عند 0 دائماً)</h3><p class="m">لكل فئة حدّان مستقلان: «قارب» (أقل أو يساوي) و«متوفر» (أكثر من).</p>' + CARDS.map(n => row('بطاقة ' + n + ' درهم — «قارب» عند ≤', "tpLim('cl" + n + "')", c.cl[n]) + row('بطاقة ' + n + ' درهم — «متوفر» أكثر من', "tpLim('gm" + n + "')", c.gm[n])).join('')
         + '<h3>التذكير</h3>' + row(LB.rh, "tpLim('rh')", c.rh + ':00')
         + '<div style="margin-top:14px"><button class="btn s" onclick="if(okTpE())upd(()=>{delete S.cfg.tp})">إرجاع الحدود الافتراضية</button></div>'
     };
@@ -137,9 +137,15 @@
   window.okTpE = () => okE() || (toast('للمدير فقط'), false);
 
   /* ---------- الرئيسية والمزيد ---------- */
+  /* إلغاء تذكير اليوم مع تأكيد وتراجع؛ يعود غداً تلقائياً */
+  window.tpSkip = () => sure('لن تُسجَّل أرصدة التعبئة اليوم؟ سيختفي التذكير حتى الغد.', 'نعم، لا تسجيل اليوم', false).then(ok => {
+    if (!ok) return;
+    S.cfg.tx = new Date().toDateString(); save(); render();
+    toast('أُلغي تذكير التعبئة لليوم', () => { delete S.cfg.tx; });
+  });
   HOME.top.push(() => {
-    if (new Date().getHours() < cf().rh || phDone() >= OPS.length * PH.length) return '';
-    return `<div class="card row2">${I('alert')}<span style="flex:1">لم تُسجَّل أرصدة التعبئة اليوم</span><button class="btn sm" onclick="go('tp')">سجّل الآن</button></div>`;
+    if (new Date().getHours() < cf().rh || phDone() >= OPS.length * PH.length || S.cfg.tx == new Date().toDateString()) return '';
+    return `<div class="card row2">${I('alert')}<span style="flex:1">لم تُسجَّل أرصدة التعبئة اليوم</span><button class="btn sm" onclick="go('tp')">سجّل الآن</button><button class="btn s sm" aria-label="لا تسجيل اليوم" onclick="tpSkip()">✕</button></div>`;
   });
   HOME.after.push(() => {
     const t = tally(), p = [];
@@ -148,7 +154,7 @@
     const sub = t.u == TOTAL ? 'لم تُسجَّل أرصدة بعد' : p.length ? p.join(' &nbsp; ') : 'كل شيء متوفر';
     return `<button class="card row2 tph" onclick="go('tp')"><span class="tpic">${ic('topup')}</span><span style="flex:1;min-width:0"><b style="display:block">التعبئة</b><span class="m">${sub}</span></span></button>`;
   });
-  MORE.push({ g: 'rep', o: 15, l: 'حدود التعبئة', fn: "go('st_tp')" });
+  MORE.push({ g: 'lim', o: 20, l: 'حدود التعبئة', d: 'حدود كل رصيد وكل بطاقة (قارب / متوفر) وساعة تذكير الصباح', fn: "go('st_tp')" });
 
   /* ---------- الأنماط ---------- */
   const st = document.createElement('style');
