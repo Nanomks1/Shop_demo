@@ -26,11 +26,11 @@ const CI = (() => {
       + `<path d="M23.5 64 L56.5 46 V76.5 a6 6 0 0 1 -6 6 H29.5 a6 6 0 0 1 -6 -6 Z" fill="#F472B6"/><circle cx="33" cy="35" r="5" fill="#FDE047"/>`
       + `<rect x="38" y="10" width="43" height="68" rx="10" fill="#67E8F9" fill-opacity=".3" stroke="#BAE6FD" stroke-width="3"/>`
       + `<path d="M48 68 L72 36 M58 72 L75 50" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7" fill="none"/><circle cx="48" cy="21" r="2.5" fill="#fff" opacity=".9"/>`),
-    /* البوشيط (كفرات ملوّنة، مكان الكاميرا فارغ) */
+    /* البوشيط (كفران ملوّنان، مكان الكاميرا فارغ) */
     ccase: T('#7C3AED',
-      `<rect x="38" y="14" width="42" height="70" rx="11" fill="#FBBF24" transform="rotate(10 59 49)"/>`
-      + `<rect x="22" y="12" width="44" height="74" rx="11" fill="#F472B6"/>`
-      + `<circle cx="44" cy="60" r="11" fill="none" stroke="#fff" stroke-width="2.5" opacity=".7"/>`),
+      `<defs><linearGradient id="gcb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60A5FA"/><stop offset="1" stop-color="#2563EB"/></linearGradient><linearGradient id="gcf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBBF24"/><stop offset=".55" stop-color="#FB7185"/><stop offset="1" stop-color="#EC4899"/></linearGradient></defs>`
+      + `<g transform="rotate(-10 40 50)"><rect x="17" y="16" width="42" height="68" rx="11" fill="url(#gcb)"/><rect x="23" y="22" width="14" height="14" rx="4.5" fill="#E0E7FF" opacity=".75"/></g>`
+      + `<g transform="rotate(8 62 50)"><rect x="40" y="12" width="44" height="72" rx="12" fill="url(#gcf)" stroke="#F472B6" stroke-width="3"/><rect x="46" y="18" width="16" height="16" rx="5" fill="#fff" opacity=".4"/></g>`),
     /* الإكسسوارات */
     cacc: T('#16A34A',
       `<rect x="40" y="8" width="4.5" height="12" rx="1" fill="#CBD5E1"/><rect x="55" y="8" width="4.5" height="12" rx="1" fill="#CBD5E1"/>`
