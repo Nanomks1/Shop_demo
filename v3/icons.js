@@ -31,11 +31,12 @@ const CI = (() => {
       `<defs><linearGradient id="gcb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60A5FA"/><stop offset="1" stop-color="#2563EB"/></linearGradient><linearGradient id="gcf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBBF24"/><stop offset=".55" stop-color="#FB7185"/><stop offset="1" stop-color="#EC4899"/></linearGradient></defs>`
       + `<g transform="rotate(-10 40 50)"><rect x="17" y="16" width="42" height="68" rx="11" fill="url(#gcb)"/><rect x="23" y="22" width="14" height="14" rx="4.5" fill="#E0E7FF" opacity=".75"/></g>`
       + `<g transform="rotate(8 62 50)"><rect x="40" y="12" width="44" height="72" rx="12" fill="url(#gcf)" stroke="#F472B6" stroke-width="3"/><rect x="46" y="18" width="16" height="16" rx="5" fill="#fff" opacity=".4"/></g>`),
-    /* الإكسسوارات */
+    /* الإكسسوارات: أربعة أصناف */
     cacc: T('#16A34A',
-      `<rect x="40" y="8" width="4.5" height="12" rx="1" fill="#CBD5E1"/><rect x="55" y="8" width="4.5" height="12" rx="1" fill="#CBD5E1"/>`
-      + `<rect x="34" y="18" width="32" height="38" rx="8" fill="#F8FAFC"/><polygon points="51,24 43,38 49,38 46,50 57,33 51,33" fill="#F59E0B"/>`
-      + `<path d="M50 56 V64 C50 78 72 72 72 82" fill="none" stroke="#F8FAFC" stroke-width="5" stroke-linecap="round"/><rect x="67" y="79" width="10" height="11" rx="3" fill="#CBD5E1"/>`),
+      `<rect x="12" y="12" width="36" height="36" rx="10" fill="#ECFDF5"/><rect x="23" y="17" width="3.5" height="7" rx="1" fill="#94A3B8"/><rect x="33.5" y="17" width="3.5" height="7" rx="1" fill="#94A3B8"/><rect x="19" y="23" width="22" height="18" rx="5" fill="#334155"/><polygon points="31,25 25,33 29,33 28,39 36,31 32,31" fill="#FBBF24"/>`
+      + `<rect x="52" y="12" width="36" height="36" rx="10" fill="#ECFDF5"/><path d="M60 38 V32 a10 10 0 0 1 20 0 V38" fill="none" stroke="#334155" stroke-width="3.5" stroke-linecap="round"/><rect x="57" y="34" width="8" height="12" rx="3.5" fill="#F43F5E"/><rect x="75" y="34" width="8" height="12" rx="3.5" fill="#F43F5E"/>`
+      + `<rect x="12" y="52" width="36" height="36" rx="10" fill="#ECFDF5"/><path d="M22 58 H35 L41 64 V80 a3 3 0 0 1 -3 3 H22 a3 3 0 0 1 -3 -3 V61 a3 3 0 0 1 3 -3 Z" fill="#2563EB"/><rect x="23" y="60" width="2.5" height="7" fill="#FBBF24"/><rect x="28" y="60" width="2.5" height="7" fill="#FBBF24"/><rect x="33" y="60" width="2.5" height="7" fill="#FBBF24"/>`
+      + `<rect x="52" y="52" width="36" height="36" rx="10" fill="#ECFDF5"/><path d="M60 80 C60 66 80 74 80 60" fill="none" stroke="#6366F1" stroke-width="3.5" stroke-linecap="round"/><rect x="57" y="78" width="7" height="6" rx="2" fill="#64748B"/><rect x="76" y="56" width="7" height="6" rx="2" fill="#64748B"/>`),
     /* التعبئة */
     ctopup: T('#0891B2',
       `<path d="M24 14 H46 L60 28 V80 a6 6 0 0 1 -6 6 H24 a6 6 0 0 1 -6 -6 V20 a6 6 0 0 1 6 -6 Z" fill="#F1F5F9"/>`
