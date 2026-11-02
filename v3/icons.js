@@ -20,17 +20,18 @@ const CI = (() => {
     cphone: T('#1D4ED8',
       `<rect x="16" y="18" width="38" height="64" rx="9" fill="#93C5FD"/><rect x="21" y="23" width="14" height="14" rx="4" fill="#1E3A8A"/><circle cx="26" cy="28" r="3" fill="#60A5FA"/><circle cx="31" cy="33" r="3" fill="#60A5FA"/>`
       + PH(44, 12, 40, 70, APPS(52, 30, ['#F472B6', '#FBBF24', '#34D399', '#60A5FA']))),
-    /* الأنتي كاس */
+    /* الأنتي كاس: شاشة ملوّنة + زجاج عائم */
     cglass: T('#0E7490',
-      PH(28, 12, 40, 70, `<rect x="34" y="40" width="28" height="8" rx="3" fill="#164E63"/>`)
-      + `<polygon points="35,17 58,17 35,56" fill="#fff" opacity=".28"/>`
-      + `<path d="M70 50 L85 56 V69 C85 79 78 84 70 87 C62 84 55 79 55 69 V56 Z" fill="#34D399" stroke="#0E7490" stroke-width="3" stroke-linejoin="round"/>`
-      + `<polyline points="63,69 68,74 77,63" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`),
-    /* البوشيط (كفرات ملوّنة) */
+      `<rect x="20" y="20" width="40" height="66" rx="9" fill="#E2E8F0"/><rect x="23.5" y="23.5" width="33" height="59" rx="6" fill="#C026D3"/>`
+      + `<path d="M23.5 64 L56.5 46 V76.5 a6 6 0 0 1 -6 6 H29.5 a6 6 0 0 1 -6 -6 Z" fill="#F472B6"/><circle cx="33" cy="35" r="5" fill="#FDE047"/>`
+      + `<rect x="38" y="10" width="43" height="68" rx="10" fill="#67E8F9" fill-opacity=".3" stroke="#BAE6FD" stroke-width="3"/>`
+      + `<path d="M48 68 L72 36 M58 72 L75 50" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7" fill="none"/><circle cx="48" cy="21" r="2.5" fill="#fff" opacity=".9"/>`),
+    /* البوشيط (كفرات ملوّنة، بدون كاميرا) */
     ccase: T('#7C3AED',
       `<rect x="38" y="14" width="42" height="70" rx="11" fill="#FBBF24" transform="rotate(10 59 49)"/>`
-      + `<rect x="22" y="12" width="44" height="74" rx="11" fill="#F472B6"/><rect x="27" y="17" width="17" height="17" rx="5" fill="#4C1D95"/><circle cx="33" cy="23" r="3.2" fill="#A78BFA"/><circle cx="39" cy="29" r="3.2" fill="#A78BFA"/>`
-      + `<circle cx="44" cy="60" r="11" fill="none" stroke="#fff" stroke-width="2.5" opacity=".7"/>`),
+      + `<rect x="20" y="12" width="46" height="74" rx="11" fill="#F472B6"/><path d="M20 62 L66 36 V75 a11 11 0 0 1 -11 11 H31 a11 11 0 0 1 -11 -11 Z" fill="#EC4899"/>`
+      + STAR(43, 44, 15, '#FDF2F8')
+      + `<circle cx="30" cy="22" r="2.4" fill="#FCE7F3"/><circle cx="55" cy="24" r="2.4" fill="#FCE7F3"/><circle cx="31" cy="74" r="2.4" fill="#FCE7F3"/>`),
     /* الإكسسوارات */
     cacc: T('#16A34A',
       `<rect x="40" y="8" width="4.5" height="12" rx="1" fill="#CBD5E1"/><rect x="55" y="8" width="4.5" height="12" rx="1" fill="#CBD5E1"/>`

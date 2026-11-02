@@ -134,7 +134,7 @@
   });
   HOME.top.push(() => {
     const c = rcf(), d = new Date();
-    if (!c.rm || sentToday() || c.nd.includes(d.getDay()) || d.getHours() < c.rh || S.cfg.rx == d.toDateString()) return '';
+    if (!c.rm || (typeof noRem == 'function' && noRem()) || sentToday() || c.nd.includes(d.getDay()) || d.getHours() < c.rh || S.cfg.rx == d.toDateString()) return '';
     return `<div class="card row2">${I('alert')}<span style="flex:1">لم يُرسل تقرير اليوم بعد</span><button class="btn sm" onclick="go('rep')">افتح التقرير</button><button class="btn s sm" aria-label="لا تقرير اليوم" onclick="rcSkip()">✕</button></div>`;
   });
   MORE.push({ g: 'rep', o: 10, l: 'إعدادات التقرير', d: 'ما يظهر في التقرير ونص الواتساب، وتذكير الإرسال', fn: "go('st_rep')" });

@@ -259,13 +259,14 @@ VW.st_users = () => {
   const a = isAdmin();
   return {
     t: 'المستخدمون',
-    h: S.users.map((u, i) => `<div class="card row2"><b>${esc(u.name)}</b><span class="m">${u.admin ? 'مدير' : 'موظف' + (u.pin ? '' : ' · بلا رمز')}</span>${a ? `<button class="btn s sm" onclick="uEd(${i})">تعديل</button>` : ''}</div>`).join('')
+    h: S.users.map((u, i) => `<div class="card row2"><b>${esc(u.name)}</b><span class="m">${u.admin ? 'مدير' : 'موظف' + (u.pin ? '' : ' · بلا رمز')}${u.nr ? ' · بلا تنبيهات' : ''}</span>${a ? `<button class="btn s sm" onclick="uEd(${i})">تعديل</button>` : ''}</div>`).join('')
       + (a ? '<button class="btn" onclick="uAdd()">+ مستخدم</button><button class="btn s" onclick="pinCh()">تغيير رمز المدير</button><h3>الصلاحيات</h3>'
         + Object.keys(PL).map(k => `<div class="card row2"><b>${PL[k]}</b><button class="btn s sm" onclick="pTog('${k}')">${S.perm[k] == 'a' ? 'المدير فقط' : 'الجميع'}</button></div>`).join('')
         : '<p class="m">التعديل للمدير فقط.</p>')
   };
 };
 const adm = () => S.users.filter(u => u.admin).length;
+const noRem = () => !!(S.users.find(u => u.name == S.me) || {}).nr;
 const uAdd = needAdm(function () {
   ask('مستخدم جديد', [{ k: 'n', l: 'الاسم' }, { k: 'r', l: 'الدور', t: 'sel', o: ['موظف', 'مدير'], v: 'موظف' }, { k: 'p', l: 'رمز الموظف بالأرقام (إجباري للموظف، 4 على الأقل)', t: 'password' }]).then(v => {
     if (!v || !v.n.trim()) return;
@@ -277,6 +278,7 @@ const uAdd = needAdm(function () {
 const uEd = needAdm(function (i) {
   const u = S.users[i];
   const F = [{ k: 'r', l: 'الدور', t: 'sel', o: ['موظف', 'مدير'], v: u.admin ? 'مدير' : 'موظف' }, { k: 'p', l: 'رمز جديد للموظف (فارغ = بلا تغيير)' + (u.pin ? ' — له رمز حالياً' : ''), t: 'password' }];
+  F.push({ k: 'n', l: 'التنبيهات اليومية في الرئيسية (التقرير والتعبئة)', t: 'sel', o: ['تظهر', 'مخفية'], v: u.nr ? 'مخفية' : 'تظهر' });
   F.push({ k: 'x', l: 'حذف المستخدم؟', t: 'sel', o: ['لا', 'نعم'], v: 'لا' });
   ask(u.name, F).then(v => {
     if (!v) return;
@@ -285,7 +287,7 @@ const uEd = needAdm(function (i) {
     if (v.x != 'نعم' && v.r == 'موظف' && !u.pin && !v.p) return toast('رمز الموظف إجباري: اكتب رمزاً جديداً للموظف');
     upd(() => {
       if (v.x == 'نعم') S.users.splice(i, 1);
-      else { u.admin = v.r == 'مدير'; if (u.admin) delete u.pin; else if (v.p) u.pin = hs(v.p); }
+      else { u.admin = v.r == 'مدير'; if (u.admin) delete u.pin; else if (v.p) u.pin = hs(v.p); if (v.n == 'مخفية') u.nr = 1; else delete u.nr; }
     });
   });
 });

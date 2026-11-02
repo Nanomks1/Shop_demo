@@ -144,7 +144,7 @@
     toast('أُلغي تذكير التعبئة لليوم', () => { delete S.cfg.tx; });
   });
   HOME.top.push(() => {
-    if (new Date().getHours() < cf().rh || phDone() >= OPS.length * PH.length || S.cfg.tx == new Date().toDateString()) return '';
+    if ((typeof noRem == 'function' && noRem()) || new Date().getHours() < cf().rh || phDone() >= OPS.length * PH.length || S.cfg.tx == new Date().toDateString()) return '';
     return `<div class="card row2">${I('alert')}<span style="flex:1">لم تُسجَّل أرصدة التعبئة اليوم</span><button class="btn sm" onclick="go('tp')">سجّل الآن</button><button class="btn s sm" aria-label="لا تسجيل اليوم" onclick="tpSkip()">✕</button></div>`;
   });
   HOME.after.push(() => {
