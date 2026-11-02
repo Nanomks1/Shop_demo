@@ -7,7 +7,7 @@
 
 
 /* ---------- الأقسام ---------- */
-const SECS = [['phones', 'الهواتف', 'mobile'], ['glass', 'الأنتي كاس', 'shield'], ['case', 'البوشيط', 'box'], ['acc', 'الإكسسوارات', 'plug']];
+const SECS = [['phones', 'الهواتف', 'cphone'], ['glass', 'الأنتي كاس', 'cglass'], ['case', 'البوشيط', 'ccase'], ['acc', 'الإكسسوارات', 'cacc']];
 const secCount = k => k == 'glass' ? S.gg.length : S.items.filter(i => i.sec == k).length;
 const soon = t => ({ t, h: '<div class="card"><b>يُبنى في مرحلة قادمة</b><p class="m">هذا القسم لم يُنقل إلى النسخة الجديدة بعد، والنسخة القديمة (v2) ما زالت تعمل.</p></div>' });
 VW.sec = VW.sec || (() => soon('قسم'));

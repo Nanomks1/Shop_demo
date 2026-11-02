@@ -152,7 +152,7 @@
     if (t.r) p.push(`<span class="dotl" style="background:${DT.r};margin-inline-end:4px"></span>${t.r} نافد`);
     if (t.y) p.push(`<span class="dotl" style="background:${DT.y};margin-inline-end:4px"></span>${t.y} قارب`);
     const sub = t.u == TOTAL ? 'لم تُسجَّل أرصدة بعد' : p.length ? p.join(' &nbsp; ') : 'كل شيء متوفر';
-    return `<button class="card row2 tph" onclick="go('tp')"><span class="tpic">${ic('topup')}</span><span style="flex:1;min-width:0"><b style="display:block">التعبئة</b><span class="m">${sub}</span></span></button>`;
+    return `<button class="card row2 tph" onclick="go('tp')"><span class="tpic">${ic('ctopup')}</span><span style="flex:1;min-width:0"><b style="display:block">التعبئة</b><span class="m">${sub}</span></span></button>`;
   });
   MORE.push({ g: 'lim', o: 20, l: 'حدود التعبئة', d: 'حدود كل رصيد وكل بطاقة (قارب / متوفر) وساعة تذكير الصباح', fn: "go('st_tp')" });
 

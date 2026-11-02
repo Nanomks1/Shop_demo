@@ -1,9 +1,10 @@
-const CACHE = 'aziz-shop-v3-24';
+const CACHE = 'aziz-shop-v3-27';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './core.js',
+  './icons.js',
   './topup.js',
   './inventory.js',
   './repair.js',

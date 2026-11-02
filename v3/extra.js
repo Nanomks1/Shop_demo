@@ -151,7 +151,7 @@ VW.stat = () => {
 };
 
 /* ---------- التسجيل في الرئيسية والمزيد والبحث ---------- */
-HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1;margin:0" onclick="go('usd')">${I('mobile')} شراء مستعمل</button><button class="btn s" style="flex:1;margin:0" onclick="go('dbt')">${I('wallet')} الديون${S.debt.filter(d => !d.paid).length ? ' (' + S.debt.filter(d => !d.paid).length + ')' : ''}</button></div>`);
+HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1;margin:0" onclick="go('usd')">${I('cused')} شراء مستعمل</button><button class="btn s" style="flex:1;margin:0" onclick="go('dbt')">${I('cdebt')} الديون${S.debt.filter(d => !d.paid).length ? ' (' + S.debt.filter(d => !d.paid).length + ')' : ''}</button></div>`);
 MORE.push({ g: 'rep', o: 60, l: 'إحصائيات: الأعطال وطلبات الزبائن', fn: "go('stat')" });
 SRCH.push(
   { k: 'used', l: 'مستعمل', run: n => S.used.filter(u => nz([u.dev, u.name, u.tel, u.imei, u.note].join(' ')).includes(n)).slice(0, 20).map(usedCard) },
