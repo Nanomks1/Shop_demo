@@ -26,12 +26,11 @@ const CI = (() => {
       + `<path d="M23.5 64 L56.5 46 V76.5 a6 6 0 0 1 -6 6 H29.5 a6 6 0 0 1 -6 -6 Z" fill="#F472B6"/><circle cx="33" cy="35" r="5" fill="#FDE047"/>`
       + `<rect x="38" y="10" width="43" height="68" rx="10" fill="#67E8F9" fill-opacity=".3" stroke="#BAE6FD" stroke-width="3"/>`
       + `<path d="M48 68 L72 36 M58 72 L75 50" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7" fill="none"/><circle cx="48" cy="21" r="2.5" fill="#fff" opacity=".9"/>`),
-    /* البوشيط (كفرات ملوّنة، بدون كاميرا) */
+    /* البوشيط (كفرات ملوّنة، مكان الكاميرا فارغ) */
     ccase: T('#7C3AED',
       `<rect x="38" y="14" width="42" height="70" rx="11" fill="#FBBF24" transform="rotate(10 59 49)"/>`
-      + `<rect x="20" y="12" width="46" height="74" rx="11" fill="#F472B6"/><path d="M20 62 L66 36 V75 a11 11 0 0 1 -11 11 H31 a11 11 0 0 1 -11 -11 Z" fill="#EC4899"/>`
-      + STAR(43, 44, 15, '#FDF2F8')
-      + `<circle cx="30" cy="22" r="2.4" fill="#FCE7F3"/><circle cx="55" cy="24" r="2.4" fill="#FCE7F3"/><circle cx="31" cy="74" r="2.4" fill="#FCE7F3"/>`),
+      + `<rect x="22" y="12" width="44" height="74" rx="11" fill="#F472B6"/>`
+      + `<circle cx="44" cy="60" r="11" fill="none" stroke="#fff" stroke-width="2.5" opacity=".7"/>`),
     /* الإكسسوارات */
     cacc: T('#16A34A',
       `<rect x="40" y="8" width="4.5" height="12" rx="1" fill="#CBD5E1"/><rect x="55" y="8" width="4.5" height="12" rx="1" fill="#CBD5E1"/>`
