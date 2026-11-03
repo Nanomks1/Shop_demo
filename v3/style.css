@@ -1,11 +1,14 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-:root{--bg:#f4f6fa;--c:#fff;--t:#0f172a;--m:#64748b;--b:#cbd5e1;--p:#2563eb;--ab:#e0e9ff;--onp:#fff;--fs:17px;--r:16px;color-scheme:light}
-[data-th=d]{--bg:#0b1220;--c:#131c2e;--t:#e6edf7;--m:#8a97ad;--b:#263552;--p:#4f8cff;--ab:#1b2a4a;--onp:#06122b;color-scheme:dark}
-[data-th=g]{--bg:#f2f7f4;--c:#fff;--t:#10231a;--m:#5a7066;--b:#c5d8ce;--p:#059669;--ab:#d1fae5}
-[data-th=v]{--bg:#130f1f;--c:#1c1630;--t:#ece8f8;--m:#9b92b8;--b:#352b54;--p:#8b5cf6;--ab:#2a2150;color-scheme:dark}
-[data-th=w]{--bg:#f8f3ea;--c:#fffdf8;--t:#2b2118;--m:#7a6a58;--b:#dfd0b8;--p:#d9480f;--ab:#fdeadf}
-@media(prefers-color-scheme:dark){[data-th=a]{--bg:#0b1220;--c:#131c2e;--t:#e6edf7;--m:#8a97ad;--b:#263552;--p:#4f8cff;--ab:#1b2a4a;--onp:#06122b;color-scheme:dark}}
+:root{--bg:#eef1f6;--c:#fff;--t:#0f172a;--m:#4b5a70;--b:#c4cddb;--p:#1d4ed8;--ab:#dbe7ff;--onp:#fff;--fs:18px;--r:16px;color-scheme:only light}
+[data-md=d]{--bg:#0b1220;--c:#151f33;--t:#eef3fb;--m:#a3b0c7;--b:#2d3d5c;--p:#6aa0ff;--ab:#1c2d52;--onp:#07142e;color-scheme:dark}
+[data-ac=g][data-md=l]{--bg:#eef4f0;--b:#c3d6ca;--p:#047857;--ab:#d3f5e4}
+[data-ac=g][data-md=d]{--bg:#09130f;--c:#12201a;--b:#2a4538;--p:#34d399;--ab:#12362c;--onp:#04231a}
+[data-ac=v][data-md=l]{--bg:#f3f0fa;--b:#d4cbe8;--p:#6d28d9;--ab:#ebe2ff}
+[data-ac=v][data-md=d]{--bg:#120e1f;--c:#1c1630;--b:#3a2f5c;--p:#a78bfa;--ab:#2a2150;--onp:#170b3a}
+[data-ac=o][data-md=l]{--bg:#f7f2ea;--c:#fffdf9;--b:#dccfb9;--p:#c2410c;--ab:#ffe6d6}
+[data-ac=o][data-md=d]{--bg:#16110c;--c:#211a13;--b:#4a3a2b;--p:#fb923c;--ab:#3b2414;--onp:#2a1203}
+[data-md=d] .btn.del,[data-md=d] .dng{color:#f87171}
 html{font-size:var(--fs);overflow-x:hidden}
 body{margin:0;overflow-x:hidden;max-width:100%;background:var(--bg);color:var(--t);font-family:system-ui,"Segoe UI",Tahoma,sans-serif;line-height:1.6}
 header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:4px;padding:8px 8px;padding-top:calc(10px + env(safe-area-inset-top));background:var(--c);border-bottom:1px solid var(--b)}
@@ -28,7 +31,7 @@ button,input,select,textarea{touch-action:manipulation}
 .card.sel{border-color:var(--p);box-shadow:0 0 0 1px var(--p)}
 .row2{display:flex;align-items:center;gap:10px}
 .row2 b{flex:1;min-width:0;font-weight:600;overflow-wrap:anywhere}
-.m{color:var(--m);font-size:.92rem}
+.m{color:var(--m);font-size:.96rem}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .grid .card{margin:0;text-align:center;padding:22px 10px;font-weight:600}
 .grid .card.sc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:start;padding:14px;cursor:pointer}
@@ -41,10 +44,10 @@ input,select,textarea{width:100%;min-height:48px;padding:10px 12px;border:1.5px 
 #sh input,#sh select,#sh textarea,.card input,.card select,.card textarea{background:var(--bg);border-color:color-mix(in srgb,var(--t) 22%,var(--b))}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--p);outline-offset:-1px;border-color:transparent!important}
 ::placeholder{color:var(--m);opacity:.8}
-label{display:block;margin:10px 0 4px;color:var(--m);font-size:.9rem;font-weight:500}
+label{display:block;margin:10px 0 4px;color:var(--m);font-size:.96rem;font-weight:500}
 
 nav{position:fixed;bottom:0;inset-inline:0;z-index:10;display:flex;background:var(--c);border-top:1px solid var(--b);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
-nav button{flex:1;border:0;background:none;color:var(--m);padding:4px 0;font:inherit;font-size:.78rem;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+nav button{flex:1;border:0;background:none;color:var(--m);padding:4px 0;font:inherit;font-size:.84rem;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
 nav button .ic{width:3rem;height:1.9rem;padding:.25rem .8rem;border-radius:999px}
 nav button.on{color:var(--p);font-weight:600}
 nav button.on .ic{background:var(--ab)}
@@ -58,7 +61,7 @@ nav button.on .ic{background:var(--ab)}
 
 .toast{position:fixed;bottom:84px;inset-inline:14px;max-width:612px;margin:auto;background:#1e293b;color:#fff;padding:12px 16px;border-radius:14px;display:flex;justify-content:space-between;align-items:center;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .toast button{background:none;border:0;color:#93c5fd;font:inherit;font-weight:600;cursor:pointer}
-.tag{display:inline-flex;gap:8px;align-items:center;margin:3px;padding:7px 13px;border-radius:999px;background:var(--c);border:1px solid var(--b);color:var(--t);font:inherit;font-size:.9rem;cursor:pointer}
+.tag{display:inline-flex;gap:8px;align-items:center;margin:3px;padding:7px 13px;border-radius:999px;background:var(--c);border:1px solid var(--b);color:var(--t);font:inherit;font-size:.96rem;cursor:pointer}
 #sh .tag{background:var(--bg)}
 .tag b{color:#dc2626}
 .tag.on,#sh .tag.on{background:var(--p);color:var(--onp);border-color:var(--p);font-weight:600}
@@ -102,7 +105,7 @@ nav button.on .ic{background:var(--ab)}
 .qpill.ok .qic{background:color-mix(in srgb,#16a34a 14%,var(--c));color:#16a34a}
 .qpill .qn{font-size:1.7rem;font-weight:800;line-height:1.1}
 .qpill .ql{font-size:.78rem;font-weight:600;line-height:1.2}
-.qpill .qs{font-size:.72rem;color:var(--m)}
+.qpill .qs{font-size:.8rem;color:var(--m)}
 
 /* ---- بطاقات أقسام الإعدادات (المزيد) ---- */
 .st-card{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer}
@@ -160,7 +163,7 @@ nav button.on .ic{background:var(--ab)}
 .gm{border-top:1px solid var(--b);padding-top:8px;margin-top:8px}
 .kvs{display:flex;gap:8px;margin:8px 0}
 .kv{flex:1;background:var(--bg);border-radius:10px;padding:6px 10px;text-align:center}
-.kv small{display:block;color:var(--m);font-size:.75rem}.kv b{font-size:1.1rem}
+.kv small{display:block;color:var(--m);font-size:.82rem}.kv b{font-size:1.1rem}
 
 /* ---- شاشات القفل ---- */
 .lockscr{position:fixed;inset:0;z-index:15;background:var(--bg);overflow:auto;display:flex}

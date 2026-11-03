@@ -244,24 +244,41 @@ function bcBeep(ok = true) {
   } catch (e) { }
 }
 
-function ensureBD() {   // آيفون: تحميل ماسح بديل عند الحاجة
-  if ('BarcodeDetector' in window) return Promise.resolve(true);
+let BDX = null;
+function loadPoly() {   // ماسح بديل (للمتصفحات التي لا تدعم المسح الأصلي مثل Brave)
+  if (window.BarcodeDetectorPolyfill) return Promise.resolve(true);
   if (BDP) return BDP;
   return BDP = new Promise(res => {
     const s = document.createElement('script'); s.src = 'https://fastly.jsdelivr.net/npm/barcode-detector@2.3.1/dist/iife/pure.min.js';
-    s.onload = () => { if (window.BarcodeDetectorPolyfill && !('BarcodeDetector' in window)) window.BarcodeDetector = window.BarcodeDetectorPolyfill; res('BarcodeDetector' in window); };
-    s.onerror = () => res(false); document.head.appendChild(s);
+    s.onload = () => res(!!window.BarcodeDetectorPolyfill); s.onerror = () => { BDP = null; res(false); }; document.head.appendChild(s);
   });
 }
+async function bdNew() {   // الأصلي إن كان يعمل فعلاً، وإلا البديل
+  if (BDX) return BDX;
+  if ('BarcodeDetector' in window && !window.BarcodeDetectorPolyfill) {
+    try { const t = new window.BarcodeDetector(), c = document.createElement('canvas'); c.width = c.height = 8; await t.detect(c); return BDX = t; } catch (e) { }
+  }
+  if (await loadPoly()) { try { return BDX = new window.BarcodeDetectorPolyfill(); } catch (e) { } }
+  return null;
+}
+function camErr(e) {   // سبب فشل الكاميرا بكلام مفهوم
+  const n = (e && e.name) || '';
+  if (!window.isSecureContext) return 'الكاميرا تحتاج رابطاً آمناً (https)';
+  if (n == 'NotAllowedError' || n == 'SecurityError' || n == 'PermissionDeniedError') return 'الكاميرا محظورة: اسمح بها من إعدادات الموقع في المتصفح، ومن إعدادات أندرويد ← التطبيقات ← المتصفح ← الأذونات ← الكاميرا';
+  if (n == 'NotFoundError' || n == 'OverconstrainedError') return 'لم يتم العثور على كاميرا في هذا الجهاز';
+  if (n == 'NotReadableError' || n == 'AbortError') return 'الكاميرا مشغولة بتطبيق آخر، أغلقه وأعد المحاولة';
+  return 'تعذر فتح الكاميرا' + (n ? ' (' + n + ')' : '');
+}
 async function bcScan(cb, onContinuous) {
-  if (!('BarcodeDetector' in window)) { toast('جارٍ تجهيز ماسح الباركود...'); await ensureBD(); }
-  if (!('BarcodeDetector' in window) || !navigator.mediaDevices) return toast('هذا المتصفح لا يدعم المسح بالكاميرا');
+  if (!BDX) toast('جارٍ تجهيز ماسح الباركود...');
+  const d = await bdNew();
+  if (!d || !navigator.mediaDevices) return toast('تعذّر تجهيز ماسح الباركود: تحقق من الاتصال بالإنترنت ثم أعد المحاولة', 0, 12000);
   BC_LAST = { c: '', t: 0 };
   const qMode = bcQ();
   $('sh').innerHTML = `<div class="bar"></div><h3>${qMode ? I('zap') + ' البيع السريع المتتالي (−1)' : 'وجّه الكاميرا نحو الباركود'}</h3>`
     + (qMode ? `<div class="m" style="margin-bottom:6px">تبقى الكاميرا مفتوحة لخصم عدة سلع متتالية</div>` : '')
     + `<video id="bcv" autoplay playsinline muted style="width:100%;border-radius:14px"></video><div id="bc_log" style="margin-top:8px"></div><button class="btn s" onclick="finish(null)">إغلاق</button>`;
-  sheetOpen(v => { bcStop(); if (v) cb(v); }); const d = new BarcodeDetector();
+  sheetOpen(v => { bcStop(); if (v) cb(v); });
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(s => {
     if (!SH) { s.getTracks().forEach(t => t.stop()); return; } BS = s; const v = $('bcv'); v.srcObject = s;
     BI = setInterval(() => {
@@ -274,19 +291,18 @@ async function bcScan(cb, onContinuous) {
         bcStop(); finish(c);
       }).catch(() => { });
     }, 350);
-  }).catch(() => { toast('تعذر فتح الكاميرا'); if (SH) finish(null); });
+  }).catch(e => { if (SH) finish(null); toast(camErr(e), 0, 15000); });
 }
 let INL = null, INT = 0;
 function stopInlineScan() { clearInterval(INT); if (INL) { INL.getTracks().forEach(t => t.stop()); INL = null; } const b = $('inline_bc_box'); if (b) b.remove(); }
 async function scanIntoInput(inputId) {   // مسح داخل نموذج مفتوح (حقل IMEI)
   if ($('inline_bc_box')) return stopInlineScan(); const inp = $(inputId); if (!inp) return;
-  if (!(await ensureBD()) || !navigator.mediaDevices) return toast('هذا المتصفح لا يدعم المسح بالكاميرا');
+  const det = await bdNew(); if (!det || !navigator.mediaDevices) return toast('تعذّر تجهيز ماسح الباركود: تحقق من الاتصال بالإنترنت ثم أعد المحاولة', 0, 12000);
   (inp.closest('label') || inp.parentElement).insertAdjacentHTML('afterend', '<div id="inline_bc_box" class="card" style="margin:8px 0;padding:10px;text-align:center"><div class="m" style="margin-bottom:6px">وجّه الكاميرا نحو باركود IMEI على العلبة أو الشاشة (*#06#)</div><video id="inline_bcv" autoplay playsinline muted style="width:100%;max-height:190px;object-fit:cover;border-radius:10px"></video><button type="button" class="btn s sm" style="margin-top:8px;width:100%" onclick="stopInlineScan()">إلغاء المسح</button></div>');
-  const det = new BarcodeDetector();
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(st => {
     const v = $('inline_bcv'); if (!v) { st.getTracks().forEach(t => t.stop()); return; } INL = st; v.srcObject = st;
     INT = setInterval(() => { det.detect(v).then(c => { if (c && c[0] && INL) { const val = String(c[0].rawValue || '').trim(); if (val) { const cur = inp.value.trim(); inp.value = cur && !cur.includes(val) ? cur + ' · ' + val : val; bcBeep(true); stopInlineScan(); toast('تم التقاط الرمز: ' + val); } } }).catch(() => { }); }, 350);
-  }).catch(() => { stopInlineScan(); toast('تعذر فتح الكاميرا'); });
+  }).catch(e => { stopInlineScan(); toast(camErr(e), 0, 15000); });
 }
 HK.hide.push(() => { stopInlineScan(); bcStop(); });
 const bcLbl = i => i.sec == 'phones' ? i.brand + ' ' + i.name : i.sec == 'case' ? i.name : acName(i);

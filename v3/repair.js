@@ -7,7 +7,8 @@
 
 /* ---------- ثوابت ومساعدات ---------- */
 const RK = ['شاشة مكسورة', 'بدون SIM', 'مطفأ لا يشتغل', 'البصمة لا تعمل', 'بدون غطاء'];
-const TB = { in: 'في المحل', rd: 'جاهز', dn: 'الأرشيف' };
+const TB = { in: 'في المحل', rd: 'جاهز', nf: 'لم تُصلَّح', dn: 'الأرشيف' };
+const tabOf = r => r.st == 'rd' && (r.res == 'fail' || r.res == 'ref') ? 'nf' : r.st;   // «لم تُصلَّح» = تعذّر الإصلاح أو رفض (الحالة تبقى rd)
 const FL = [['all', 'الكل'], ['today', 'اليوم'], ['yest', 'البارحة'], ['week', 'هذا الأسبوع'], ['month', 'هذا الشهر'], ['date', 'تاريخ']];
 const RES = { ok: 'تم الإصلاح', fail: 'تعذّر الإصلاح', ref: 'رفض الإصلاح' };
 const LOC = { m: 'عند المعلم', s: 'الرف' };   // مكان الهاتف داخل المحل (يُخفى من إعدادات الحقول)
@@ -97,7 +98,7 @@ function rc(r) {
     + (r.st == 'dn' ? `<div class="m">تسليم: <bdi>${fd(r.t2)}</bdi> · ${esc(r.dby || '')} · المقبوض: <b>${esc(dh(r.paid))}</b></div>` : '') + (typeof dbtRp == 'function' ? dbtRp(r) : '')
     + (oSum > 0 ? `<div class="rs" style="color:#dc2626;cursor:pointer" onclick="go('dbt')">${I('alert')} تنبيه: على هذا الزبون دين مفتوح (${oSum} درهم)</div>` : '')
     + ((r.chk || []).length ? `<div class="m">الحالة: ${esc(r.chk.join('، '))}</div>` : '') + (r.lock ? `<div class="m">PIN: ${esc(r.lock)}</div>` : '') + (w > 15 ? `<div class="rs">منسي منذ ${w} يوم</div>` : '')
-    + ((r.calls || []).length ? `<div class="m">اتصالات: ${r.calls.length}</div>` : '') + (r.st != 'in' && r.res ? `<div class="m">${RES[r.res]}</div>` : '') + (r.note ? `<div class="m">${esc(r.note)}</div>` : '')
+    + ((r.calls || []).length ? `<div class="m">اتصالات: ${r.calls.length}</div>` : '') + (r.st != 'in' && r.res ? (r.st == 'rd' && r.res != 'ok' ? `<div style="color:#dc2626;font-weight:700">${RES[r.res]}</div>` : `<div class="m">${RES[r.res]}</div>`) : '') + (r.note ? `<div class="m">${esc(r.note)}</div>` : '')
     + fxShow(r) + (r.imei ? `<div class="m">IMEI: <bdi>${esc(r.imei)}</bdi></div>` : '') + (wi ? `<div class="m" style="color:${wi.active ? '#16a34a' : '#64748b'};font-weight:700">${I('shield')} ${esc(wi.label)}</div>` : '')
     + (r.st == 'dn' ? (r.tst ? `<div class="m" style="color:#16a34a;font-weight:700">${I('check')} جُرِّب مع الزبون وسُلِّم مصلوحاً (${esc(r.dby || '')})</div>` : (r.res == 'ok' ? '<div class="m">سُلِّم بدون توثيق التجربة</div>' : '')) + (r.dnote ? `<div class="m">ملاحظة التسليم: ${esc(r.dnote)}</div>` : '') : '')
     + (r.st == 'in' ? `<div class="sub">${B('مصلوح', `rSt('${i}','ok')`, 1)}${B('غير مصلوح', `rSt('${i}','fail')`)}${B('رفض', `rSt('${i}','ref')`)}</div>`
@@ -106,7 +107,7 @@ function rc(r) {
 }
 function rpList() {
   const q = nz(V.q || ''), tab = V.tab || 'in', all = V.all && q;
-  const a = S.rp.filter(r => (all || r.st == tab) && inR(tOf(r)) && (!q || nzOf(r, rpText).includes(q))).sort((x, y) => tOf(y) - tOf(x));
+  const a = S.rp.filter(r => (all || tabOf(r) == tab) && inR(tOf(r)) && (!q || nzOf(r, rpText).includes(q))).sort((x, y) => tOf(y) - tOf(x));
   return a.map(rc).join('') || '<p class="m">لا شيء</p>';
 }
 const rpL = () => { $('rl').innerHTML = rpList(); };
@@ -114,7 +115,7 @@ VW.rp = () => {
   const tab = V.tab || 'in';
   return {
     t: 'الصيانة',
-    h: `<div class="row2" style="gap:8px"><button class="btn" style="width:auto;flex:2" onclick="rEd(null)">+ استلام هاتف</button><button class="btn s" style="width:auto;flex:1" onclick="go('gd')">دليل الأسعار</button></div><div class="stk-bar"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${Object.keys(TB).map(k => `<button class="tag ${tab == k ? 'on' : ''}" style="margin:0;justify-content:center;padding:8px 4px" onclick="V.tab='${k}';render()">${TB[k]} (${S.rp.filter(r => r.st == k).length})</button>`).join('')}</div></div>`
+    h: `<div class="row2" style="gap:8px"><button class="btn" style="width:auto;flex:2" onclick="rEd(null)">+ استلام هاتف</button><button class="btn s" style="width:auto;flex:1" onclick="go('gd')">دليل الأسعار</button></div><div class="stk-bar"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">${Object.keys(TB).map(k => `<button class="tag ${tab == k ? 'on' : ''}" style="margin:0;justify-content:center;flex-direction:column;gap:0;padding:6px 2px;font-size:.88rem;line-height:1.35" onclick="V.tab='${k}';render()">${TB[k]}<b style="font-size:.95rem">${S.rp.filter(r => tabOf(r) == k).length}</b></button>`).join('')}</div></div>`
       + `<input placeholder="ابحث: تذكرة (A101)، اسم، رقم، جهاز، عطل" value="${esc(V.q)}" oninput="V.q=this.value;rpL()"><div class="row2" style="margin:6px 0"><select style="flex:1" aria-label="التاريخ" onchange="V.d=this.value;render()">${FL.map(([k, l]) => `<option value="${k}" ${(V.d || 'all') == k ? 'selected' : ''}>${k == 'all' ? 'كل التواريخ' : l}</option>`).join('')}</select><button class="tag ${V.all ? 'on' : ''}" style="margin:0;white-space:nowrap" onclick="V.all=!V.all;render()">كل التبويبات</button></div>`
       + `${V.d == 'date' ? `<input type="date" value="${V.dt || ''}" onchange="V.dt=this.value;render()">` : ''}<div id="rl">${rpList()}</div>`
   };
@@ -123,7 +124,7 @@ VW.rp = () => {
 /* ---------- تغيير الحالة، الاتصال، الحذف ---------- */
 function rSt(id, x) {
   const r = rf(id);
-  commit('تم التحديث', () => { if (x == 'in') { r.st = 'in'; r.res = ''; } else { r.st = 'rd'; r.res = x; r.t1 = Date.now(); } r.loc = ''; r.lb = S.me; });
+  commit(x == 'in' ? 'عاد إلى «في المحل»' : x == 'ok' ? 'انتقل إلى «جاهز»' : 'انتقل إلى «لم تُصلَّح»', () => { if (x == 'in') { r.st = 'in'; r.res = ''; } else { r.st = 'rd'; r.res = x; r.t1 = Date.now(); } r.loc = ''; r.lb = S.me; });
 }
 function rLoc(id, k) {
   const r = rf(id); if (!r || !LOC[k]) return;
@@ -292,7 +293,7 @@ function rCam() {
   $('r_im').insertAdjacentHTML('beforebegin', '<div id="cam_box" class="card" style="margin:8px 0;padding:10px;text-align:center"><video id="cam_v" autoplay playsinline muted style="width:100%;border-radius:12px"></video><div class="row2" style="margin-top:8px"><button type="button" class="btn sm" style="flex:1" onclick="camSnap()">التقاط</button><button type="button" class="btn s sm" onclick="camStop()">إلغاء</button></div></div>');
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(s => {
     const v = $('cam_v'); if (!v) { s.getTracks().forEach(t => t.stop()); return; } CAMS = s; v.srcObject = s;
-  }).catch(() => { camStop(); toast('تعذر فتح الكاميرا: اختر صورة من الجهاز'); $('r_i').click(); });
+  }).catch(e => { camStop(); toast(camErr(e), 0, 15000); $('r_i').click(); });
 }
 function camSnap() {
   const v = $('cam_v'); if (!v || !v.videoWidth) return toast('انتظر ظهور الصورة ثم اضغط التقاط');

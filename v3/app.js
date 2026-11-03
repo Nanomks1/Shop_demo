@@ -73,18 +73,19 @@ function srch(q) {
 function sq(q) {
   if (q && !QP) { QP = 1; history.pushState({ V, q: 1 }, ''); }
   Q = q; const r = $('res'); if (r) r.innerHTML = q ? srch(q) : '';
+  const hm = $('hm'); if (hm) hm.hidden = !!(q && String(q).trim());   // أثناء البحث: أخفِ بقية الرئيسية
 }
 function goSearch() { go('home'); setTimeout(() => { const i = $('q_inp') || document.querySelector('main input'); if (i) i.focus(); }, 60); }
 
 /* ---------- شريط النظرة السريعة في الرئيسية ---------- */
 function homeQuickBar() {
   const rpIn = S.rp.filter(r => r.st == 'in').length;
-  const rpRd = S.rp.filter(r => r.st == 'rd').length;
+  const rpRd = S.rp.filter(r => r.st == 'rd').length, rpOk = S.rp.filter(r => r.st == 'rd' && r.res != 'fail' && r.res != 'ref').length;
   const need = typeof invLines == 'function' ? invLines(false).length : 0;
   const rq = (S.req || []).length;
   const P = (cls, on, icn, n, l, sub) => `<button class="qpill ${cls}" onclick="${on}"><div class="qic">${ic(icn)}</div><div class="qn">${n}</div><div class="ql">${l}</div>${sub ? `<div class="qs">${sub}</div>` : ''}</button>`;
   return `<div class="qbar cmp">`
-    + P('rp', `go('rp',{tab:'${rpRd ? 'rd' : 'in'}'})`, 'tool', rpIn + rpRd, 'في الصيانة', rpRd ? rpRd + ' جاهز للتسليم' : '')
+    + P('rp', `go('rp',{tab:'${rpOk ? 'rd' : rpRd ? 'nf' : 'in'}'})`, 'tool', rpIn + rpRd, 'في الصيانة', rpRd ? rpRd + ' جاهز للتسليم' : '')
     + P(need ? 'al' : 'ok', "go('rep')", need ? 'alert' : 'check', need, 'نواقص المخزون', need ? '' : 'مكتمل')
     + P(rq ? 'rp' : 'ok', "go('rep')", 'chat', rq, 'طلبات الزبائن', '')
     + `</div>`
@@ -120,10 +121,10 @@ VW.home = () => {
     h: bk + call(HOME.top)
       + `<input id="q_inp" placeholder="ابحث عن ثمن أو سلعة: هاتف، زجاج، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)">`
       + `<div id="sc">${scopeChips()}</div><div id="res"></div>`
-      + homeQuickBar() + scan + topup
+      + '<div id="hm">' + homeQuickBar() + scan + topup
       + '<h3>الأقسام</h3>'
       + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="go('sec',{k:'${k}'})">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`
-      + more,
+      + more + '</div>',
     a: () => sq(Q)
   };
 };
@@ -221,15 +222,17 @@ MORE.push(
 })();
 
 /* ---------- المظهر والأيقونة العائمة ---------- */
-const THM = [['a', 'تلقائي', 'يتبدّل بين النهاري والليلي مع الهاتف', ['#f4f6fa', '#0b1220', '#2563eb']], ['l', 'نقي', 'فاتح · أزرق', ['#f4f6fa', '#ffffff', '#2563eb']], ['d', 'ليل', 'داكن · أزرق', ['#0b1220', '#131c2e', '#4f8cff']], ['g', 'زمرد', 'فاتح · أخضر', ['#f2f7f4', '#ffffff', '#059669']], ['v', 'بنفسجي', 'داكن · بنفسجي', ['#130f1f', '#1c1630', '#8b5cf6']], ['w', 'دافئ', 'ورقي · برتقالي', ['#f8f3ea', '#fffdf8', '#d9480f']]];
+const THA = [['b', 'أزرق', '#2563eb'], ['g', 'أخضر', '#059669'], ['v', 'بنفسجي', '#7c3aed'], ['o', 'برتقالي', '#ea580c']], THMD = [['a', 'تلقائي'], ['l', 'نهاري'], ['d', 'ليلي']];
 VW.st_look = () => {
-  const fabOn = S.cfg.fab !== 0;
+  const fabOn = S.cfg.fab !== 0, [ac, md] = thGet(), fs = FS_OLD[S.cfg.fs] || S.cfg.fs || 18;
   return {
     t: 'المظهر والعرض',
     h: '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
       + `<button class="card row2" onclick="upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة السريعة في الرئيسية</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
-      + '<h3>الثيم (لهذا الجهاز فقط)</h3>' + THM.map(([k, n, d, c]) => { const on = (S.cfg.th || 'a') == k; return `<button class="card row2 ${on ? 'sel' : ''}" onclick="upd(()=>S.cfg.th='${k}')"><span class="sw3">${c.map(x => `<i style="background:${x}"></i>`).join('')}</span><b>${n}<div class="m" style="font-weight:400">${d}</div></b>${on ? I('check') : ''}</button>`; }).join('')
-      + '<h3>حجم الخط</h3>' + [[15, 'صغير'], [17, 'عادي'], [19, 'كبير'], [21, 'أكبر']].map(([v, l]) => `<button class="tag ${S.cfg.fs == v ? 'on' : ''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')
+      + '<h3>الوضع (لهذا الجهاز فقط)</h3>' + THMD.map(([k, n]) => `<button class="tag ${md == k ? 'on' : ''}" onclick="upd(()=>S.cfg.th='${ac}-${k}')">${n}</button>`).join('')
+      + '<p class="m">«تلقائي» يتبع وضع الهاتف: نهاري في النهار وليلي في الليل.</p>'
+      + '<h3>اللون</h3>' + THA.map(([k, n, c]) => `<button class="tag ${ac == k ? 'on' : ''}" onclick="upd(()=>S.cfg.th='${k}-${md}')"><i style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c};border:2px solid #fff"></i>${n}</button>`).join('')
+      + '<h3>حجم الخط</h3>' + [[16, 'صغير'], [18, 'عادي'], [20, 'كبير'], [22, 'أكبر']].map(([v, l]) => `<button class="tag ${fs == v ? 'on' : ''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')
   };
 };
 

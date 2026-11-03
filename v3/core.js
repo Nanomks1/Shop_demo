@@ -64,7 +64,7 @@ const nzOf = (o, fn) => { let c = NZC.get(o); if (!c || c.v !== ST.ver) { c = { 
 const DEF = {
   me: '', users: [], pin: '',
   perm: { del: 'a', price: 'a', tags: 'a', fields: 'a' },
-  cfg: { fs: 17, th: 'a' },
+  cfg: { fs: 18, th: 'b-a' },
   tags: {
     brand: ['Samsung', 'Xiaomi', 'Redmi', 'Realme', 'Oppo', 'Vivo', 'Tecno', 'Infinix', 'iPhone', 'Itel'],
     color: ['أسود', 'أبيض', 'أزرق', 'أحمر', 'أخضر', 'ذهبي', 'فضي', 'وردي'],
@@ -207,12 +207,12 @@ const needAdm = f => function (...a) {
 };
 
 /* ---------- الإشعار ---------- */
-function toast(msg, undo) {
+function toast(msg, undo, ms) {
   const t = $('ts');
   t.innerHTML = `<span>${esc(msg)}</span>` + (undo ? '<button id="tu">تراجع</button>' : '');
   t.hidden = false;
   if (undo) $('tu').onclick = () => { undo(); save(); render(); t.hidden = true; };
-  clearTimeout(TT); TT = setTimeout(() => t.hidden = true, 6000);
+  clearTimeout(TT); TT = setTimeout(() => t.hidden = true, ms || 6000);
 }
 
 /* ---------- التنقل وزر الرجوع ---------- */
@@ -319,6 +319,21 @@ function restore(id) {
 }
 const row = (l, fn, sub) => `<button class="card row2" onclick="${fn}"><b>${esc(l)}</b><span class="m">${esc(sub || '')}</span></button>`;
 
+/* ---------- المظهر: وضع (تلقائي/نهاري/ليلي) × لون (أزرق/أخضر/بنفسجي/برتقالي) ---------- */
+const TH_OLD = { a: 'b-a', l: 'b-l', d: 'b-d', g: 'g-l', v: 'v-d', w: 'o-l' }, FS_OLD = { 15: 16, 17: 18, 19: 20, 21: 22 };
+function thGet() {
+  const v = TH_OLD[S.cfg.th] || S.cfg.th || 'b-a', p = String(v).split('-');
+  return [['b', 'g', 'v', 'o'].includes(p[0]) ? p[0] : 'b', ['a', 'l', 'd'].includes(p[1]) ? p[1] : 'a'];
+}
+function thApply(de) {
+  const [ac, md] = thGet(); let dark = md == 'd';
+  if (md == 'a') { try { dark = matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { } }
+  de.dataset.ac = ac; de.dataset.md = dark ? 'd' : 'l';
+  de.style.setProperty('--fs', (FS_OLD[S.cfg.fs] || S.cfg.fs || 18) + 'px');
+  try { const m = document.querySelector('meta[name=color-scheme]'); if (m) m.content = dark ? 'dark' : 'only light'; } catch (e) { }
+}
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (thGet()[1] == 'a') render(); }); } catch (e) { }
+
 /* ---------- الرسم ---------- */
 const NV = [['home', 'chome', 'الرئيسية'], ['rp', 'crepair', 'الصيانة'], ['rep', 'creport', 'التقرير'], ['st', 'cmore', 'المزيد']];
 function render() {
@@ -328,7 +343,7 @@ function render() {
   $('ti').textContent = r.t; $('bk').hidden = V.v == 'home'; $('me').textContent = S.me; $('m').innerHTML = r.h;
   $('nv').innerHTML = NV.map(([k, i, l]) => `<button class="${V.v.startsWith(k) ? 'on' : ''}" onclick="go('${k}')">${ic(i)}<span>${l}</span></button>`).join('');
   const de = document.documentElement;
-  de.dataset.th = S.cfg.th; de.style.setProperty('--fs', S.cfg.fs + 'px');
+  thApply(de);
   try { const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = getComputedStyle(de).getPropertyValue('--c').trim() || m.content; } catch (e) { }
   r.a && r.a();
   HK.render.forEach(f => { try { f(); } catch (e) { } });   // بعد كل رسم (مثل الزر العائم)

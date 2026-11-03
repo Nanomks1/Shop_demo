@@ -53,7 +53,7 @@ function usCam() {
   $('u_im').insertAdjacentHTML('beforebegin', '<div id="ucam_box" class="card" style="margin:8px 0;padding:10px;text-align:center"><video id="ucam_v" autoplay playsinline muted style="width:100%;border-radius:12px"></video><div class="row2" style="margin-top:8px"><button type="button" class="btn sm" style="flex:1" onclick="usCamSnap()">التقاط</button><button type="button" class="btn s sm" onclick="usCamStop()">إلغاء</button></div></div>');
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(s => {
     const v = $('ucam_v'); if (!v) { s.getTracks().forEach(t => t.stop()); return; } UCAMS = s; v.srcObject = s;
-  }).catch(() => { usCamStop(); toast('تعذر فتح الكاميرا: اختر صورة من الجهاز'); $('u_i').click(); });
+  }).catch(e => { usCamStop(); toast(camErr(e), 0, 15000); $('u_i').click(); });
 }
 function usCamSnap() {
   const v = $('ucam_v'); if (!v || !v.videoWidth) return toast('انتظر ظهور الصورة ثم اضغط التقاط');
