@@ -94,16 +94,17 @@ function rc(r) {
   const B = (t, f, p) => `<button class="btn ${p ? '' : 's'} sm" onclick="${f}">${t}</button>`;
   const locHtml = r.st == 'in' && shown('rp', 'loc') ? `<span style="display:inline-flex;gap:4px">${Object.keys(LOC).map(k => `<button class="tag ${r.loc == k ? 'on' : ''}" style="margin:0;padding:3px 9px;font-size:.76rem" onclick="rLoc('${i}','${k}')">${LOC[k]}</button>`).join('')}</span>` : '';
   return `<div class="card ${bCls}"><div class="row2">${im ? `<img onclick="rpZoom('${i}')" src="${im}" style="cursor:pointer;width:56px;height:56px;object-fit:cover;border-radius:10px">` : ''}<div style="flex:1"><b>${r.tk ? `<span class="tk-b">#${esc(r.tk)}</span>` : ''}${esc(r.name)}</b><div class="m">${esc(r.dev)} — ${esc(r.fault)}</div></div>${locHtml}${(r.pat || []).length > 1 ? `<svg viewBox="0 0 120 120" width="48">${PI(r.pat)}</svg>` : ''}</div>`
+    + (r.note ? `<div class="rnote" onclick="rNote('${i}')" title="اضغط لتعديل الملاحظة">${I('chat')}<span>${esc(r.note)}</span></div>` : '')
     + `<div class="row2" style="margin-top:4px;flex-wrap:wrap;gap:6px"><span class="m"><bdi>${esc(r.tel)}</bdi> · استلام: <bdi>${fd(r.t0)}</bdi> · ${esc(r.by)}${n && r.st != 'dn' ? ' · منذ ' + n + ' يوم' : ''}</span>${r.cap ? `<span class="cmp-pr" style="margin-inline-start:auto">السعر: ${esc(dh(r.cap))}${r.dep ? ' (عربون ' + esc(r.dep) + ')' : ''}</span>` : (r.dep ? `<span class="m" style="margin-inline-start:auto">العربون: ${esc(r.dep)}</span>` : '')}</div>`
     + (r.st == 'dn' ? `<div class="m">تسليم: <bdi>${fd(r.t2)}</bdi> · ${esc(r.dby || '')} · المقبوض: <b>${esc(dh(r.paid))}</b></div>` : '') + (typeof dbtRp == 'function' ? dbtRp(r) : '')
     + (oSum > 0 ? `<div class="rs" style="color:#dc2626;cursor:pointer" onclick="go('dbt')">${I('alert')} تنبيه: على هذا الزبون دين مفتوح (${oSum} درهم)</div>` : '')
     + ((r.chk || []).length ? `<div class="m">الحالة: ${esc(r.chk.join('، '))}</div>` : '') + (r.lock ? `<div class="m">PIN: ${esc(r.lock)}</div>` : '') + (w > 15 ? `<div class="rs">منسي منذ ${w} يوم</div>` : '')
-    + ((r.calls || []).length ? `<div class="m">اتصالات: ${r.calls.length}</div>` : '') + (r.st != 'in' && r.res ? (r.st == 'rd' && r.res != 'ok' ? `<div style="color:#dc2626;font-weight:700">${RES[r.res]}</div>` : `<div class="m">${RES[r.res]}</div>`) : '') + (r.note ? `<div class="m">${esc(r.note)}</div>` : '')
+    + ((r.calls || []).length ? `<div class="m">اتصالات: ${r.calls.length}</div>` : '') + (r.st != 'in' && r.res ? (r.st == 'rd' && r.res != 'ok' ? `<div style="color:#dc2626;font-weight:700">${RES[r.res]}</div>` : `<div class="m">${RES[r.res]}</div>`) : '')
     + fxShow(r) + (r.imei ? `<div class="m">IMEI: <bdi>${esc(r.imei)}</bdi></div>` : '') + (wi ? `<div class="m" style="color:${wi.active ? '#16a34a' : '#64748b'};font-weight:700">${I('shield')} ${esc(wi.label)}</div>` : '')
     + (r.st == 'dn' ? (r.tst ? `<div class="m" style="color:#16a34a;font-weight:700">${I('check')} جُرِّب مع الزبون وسُلِّم مصلوحاً (${esc(r.dby || '')})</div>` : (r.res == 'ok' ? '<div class="m">سُلِّم بدون توثيق التجربة</div>' : '')) + (r.dnote ? `<div class="m">ملاحظة التسليم: ${esc(r.dnote)}</div>` : '') : '')
     + (r.st == 'in' ? `<div class="sub">${B('مصلوح', `rSt('${i}','ok')`, 1)}${B('غير مصلوح', `rSt('${i}','fail')`)}${B('رفض', `rSt('${i}','ref')`)}</div>`
       : r.st == 'rd' ? `<div class="sub">${B('تسليم', `rDV('${i}')`, 1)}${B('إبلاغ واتساب', `rWA('${i}')`)}${B('اتصلت', `rCL('${i}')`)}${B('إرجاع للمحل', `rSt('${i}','in')`)}</div>` : '')
-    + `<div class="sub">${r.tel ? `<a href="tel:${esc(r.tel)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a>` : ''}${B('تعديل', `rEd('${i}')`)}<button class="btn s sm" style="flex:0 0 auto;padding:0 12px;color:#ef4444" onclick="rDel('${i}')">حذف</button></div></div>`;
+    + `<div class="sub">${r.tel ? `<a href="tel:${esc(r.tel)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a>` : ''}${r.st != 'dn' && !r.note ? B('+ ملاحظة', `rNote('${i}')`) : ''}${B('تعديل', `rEd('${i}')`)}<button class="btn s sm" style="flex:0 0 auto;padding:0 12px;color:#ef4444" onclick="rDel('${i}')">حذف</button></div></div>`;
 }
 function rpList() {
   const q = nz(V.q || ''), tab = V.tab || 'in', all = V.all && q;
@@ -125,6 +126,12 @@ VW.rp = () => {
 function rSt(id, x) {
   const r = rf(id);
   commit(x == 'in' ? 'عاد إلى «في المحل»' : x == 'ok' ? 'انتقل إلى «جاهز»' : 'انتقل إلى «لم تُصلَّح»', () => { if (x == 'in') { r.st = 'in'; r.res = ''; } else { r.st = 'rd'; r.res = x; r.t1 = Date.now(); } r.loc = ''; r.lb = S.me; });
+}
+function rNote(id) {   // تعديل سريع للملاحظة دون فتح نموذج التعديل الكامل
+  const r = rf(id); if (!r) return;
+  $('sh').innerHTML = `<div class="bar"></div><h3 style="color:var(--t)">ملاحظة — ${esc((r.tk ? '#' + r.tk + ' ' : '') + r.name)}</h3><textarea id="rn_t" rows="4" placeholder="اكتب ملاحظة عن هذا الهاتف…">${esc(r.note || '')}</textarea><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish($('rn_t').value.trim())">حفظ</button></div>`;
+  sheetOpen(v => { if (v === null) return; commit(v ? 'تم حفظ الملاحظة' : 'تم مسح الملاحظة', () => { r.note = v; r.lb = S.me; }); });
+  setTimeout(() => { const t = $('rn_t'); if (t) t.focus(); }, 80);
 }
 function rLoc(id, k) {
   const r = rf(id); if (!r || !LOC[k]) return;
@@ -241,7 +248,7 @@ function rForm(rec) {
   const shownImg = ZI.startsWith('data:') ? ZI : (rec.id && IMG[rec.id]) || '';
   const lockOpen = rec.lock || (rec.pat && rec.pat.length) ? ' open' : '';
   const tkShow = rec.tk || '';
-  const moreOpen = (rec.imei || ZI || +rec.war || rec.note) ? ' open' : '';
+  const moreOpen = (rec.imei || ZI || +rec.war) ? ' open' : '';
   $('sh').innerHTML = `<div class="bar"></div><div class="row2"><h3 style="color:var(--t);margin:0;flex:1">${rec.id ? 'تعديل صيانة' : 'استلام هاتف'}</h3>${tkShow ? `<span class="tk-b" style="font-size:1.05rem;padding:4px 12px" title="اكتب هذا الرقم على ملصق الهاتف">#${esc(tkShow)}</span>` : '<span class="m" style="font-size:.82rem">رقم التذكرة يظهر بعد الحفظ</span>'}</div>`
     + rpDatalists()
     + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:1">اسم الزبون<input id="r_n" list="dl_rnames" value="${esc(rec.name || '')}" oninput="rH(1)"></label><label style="flex:1">رقم الهاتف<input id="r_t" type="tel" value="${esc(rec.tel || '')}" oninput="rH()"></label></div><div id="rh" class="m" style="margin-top:4px"></div>`
@@ -252,11 +259,12 @@ function rForm(rec) {
     + `<div id="rp_price_hint" style="margin:4px 0"></div>`
     + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:1.3"${hh('rp', 'cap')}>السعر المتفق (أو: اتصل)<input id="r_c" value="${esc(rec.cap || '')}" placeholder="مثال: 150"></label><label style="flex:1"${hh('rp', 'dep')}>العربون (اختياري)<input id="r_d" type="tel" value="${esc(rec.dep || '')}" placeholder="0"></label></div>`
     + `<div${hh('rp', 'chk')}><label>حالة الجهاز عند الاستلام</label><div id="rk"></div></div>`
-    + `<details class="card" style="padding:10px 12px;margin-top:12px"${moreOpen}><summary><b>تفاصيل إضافية</b> <span class="m">(الضمان، الصورة، IMEI، ملاحظة)</span></summary>`
+    + `<label${hh('rp', 'note')}>ملاحظة (اختياري) — تظهر بارزة على البطاقة<textarea id="r_o" rows="2">${esc(rec.note || '')}</textarea></label>`
+    + `<details class="card" style="padding:10px 12px;margin-top:12px"${moreOpen}><summary><b>تفاصيل إضافية</b> <span class="m">(الضمان، الصورة، IMEI)</span></summary>`
     + `<label${hh('rp', 'war')}>ضمان الإصلاح (يبدأ من تاريخ التسليم)<div style="margin:4px 0">${WAR_OPTS.map(([d, l]) => `<button type="button" class="tag war-tg ${ZW === d ? 'on' : ''}" onclick="setRpWar(${d})">${l}</button>`).join('')}</div><input id="r_war" type="tel" value="${ZW || ''}" placeholder="أو اكتب عدد أيام الضمان (0 = بدون ضمان)" oninput="setRpWar(+this.value||0,1)"></label>`
     + `<label${hh('rp', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="r_imei" value="${esc(rec.imei || '')}" placeholder="امسح باركود العلبة أو *#06#" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('r_imei')">${I('scan')} مسح</button></div></label>`
     + `<div${hh('rp', 'img')}><label>صورة الهاتف</label><div class="row2"><button type="button" class="btn s sm" onclick="rCam()">التقاط صورة</button><button type="button" id="r_imx" class="btn s sm" onclick="rImDel()" ${shownImg ? '' : 'hidden'}>حذف الصورة</button></div><img id="r_im" ${shownImg ? `src="${shownImg}"` : 'hidden'} style="width:100%;border-radius:10px;margin-top:8px"><input id="r_i" type="file" accept="image/*" capture="environment" hidden onchange="rIM(this.files[0])"></div>`
-    + `<div id="fx"></div><label${hh('rp', 'note')}>ملاحظة<textarea id="r_o">${esc(rec.note || '')}</textarea></label></details>`
+    + `<div id="fx"></div></details>`
     + `<details class="card" style="padding:10px 12px;margin-top:10px"${lockOpen}><summary><b>بيانات القفل</b> <span class="m">(PIN، نمط القفل)</span></summary><label${hh('rp', 'lock')}>رمز PIN (إن وجد)<input id="r_l" value="${esc(rec.lock || '')}"></label>`
     + `<div${hh('rp', 'pat')}><label>نمط القفل (ارسمه بإصبعك)</label><svg id="zsv" viewBox="0 0 120 120" width="150" style="touch-action:none;background:var(--bg);border-radius:12px" onpointerdown="ZD=1;rP(event,1)" onpointermove="if(ZD)rP(event)" onpointerup="ZD=0" onpointercancel="ZD=0">${PI(ZP)}</svg> <button type="button" class="btn s sm" onclick="ZP=[];$('zsv').innerHTML=PI(ZP)">مسح</button></div></details>`
     + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="rSave()">حفظ</button></div>`;
