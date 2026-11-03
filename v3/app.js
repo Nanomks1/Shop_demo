@@ -18,7 +18,7 @@ VW.sec = VW.sec || (() => soon('قسم'));
 VW.rp = VW.rp || (() => soon('الصيانة'));
 VW.rep = VW.rep || (() => soon('التقرير'));
 
-/* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري ---------- */
+/* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري (بدون تكرار) ---------- */
 let SC = '';   // نطاق البحث الحالي
 const scopeChips = () => [['', 'الكل'], ...SRCH.map(p => [p.k, p.l])].map(([k, l]) => `<button class="tag ${SC == k ? 'on' : ''}" onclick="scSet('${k}')">${l}</button>`).join('');
 /* مصادر بحث إضافية: الصيانة، طلبات الزبائن، دليل أسعار الإصلاح */
@@ -29,35 +29,38 @@ SRCH.push(
 );
 function scSet(k) { SC = k; const b = $('sc'); if (b) b.innerHTML = scopeChips(); sq(Q); }
 
-/* بطاقة ملخص الأثمنة والتوفر للموديل المبحوث عنه */
+/* بطاقة ملخص الأثمنة والتوفر التفاعلية للموديل المبحوث عنه */
 function priceLookupCard(n) {
   if (SC || n.length < 2) return '';
+  if (typeof window.priceLookupHtml == 'function') return window.priceLookupHtml(n);
   const phs = S.items.filter(i => i.sec == 'phones' && nzOf(i, nzText).includes(n)).slice(0, 4);
   const gls = S.gg.filter(g => g.models.some(m => nz(((g.br || {})[m] || '') + m).includes(n))).slice(0, 2);
   const css = S.items.filter(i => i.sec == 'case' && nz(i.name).includes(n)).slice(0, 3);
   const gds = S.guide.filter(g => nz(g.m + ' ' + g.f).includes(n)).slice(0, 5);
   const hits = (phs.length ? 1 : 0) + (gls.length ? 1 : 0) + (css.length ? 1 : 0) + (gds.length ? 1 : 0);
   if (hits < 2 && !gds.length) return '';
-  const rowP = (icName, lbl, right, stCol) => `<div class="rrow" style="padding:6px 0">${stCol ? `<span class="dotl" style="background:${stCol}"></span>` : I(icName)}<span class="rt" style="font-size:.88rem">${lbl}</span><b style="color:var(--p);white-space:nowrap;font-size:.92rem">${right}</b></div>`;
+  const rowP = (icName, lbl, right, stCol, fn) => `<div class="rrow" style="padding:6px 0;${fn ? 'cursor:pointer' : ''}" ${fn ? `onclick="${fn}"` : ''}>${stCol ? `<span class="dotl" style="background:${stCol}"></span>` : I(icName)}<span class="rt" style="font-size:.88rem">${lbl}</span><b style="color:var(--p);white-space:nowrap;font-size:.92rem">${right}</b></div>`;
   let rows = '';
   phs.forEach(i => {
     const st = typeof phSt == 'function' ? DT[phSt(i)] : '';
-    rows += rowP('mobile', `<b>${esc(i.brand + ' ' + i.name)}</b> <span class="m">${esc([i.color, i.cap].filter(Boolean).join('·'))} (${av(i)} متاح)</span>`, esc(i.price ? i.price + (/(درهم|د)/.test(i.price) ? '' : ' د') : 'بدون سعر'), st);
+    rows += rowP('mobile', `<b>${esc(i.brand + ' ' + i.name)}</b> <span class="m">${esc([i.color, i.cap].filter(Boolean).join('·'))} (${av(i)} متاح)</span>`, esc(i.price ? dh(i.price) : 'بدون سعر'), st, `phEd('${i.id}')`);
   });
   gls.forEach(g => {
-    const parts = S.tags.glass.map(t => {
+    const parts = S.tags.glass.map((t, j) => {
       const it = gitem(g.id, t), tot = it ? gTot(it, g) : 0;
       if (!tot && !(it && it.price)) return '';
-      return `${esc(t)}: <b>${it && it.price ? esc(it.price) + ' د' : '—'}</b> <span class="m">(${it && gEst(it, g) ? '≈' : ''}${tot})</span>`;
+      return `<span onclick="glMin('${g.id}',${j})" style="cursor:pointer">${esc(t)}: <b>${it && it.price ? esc(dh(it.price)) : '—'}</b> <span class="m">(${it && gEst(it, g) ? '≈' : ''}${tot})</span></span>`;
     }).filter(Boolean);
     if (parts.length) rows += `<div class="rrow" style="padding:6px 0">${I('shield')}<span class="rt" style="font-size:.86rem"><b>زجاج ${esc(g.models.slice(0, 3).join(' / '))}:</b> ${parts.join(' · ')}</span></div>`;
   });
   css.forEach(c => {
     const st = typeof csSt == 'function' ? DT[csSt(c)] : '';
-    rows += rowP('box', `<b>بوشيط ${esc(c.name)}</b> <span class="m">(المتوفر ${csTot(c)})</span>`, esc(c.price ? c.price + ' د' : csTot(c) + ' قطعة'), st);
+    const gTxt = typeof csGText == 'function' ? csGText(c) : 'المتوفر ' + csTot(c);
+    rows += rowP('box', `<b>بوشيط ${esc(c.name)}</b> <span class="m">(${esc(gTxt)})</span>`, esc(c.price ? dh(c.price) : csTot(c) + ' قطعة'), st, `csLimEd('${c.id}')`);
   });
   gds.forEach(g => {
-    rows += rowP('tool', `إصلاح ${esc(g.m)} — <b>${esc(g.f)}</b>${g.n ? ` <span class="m">(${esc(g.n)})</span>` : ''}`, esc(g.p) + (/^\d+$/.test(String(g.p).trim()) ? ' د' : ''));
+    const pr = dh(g.p) + (g.p2 ? ' / أصلي ' + dh(g.p2) : '');
+    rows += rowP('tool', `إصلاح ${esc(g.m)} — <b>${esc(g.f)}</b>${g.n ? ` <span class="m">(${esc(g.n)})</span>` : ''}`, esc(pr), '', `go('gd')`);
   });
   return rows ? `<div class="card" style="border-color:var(--p);background:color-mix(in srgb,var(--ab) 35%,var(--c));padding:10px 12px"><div class="row2" style="margin-bottom:4px"><b style="color:var(--p);font-size:.9rem">${I('tag')} ملخص الأثمنة والتوفر</b></div>${rows}</div>` : '';
 }
@@ -67,7 +70,12 @@ function srch(q) {
   const o = [];
   const topCard = priceLookupCard(n);
   if (topCard) o.push(topCard);
-  SRCH.forEach(p => { if (SC && SC != p.k) return; const r = p.run(n); if (r.length) o.push((SC ? '' : `<h3>${p.l} <span class="m">(${r.length})</span></h3>`) + r.join('')); });
+  /* نتجنب تشغيل قسم 'prc' مرتين عندما يكون البحث على «الكل» لأن topCard عرضته بالفعل */
+  SRCH.forEach(p => {
+    if (SC ? SC != p.k : p.k == 'prc') return;
+    const r = p.run(n);
+    if (r.length) o.push((SC ? '' : `<h3>${p.l} <span class="m">(${r.length})</span></h3>`) + r.join(''));
+  });
   return o.join('') || '<p class="m">لا نتائج</p>';
 }
 function sq(q) {
@@ -207,7 +215,7 @@ MORE.push(
   };
   const D = {
     'الهواتف': 'الماركات والألوان والسعات وألوان الماركات وحدود النفاد', 'الأنتي كاس': 'أنواع الزجاج والمستويات والحدود',
-    'البوشيط': 'الجنس والألوان وحدود النفاد', 'الإكسسوارات': 'الأنواع والموصلات والفئات وحدود كل نوع',
+    'البوشيط': 'الجنس والألوان وحدود النفاد (رجالي ونسائي)', 'الإكسسوارات': 'الأنواع والموصلات والفئات وحدود كل نوع',
     'الصيانة': 'أعطال الصيانة، دليل الأسعار، مدة حفظ الصور، والأرشفة', 'تلوين البطاقات': 'ألوان خفيفة للتمييز بين الماركات والأقسام',
     'الحقول في النماذج': 'اختر الحقول التي تظهر عند إضافة هاتف أو غيره', 'الخانات المخصصة': 'أضف خانة خاصة بك (مثل: الضمان) لأي قسم',
     'المزامنة بين الأجهزة': 'ربط هاتفين أو أكثر ليتطابقوا في البيانات',

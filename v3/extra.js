@@ -12,6 +12,20 @@ const xn = s => parseFloat(String(s || '').replace(/[٠-٩]/g, d => '٠١٢٣٤�
 const xTel = t => t ? `<a href="tel:${esc(t)}">${esc(t)}</a>` : '';
 const xNum = t => { t = String(t || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, ''); return t[0] == '0' ? '212' + t.slice(1) : t; };
 
+/* الإكمال التلقائي المشترك لاسم الزبون ورقم هاتفه (في المستعمل والديون) */
+function xCustLookup(nameId, telId, fromName) {
+  const nEl = $(nameId), tEl = $(telId); if (!nEl || !tEl) return;
+  const nv = nEl.value.trim(), tv = tEl.value.trim(), ph8 = xNum(tv).slice(-8);
+  const all = [...(S.rp || []), ...(S.debt || []), ...(S.used || [])];
+  if (fromName && nv && !tv) {
+    const f = all.find(x => x.name == nv && x.tel);
+    if (f) tEl.value = f.tel;
+  } else if (!fromName && ph8.length >= 8 && !nv) {
+    const f = all.find(x => x.tel && xNum(x.tel).slice(-8) === ph8 && x.name);
+    if (f) nEl.value = f.name;
+  }
+}
+
 /* ---------- خزنة صور المستعمل (تشترك مع IndexedDB في core.js) ---------- */
 const uImg = u => u && u.img && u.img.startsWith('data:') ? u.img : (u && IMG[u.id] || '');
 HK.save.push(() => {
@@ -53,7 +67,7 @@ function usCam() {
   $('u_im').insertAdjacentHTML('beforebegin', '<div id="ucam_box" class="card" style="margin:8px 0;padding:10px;text-align:center"><video id="ucam_v" autoplay playsinline muted style="width:100%;border-radius:12px"></video><div class="row2" style="margin-top:8px"><button type="button" class="btn sm" style="flex:1" onclick="usCamSnap()">التقاط</button><button type="button" class="btn s sm" onclick="usCamStop()">إلغاء</button></div></div>');
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(s => {
     const v = $('ucam_v'); if (!v) { s.getTracks().forEach(t => t.stop()); return; } UCAMS = s; v.srcObject = s;
-  }).catch(e => { usCamStop(); toast(camErr(e), 0, 15000); $('u_i').click(); });
+  }).catch(e => { usCamStop(); toast(typeof camErr == 'function' ? camErr(e) : 'تعذر فتح الكاميرا', 0, 15000); $('u_i').click(); });
 }
 function usCamSnap() {
   const v = $('ucam_v'); if (!v || !v.videoWidth) return toast('انتظر ظهور الصورة ثم اضغط التقاط');
@@ -79,12 +93,13 @@ function usOpen(rec) {
   UR = rec || {}; UI = UR.img || '';
   const shownImg = UI.startsWith('data:') ? UI : (UR.id && IMG[UR.id]) || '';
   $('sh').innerHTML = `<div class="bar"></div><h3>${UR.id ? 'تعديل شراء مستعمل' : (UR.repOf ? 'روپريز: استلام هاتف الزبون' : 'شراء هاتف مستعمل')}</h3>`
+    + (typeof rpDatalists == 'function' ? rpDatalists() : '')
     + (UR.repTxt ? `<div class="card" style="padding:8px 12px;margin:6px 0;border-inline-start:4px solid var(--p)"><b>مقابل بيع:</b> ${esc(UR.repTxt)}</div>` : '')
-    + `<label>الجهاز / الموديل<input id="u_dev" value="${esc(UR.dev || '')}" placeholder="اختر ماركة من الأسفل أو اكتب الموديل (مثال: Samsung A54)" oninput="syncUsBrand()"></label>`
+    + `<label>الجهاز / الموديل<input id="u_dev" list="dl_rdevs" value="${esc(UR.dev || '')}" placeholder="اختر ماركة من الأسفل أو اكتب الموديل (مثال: Samsung A54)" oninput="syncUsBrand()"></label>`
     + `<div style="margin:4px 0 8px">${S.tags.brand.map((b, j) => `<button type="button" class="tag us-br" onclick="pickUsBrand(${j})">${esc(b)}</button>`).join('')}</div>`
     + `<div class="row2" style="gap:8px"><label style="flex:1">سعر شراء المستعمل<input id="u_price" type="tel" value="${esc(UR.price || '')}" oninput="usCalcDiff()"></label>${UR.repOf ? `<label style="flex:1">الفرق المقبوض (الصولد)<input id="u_diff" type="tel" value="${esc(UR.diff || '')}"></label>` : ''}</div>`
-    + `<div class="row2" style="gap:8px"><label style="flex:1">اسم البائع<input id="u_name" value="${esc(UR.name || '')}"></label><label style="flex:1">رقم البطاقة (CIN)<input id="u_cin" value="${esc(UR.cin || '')}" placeholder="مثال: D123456"></label></div>`
-    + `<label>هاتف البائع<input id="u_tel" type="tel" value="${esc(UR.tel || '')}"></label>`
+    + `<div class="row2" style="gap:8px"><label style="flex:1">اسم البائع<input id="u_name" list="dl_rnames" value="${esc(UR.name || '')}" oninput="xCustLookup('u_name','u_tel',1)"></label><label style="flex:1">رقم البطاقة (CIN)<input id="u_cin" value="${esc(UR.cin || '')}" placeholder="مثال: D123456"></label></div>`
+    + `<label>هاتف البائع<input id="u_tel" type="tel" value="${esc(UR.tel || '')}" oninput="xCustLookup('u_name','u_tel',0)"></label>`
     + `<label>IMEI / الرقم التسلسلي<div class="row2" style="margin-top:4px"><input id="u_imei" value="${esc(UR.imei || '')}" placeholder="امسح الباركود أو *#06#" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('u_imei')">${I('scan')} مسح</button></div></label>`
     + `<div><label>صورة البطاقة الوطنية / الهاتف (محمية)</label><div class="row2"><button type="button" class="btn s sm" onclick="usCam()">التقاط صورة</button><button type="button" class="btn s sm" onclick="$('u_i').click()">من المعرض</button><button type="button" id="u_imx" class="btn s sm" onclick="usImDel()" ${shownImg ? '' : 'hidden'}>حذف الصورة</button></div><img id="u_im" ${shownImg ? `src="${shownImg}"` : 'hidden'} style="width:100%;border-radius:10px;margin-top:8px"><input id="u_i" type="file" accept="image/*" hidden onchange="usIM(this.files[0])"></div>`
     + `<label>ملاحظة (الحالة، الملحقات...)<textarea id="u_note">${esc(UR.note || '')}</textarea></label>`
@@ -160,11 +175,14 @@ function usZoom(id) {
   $('sh').innerHTML = `<div class="bar"></div><h3>${esc(u.dev + ' — ' + u.name)}</h3><img src="${src}" style="width:100%;max-height:70vh;object-fit:contain;border-radius:12px"><div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>`;
   sheetOpen(() => { });
 }
+/* إدخال الهاتف المستعمل للمخزون: نترك سعر البيع فارغاً ليحدده البائع ونحفظ سعر الشراء كتلميح */
 function usInv(id) {
   const u = S.used.find(x => x.id == id); if (!u) return;
   $('sh').innerHTML = '';
   const br = (typeof brOfName == 'function' ? brOfName(u.dev) : '') || '';
   const nm = br ? u.dev.replace(new RegExp('^' + br + '\\s*', 'i'), '').trim() || u.dev : u.dev;
+  const buyHint = u.price ? 'سعر الشراء: ' + u.price : '';
+  const noteText = [u.note || '', buyHint].filter(Boolean).join(' · ');
   sheetOpen(v => {
     if (!v) return;
     phDone(v, PR);
@@ -172,7 +190,8 @@ function usInv(id) {
     u.inv = 1; if (added) u.invId = added.id;
     save(); render();
   });
-  phForm({ brand: br, name: nm, imei: u.imei || '', price: u.price || '', note: u.note || '', cond: 'مستعمل', cnt: 1 });
+  phForm({ brand: br, name: nm, imei: u.imei || '', price: '', note: noteText, cond: 'مستعمل', cnt: 1 });
+  if (u.price && $('pp')) $('pp').placeholder = 'اكتب سعر البيع (اشتريته بـ ' + u.price + ')';
 }
 /* استدعاء سريع للروپريز من بطاقة الهاتف في المخزون */
 window.usFromRep = function (itemId) {
@@ -222,12 +241,20 @@ window.dbtCustOpen = function (tel, name) {
 function dbtSameCust(d) { return dbtCustOpen(d.tel, d.name); }
 
 function dbtForm(rec) {
-  return ask('دين جديد', [
+  const p = ask('دين جديد', [
     { k: 'name', l: 'اسم الزبون', v: rec.name || '' },
     { k: 'tel', l: 'الهاتف (مهم للتذكير بالواتساب)', t: 'tel', v: rec.tel || '' },
     { k: 'amt', l: 'المبلغ', t: 'tel', v: rec.amt || '' },
     { k: 'why', l: 'السبب', t: 'area', v: rec.why || '' }
   ]);
+  /* ربط الإكمال التلقائي لأسماء وأرقام الزبائن المسجلين */
+  if (typeof rpDatalists == 'function' && $('sh')) {
+    $('sh').insertAdjacentHTML('beforeend', rpDatalists());
+    const nEl = $('f_name'), tEl = $('f_tel');
+    if (nEl) { nEl.setAttribute('list', 'dl_rnames'); nEl.oninput = () => xCustLookup('f_name', 'f_tel', 1); }
+    if (tEl) { tEl.oninput = () => xCustLookup('f_name', 'f_tel', 0); }
+  }
+  return p;
 }
 async function dbtSave(rec, v) {
   if (!v) return;
@@ -245,6 +272,7 @@ function dbtFromRp(id) {
   const rec = { name: r.name, tel: r.tel, amt: rest ? String(rest) : '', why: 'باقي إصلاح ' + (r.dev || ''), rp: r.id };
   dbtForm(rec).then(v => dbtSave(rec, v));
 }
+/* لا يظهر زر تسجيل الباقي كدين إلا إذا تم إصلاح الهاتف فعلاً (r.res == 'ok') */
 const dbtRp = r => {
   if (r.st != 'dn') return '';
   const ld = (S.debt || []).find(x => (r.debt && x.id == r.debt) || x.rp == r.id);
@@ -252,7 +280,7 @@ const dbtRp = r => {
     const rem = dRem(ld), done = ld.paid || rem <= 0;
     return `<div class="m" style="color:${done ? '#16a34a' : '#d97706'};font-weight:700">${I('wallet')} ${done ? 'سُدِّد باقي الإصلاح' : 'سُجّل الباقي كدين (' + rem + ' درهم)'}</div>`;
   }
-  return xn(r.cap) > (xn(r.dep) + xn(r.paid)) ? `<div class="sub"><button class="btn s sm" onclick="dbtFromRp('${r.id}')">${I('wallet')} تسجيل الباقي كدين</button></div>` : '';
+  return r.res == 'ok' && xn(r.cap) > (xn(r.dep) + xn(r.paid)) ? `<div class="sub"><button class="btn s sm" onclick="dbtFromRp('${r.id}')">${I('wallet')} تسجيل الباقي كدين</button></div>` : '';
 };
 function dbtPay(id) {
   const d = S.debt.find(x => x.id == id); if (!d) return;
