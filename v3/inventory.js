@@ -44,7 +44,7 @@ function reqFind(txt) {
     const clean = String(q.t || '').replace(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/g, '').replace(/[-–—:،.]/g, ' ').trim();
     const qn = nz(clean); if (qn.length < 2) return false;
     if (n.includes(qn) || qn.includes(n)) return true;
-    const w = clean.split(/\s+/).map(nz).filter(x => x.length >= 3);
+    const w = clean.split(/\s+/).map(nz).filter(x => x.length >= 3 || /^[a-z]\d$|^\d[a-z]$/.test(x));
     return w.length > 0 && w.every(x => n.includes(x));
   });
 }
@@ -260,7 +260,12 @@ function phSave(more) {
 function phDone(v, r) {
   if (!v) return; const more = v._more; delete v._more;
   if (v.add !== undefined) { commit('أُضيفت الكمية', () => { r.cnt += v.add; touch(r); }); reqChk(r.brand + ' ' + r.name, 1); return; }
-  if (r && r.id && S.items.includes(r)) { commit('تم التعديل', () => { Object.assign(r, v); touch(r); }); return; }
+  if (r && r.id && S.items.includes(r)) {
+    const cntChg = r.cnt !== v.cnt;
+    commit('تم التعديل', () => { Object.assign(r, v); if (cntChg) touch(r); else r.by = S.me; });
+    if (cntChg && v.cnt > 0) reqChk(r.brand + ' ' + r.name, 1);
+    return;
+  }
   const code = r && r.code || '', d = ph().find(i => i.brand == v.brand && nz(i.name) == nz(v.name) && i.color == v.color && i.ram == v.ram && i.cap == v.cap && i.cond == v.cond);
   commit(d ? 'أُضيفت الكمية للموجود' : 'تمت الإضافة', () => {
     if (d) { d.cnt += v.cnt; if (v.price) d.price = v.price; if (v.imei) d.imei = d.imei ? (d.imei.includes(v.imei) ? d.imei : d.imei + ' · ' + v.imei) : v.imei; if (code && !d.code) d.code = code; if (v.x) d.x = { ...(d.x || {}), ...v.x }; touch(d); }
@@ -372,7 +377,7 @@ function glMin(gid, j) {
   const ty = S.tags.glass[j], i = gitem(gid, ty) || {};
   ask('الحد والسعر — ' + ty, [{ k: 'm', l: `حد خاص بهذه المجموعة: «قارب النفاد» عند مجموع ≤ (فارغ = حد ${ty}: ${gTyLim(ty) - 1}). اكتب 0 إن كانت نادرة ولا تريد تنبيهاً إلا عند نفادها`, t: 'tel', v: i.min != null ? i.min - 1 : '' }, { k: 'p', l: 'السعر', t: 'tel', v: i.price || '' }]).then(v => {
     if (!v) return; const r = glGet(gid, ty), m = v.m.trim();
-    upd(() => { if (m === '') delete r.min; else r.min = ci(m) + 1; if (can('price')) r.price = v.p; });
+    upd(() => { if (m === '') delete r.min; else r.min = ci(m) + 1; if (can('price')) r.price = v.p; r.by = S.me; });
   });
 }
 const clrM = n => S.items.forEach(i => { if (i.sec == 'glass' && i.lv) delete i.lv[n]; });
@@ -392,7 +397,17 @@ function glS(q) {
   $('gl').innerHTML = S.gg.flatMap(g => g.models.map(m => ({ g, m }))).filter(x => !k || nz(x.m).includes(k)).slice(0, 8).map(x => `<button class="card row2" onclick="glJoin('${x.g.id}')"><b>${esc(x.m)}</b><span class="m">${x.g.models.length} موديلات</span></button>`).join('');
 }
 function glJoin(gid) { const g = S.gg.find(x => x.id == gid); upd(() => { clrM(GS.n); g.models.push(GS.n); if (GS.b) { g.br = g.br || {}; g.br[GS.n] = GS.b; } }); finish(null); reqChk('أنتي كاس ' + GS.n, 1); }
-function glNew() { upd(() => { clrM(GS.n); const g = { id: uid(), models: [GS.n] }; if (GS.b) g.br = { [GS.n]: GS.b }; S.gg.push(g); }); finish(null); reqChk('أنتي كاس ' + GS.n, 1); }
+function glNew() {
+  upd(() => {
+    clrM(GS.n);
+    const g = { id: uid(), models: [GS.n] };
+    if (GS.b) g.br = { [GS.n]: GS.b };
+    S.gg.push(g);
+    const ty = S.tags.glass[V.ty || 0] || S.tags.glass[0];
+    if (ty) glGet(g.id, ty);
+  });
+  finish(null); reqChk('أنتي كاس ' + GS.n, 1);
+}
 function glM(gid) {
   const g = S.gg.find(x => x.id == gid); fsInit([['brand', 'الماركة (اختياري)']], {});
   $('sh').innerHTML = `<div class="bar"></div><h3>موديل مطابق</h3><label>الاسم<input id="gmn"></label><div id="cc"></div><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({n:$('gmn').value.trim(),b:FS.v.brand||''})">حفظ</button></div>`;
@@ -431,23 +446,23 @@ function glRm(gid) {
 }
 const gl2 = i => { const g = S.gg.find(x => x.id == i.gid); return g ? `<div class="card"><b>زجاج ${esc(i.ty)}: ${esc(g.models.join(' / '))}</b><div class="m">المجموع ${gEst(i, g) ? '≈' : ''}${gTot(i, g)} · آخر تأكيد قبل ${Math.floor((Date.now() - i.at) / 864e5)} يوم</div></div>` : ''; };
 function buyG(id) {
-  const i = find(id), g = S.gg.find(x => x.id == i.gid);
+  const i = find(id), g = S.gg.find(x => x.id == i.gid); if (!i || !g) return;
   commit('تم الشراء', () => { i.lv = i.lv || {}; i.stock = i.stock || {}; for (const l of ['c', 'b', 'a']) { g.models.forEach(m => { if (mval(i, m) < lvN(l)) { i.lv[m] = l; delete i.stock[m]; } }); if (gSt(i, g) == 'g') break; } touch(i); });
-  if (g) reqChk(g.models.join(' '));
+  reqChk(g.models.join(' '));
 }
 
 /* ============================ البوشيط ============================ */
 const csTot = i => (i.v || []).reduce((a, x) => a + x.n, 0);
 const csLim = i => i.lim ?? lim('cl');
-/* حد خاص للموديل: يُحكم على المجموع فقط (نفاد نوع واحد لا ينبّه) */
-const csSt = i => { const t = csTot(i); return t <= 0 ? 'r' : (t <= csLim(i) || (i.lim == null && (i.v || []).some(x => x.n <= 0))) ? 'y' : 'g'; };
+/* الحكم على المجموع مقارنة بالحد العام أو الخاص (أو وجود ملاحظة «خاصنا»)، فلا ينبه لمجرد نفاد لون قديم والمجموع وافر */
+const csSt = i => { const t = csTot(i); return t <= 0 ? 'r' : (t <= csLim(i) || !!(i.need && i.need.trim())) ? 'y' : 'g'; };
 function csCard(i) {
   const s = csSt(i), V0 = i.v || [], ex = EXP['c_' + i.id], cmp = isCmp('case') && V.v == 'sec';
   const limV = !ex && V0.length > (cmp ? 3 : 4) ? V0.slice(0, cmp ? 2 : 4) : V0;
   const chips = `<div class="cs-chips">` + limV.map(x => `<div class="cs-chip ${x.n <= 0 ? 'low' : ''}"><span>${esc([x.g, x.c].filter(Boolean).join('·') || 'عام')}</span><button onclick="csC('${i.id}','${x.id}',-1)">−</button><b>${x.n}</b><button onclick="csC('${i.id}','${x.id}',1)">+</button>${x.n <= 0 ? `<button onclick="csX('${i.id}','${x.id}')" style="color:#dc2626">×</button>` : ''}</div>`).join('')
     + (V0.length > limV.length || ex ? `<button class="tag" style="margin:0;padding:4px 10px;font-size:.8rem" onclick="toggleExp('c_${i.id}')">${ex ? 'طيّ ▴' : '+' + (V0.length - limV.length) + ' أخرى ▾'}</button>` : '') + `</div>`;
   if (cmp) {
-    return cardH(`<div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csQuickNote('${i.id}')"><b>${esc(i.name)}</b></div><span class="m">المجموع ${csTot(i)}</span><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button></div>` + chips, colOf(i), 'cmp');
+    return cardH(`<div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csQuickNote('${i.id}')"><b>${esc(i.name)}</b></div><span class="m">المجموع ${csTot(i)}${i.lim != null ? ' · ≤' + i.lim : ''}</span><button class="btn s sm" onclick="csLimEd('${i.id}')">الحد</button><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button></div>` + chips, colOf(i), 'cmp');
   }
   return cardH(`<div class="row2"><b>${esc(i.name)}</b><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]} · ${csTot(i)}${i.lim != null ? ' · حد خاص ≤' + i.lim : ''}</span></div>`
     + chips
@@ -485,20 +500,20 @@ function csDone(v, r) {
 function csFx(id) {
   const i = find(id); fsInit([], {}, 'case', i);
   $('sh').innerHTML = '<div class="bar"></div><h3>خانات: ' + esc(i.name) + '</h3><div id="fx"></div><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({})">حفظ</button></div>';
-  sheetOpen(v => { if (v) upd(() => { i.x = { ...FS.fx }; }); }); fxR();
+  sheetOpen(v => { if (v) upd(() => { i.x = { ...FS.fx }; i.by = S.me; }); }); fxR();
 }
 function csLimEd(id) {
   const i = find(id);
   ask('حد خاص — ' + i.name, [{ k: 'n', l: `«قارب النفاد» عند مجموع ≤ (فارغ = الحد العام ${lim('cl')}). اكتب 0 إن كان نادراً ولا تريد تنبيهاً إلا عند نفاده`, t: 'tel', v: i.lim ?? '' }]).then(v => {
     if (!v) return; const n = v.n.trim();
-    upd(() => { if (n === '') delete i.lim; else i.lim = ci(n); touch(i); });
+    upd(() => { if (n === '') delete i.lim; else i.lim = ci(n); i.by = S.me; });
   });
 }
 function csQuickNote(id) {
   const i = find(id);
-  ask('بوشيط ' + i.name, [{ k: 'rem', l: 'شنو باقي عندنا فالمحل؟ (مثال: غير النسائي)', v: i.rem || '' }, { k: 'need', l: 'شنو خاص يجيب المعلم؟ (مثال: ألوان رجالية / كحل)', v: i.need || '' }]).then(v => { if (v) commit('تم التحديث', () => { i.rem = v.rem.trim(); i.need = v.need.trim(); touch(i); }); });
+  ask('بوشيط ' + i.name, [{ k: 'rem', l: 'شنو باقي عندنا فالمحل؟ (مثال: غير النسائي)', v: i.rem || '' }, { k: 'need', l: 'شنو خاص يجيب المعلم؟ (مثال: ألوان رجالية / كحل)', v: i.need || '' }]).then(v => { if (v) commit('تم التحديث', () => { i.rem = v.rem.trim(); i.need = v.need.trim(); i.by = S.me; }); });
 }
-function buyC(id) { const i = find(id); qty(i.name + ' — لكل نوع', 3, n => { const z = i.v.filter(x => x.n <= 0), t = z.length ? z : i.v; t.forEach(x => x.n += n); touch(i); reqChk('بوشيط ' + i.name, 1); }); }
+function buyC(id) { const i = find(id); qty(i.name + ' — لكل نوع', 3, n => { const z = i.v.filter(x => x.n <= 0), t = z.length ? z : i.v; t.forEach(x => x.n += n); i.need = ''; touch(i); reqChk('بوشيط ' + i.name, 1); }); }
 /* ============================ الإكسسوارات ============================ */
 const DKC = { 'كابل': { conn: 1 }, 'شاحن': { conn: 1 } }, DK = { 'كابل': { g: 1, w: 0 }, 'شاحن': { g: 1, w: 1 }, 'رأس شاحن': { g: 1, w: 1 } };
 const kc = k => ({ conn: 0, tier: 1, ...(DKC[k] || {}), ...((S.cfg.kc || {})[k] || {}) });
@@ -532,7 +547,7 @@ function acView() {
 function acC(id, d) { const i = find(id); upd(() => { i.cnt = Math.max(0, i.cnt + d); touch(i); }); if (d > 0) reqChk(acName(i)); }
 function acCnt(id) { const i = find(id); ask('عدد القطع', [{ k: 'n', l: 'العدد الحالي', t: 'tel', v: '' }]).then(v => { if (v && v.n.trim() !== '') { upd(() => { i.cnt = ci(v.n); touch(i); }); if (+v.n > 0) reqChk(acName(i), 1); } }); }
 function acS(id, s) { const i = find(id); upd(() => { i.st = s; touch(i); }); if (s != 'r') reqChk(acName(i)); }
-function acNote(id) { const i = find(id); ask('ملاحظة للمشتري', [{ k: 'n', l: 'مثال: بقي 5 حبات', v: i.note || '' }]).then(v => { if (v) upd(() => { i.note = v.n.trim(); touch(i); }); }); }
+function acNote(id) { const i = find(id); ask('ملاحظة للمشتري', [{ k: 'n', l: 'مثال: بقي 5 حبات', v: i.note || '' }]).then(v => { if (v) upd(() => { i.note = v.n.trim(); i.by = S.me; }); }); }
 function acDel(id) { del('items', id, acName(find(id))); }
 let ACCODE = '';
 function acAdd() {
@@ -561,7 +576,12 @@ function acSave(more) {
 }
 function acDone(v, r) {
   if (!v) return; const more = v._more; delete v._more;
-  if (r && r.id && S.items.includes(r)) return commit('تم التعديل', () => { Object.assign(r, v); touch(r); });
+  if (r && r.id && S.items.includes(r)) {
+    const cntChg = r.cnt !== v.cnt;
+    commit('تم التعديل', () => { Object.assign(r, v); if (cntChg) touch(r); else r.by = S.me; });
+    if (cntChg && v.cnt > 0) reqChk(acName(r), 1);
+    return;
+  }
   const d = S.items.find(i => i.sec == 'acc' && i.kind == v.kind && (i.conn || '') == v.conn && (i.tier || '') == v.tier && (i.brand || '') == v.brand && (i.pw || '') == v.pw && xSig(i) == xSig(v));
   if (d) return toast('موجود مسبقاً: ' + acName(d));
   const o = { id: uid(), sec: 'acc', ...v, st: 'g' }; if (r && r.code) o.code = r.code; touch(o);
@@ -570,9 +590,20 @@ function acDone(v, r) {
   else reqChk(acName(o), 1);
 }
 function buyA(id) {
-  const i = find(id);
-  if (typeof i.cnt == 'number') return qty(acTitle(i), acLim(i) + 3, n => { i.cnt += n; touch(i); reqChk(acName(i), 1); });
+  const i = find(id); if (!i) return;
+  if (typeof i.cnt == 'number') return qty(acTitle(i), Math.max(1, acLim(i) + 1 - i.cnt), n => { i.cnt += n; touch(i); reqChk(acName(i), 1); });
   commit('تم الشراء', () => { i.st = 'g'; touch(i); }); reqChk(acName(i));
+}
+function buyGCustom(id) {
+  const i = find(id), g = i && S.gg.find(x => x.id == i.gid); if (!i || !g) return;
+  const def = Math.max(1, gLim(i) - gTot(i, g));
+  qty('زجاج ' + i.ty + ': ' + g.models.join(' / '), def, n => {
+    i.stock = i.stock || {};
+    const m0 = g.models[0];
+    if (i.lv && i.lv[m0] !== undefined) { i.stock[m0] = lvN(i.lv[m0]) + n; delete i.lv[m0]; }
+    else i.stock[m0] = (i.stock[m0] || 0) + n;
+    touch(i); reqChk('أنتي كاس ' + g.models.join(' '), 1);
+  });
 }
 
 /* مجموعات الكابلات والشواحن: الحكم على المجموع (فئة + موصل + قدرة) */
@@ -586,7 +617,8 @@ function agList() {
     const g = S.ag.find(x => x.id == d.id), L = (g && g.lim) ?? gkc(d.kind).lim ?? lim('agl'), M = d.mem.filter(i => typeof i.cnt == 'number'), mt = M.reduce((a, i) => a + i.cnt, 0), mat = M.length ? Math.max(...M.map(i => i.at || 0)) : 0;
     let tot = null, est = false; if (M.length && mat > ((g && g.at) || 0)) tot = mt; else if (g && typeof g.cnt == 'number') { tot = g.cnt; est = true; }
     const st = tot !== null ? (tot <= 0 ? 'r' : tot <= L ? 'y' : 'g') : ((g && g.lv) || 'g');
-    return { ...d, g, lim: L, tot, est, st, title: [d.kind, d.conn, d.pw, d.tier && 'فئة ' + d.tier].filter(Boolean).join(' · ') };
+    const at = Math.max((g && g.at) || 0, ...d.mem.map(i => i.at || 0));
+    return { ...d, g, lim: L, tot, est, st, at, title: [d.kind, d.conn, d.pw, d.tier && 'فئة ' + d.tier].filter(Boolean).join(' · ') };
   }).sort((a, b) => AORD[a.st] - AORD[b.st] || a.title.localeCompare(b.title));
 }
 const agD = e => agList().find(x => x.id == decodeURIComponent(e));
@@ -598,7 +630,7 @@ function agCard(d) {
   if (isCmp('acc') && V.v == 'sec') {
     return cardH(`<div class="row2"><span class="dotl" style="background:${DT[d.st]}"></span><div class="cmp-main" onclick="agCnt('${e}')"><b>${esc(d.title)}</b>${sub ? `<div class="m">${sub}</div>` : ''}</div>${['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:.76rem" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('')}</div>`, '', 'cmp');
   }
-  return `<div class="card"><div class="row2"><b>${esc(d.title)}</b><span class="dotl" style="background:${DT[d.st]}"></span><span class="m">${ALB2[d.st]}</span></div>${sub ? `<div class="m">${sub}</div>` : ''}${d.mem.length ? `<div>${d.mem.map(i => `<button class="tag" onclick="acEd('${i.id}')">${esc(i.brand || 'بدون ماركة')}${typeof i.cnt == 'number' ? ' · ' + i.cnt : ''}</button>`).join('')}</div>` : ''}<div>${['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('')}</div><div class="sub"><button class="btn s sm" onclick="agCnt('${e}')">المجموع</button><button class="btn s sm" onclick="agLimEd('${e}')">الحد</button><button class="btn s sm" onclick="agAddB('${e}')">+ ماركة</button></div></div>`;
+  return `<div class="card"><div class="row2"><b>${esc(d.title)}</b><span class="dotl" style="background:${DT[d.st]}"></span><span class="m">${ALB2[d.st]}</span></div>${sub ? `<div class="m">${sub}</div>` : ''}${d.mem.length ? `<div>${d.mem.map(i => `<button class="tag" onclick="acEd('${i.id}')">${esc(i.brand || 'بدون ماركة')}${typeof i.cnt == 'number' ? ' · ' + i.cnt : ''}</button>`).join('')}</div>` : ''}<div>${['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('')}</div><div class="sub"><button class="btn s sm" onclick="agCnt('${e}')">المجموع</button><button class="btn s sm" onclick="agLimEd('${e}')">الحد</button><button class="btn s sm" onclick="agAddB('${e}')">+ ماركة</button>${can('del') ? `<button class="btn s sm" onclick="agDel('${e}')">حذف</button>` : ''}</div></div>`;
 }
 const agLv = (e, l) => { const d = agD(e); if (d) { agSet(d, g => { g.lv = l; delete g.cnt; }); if (l != 'r') reqChk(d.title); } };
 const agBuy = e => { const d = agD(e); if (d) { agSet(d, g => { g.lv = 'g'; delete g.cnt; }); reqChk(d.title); } };
@@ -608,6 +640,22 @@ function agLimEd(e) {
   ask('الحد — ' + d.title, [{ k: 'n', l: '«قارب النفاد» عند مجموع ≤ (فارغ = الحد العام)', t: 'tel', v: d.g && d.g.lim != null ? d.g.lim : '' }]).then(v => { if (v) agSet(d, g => { if (v.n.trim() === '') delete g.lim; else g.lim = ci(v.n); }, false); });
 }
 function agAddB(e) { const d = agD(e); if (!d) return; $('sh').innerHTML = ''; sheetOpen(v => acDone(v, PR)); acForm({ kind: d.kind, conn: d.conn, tier: d.tier, pw: d.pw }); }
+function agDel(e) {
+  if (!can('del')) return toast('الحذف للمدير فقط');
+  const d = agD(e); if (!d) return;
+  const msg = d.mem.length ? `حذف مجموعة «${d.title}» مع ${d.mem.length} عناصر تابعة لها؟` : `حذف مجموعة «${d.title}» ؟`;
+  sure(msg).then(y => {
+    if (!y) return;
+    commit('تم حذف المجموعة', () => {
+      S.ag = S.ag.filter(x => x.id != d.id);
+      if (d.mem.length) {
+        const ids = new Set(d.mem.map(m => m.id));
+        d.mem.forEach(m => S.trash.push({ id: uid(), coll: 'items', obj: m, label: acName(m), t: Date.now() }));
+        S.items = S.items.filter(i => !ids.has(i.id));
+      }
+    });
+  });
+}
 
 /* ============================ الشراء والتقرير ============================ */
 function qty(t, d, fn) { ask(t, [{ k: 'n', l: 'الكمية التي وصلت', t: 'tel', v: d }], 'تم الشراء').then(v => { if (v && +v.n > 0) commit('تم الشراء', () => fn(ci(v.n))); }); }
@@ -623,11 +671,50 @@ function invLines(notes = true) {
   return L;
 }
 
-/* ============================ الجولة اليومية ============================ */
-const rnd = () => S.items.filter(i => i.at && Date.now() - i.at > lim('stale') * 864e5).sort((a, b) => a.at - b.at);
-const itemCard = i => i.sec == 'phones' ? phCard(i) : i.sec == 'case' ? csCard(i) : i.sec == 'acc' ? acCard(i) : i.sec == 'glass' ? gl2(i) : '';
-function rCf(id) { const i = find(id); upd(() => touch(i)); }
-VW.jl = () => { const a = rnd().slice(0, 30); return { t: 'الجولة اليومية', h: '<p class="m">أكّد ما لم يتغير وعدّل ما تغيّر. الأقدم أولاً.</p>' + (a.map(i => `<div>${itemCard(i)}<button class="btn s" onclick="rCf('${i.id}')">تأكيد: كما هو</button></div>`).join('') || '<p class="m">كل شيء مؤكد حديثاً.</p>') }; };
+/* ============================ الجولة اليومية (تشمل المخزون + مجموعات الكابلات/الشواحن + بطاقات التعبئة) ============================ */
+function rnd() {
+  const ms = lim('stale') * 864e5, now = Date.now(), out = [];
+  S.items.forEach(i => {
+    if (i.sec == 'acc' && gkc(i.kind).g) return;
+    if (i.at && now - i.at > ms) out.push(i);
+  });
+  agList().forEach(d => {
+    if (d.at && now - d.at > ms) out.push({ _jl: 'ag', id: d.id, d, at: d.at });
+  });
+  (S.tp || []).forEach(r => {
+    if (r && r.k == 'c' && r.at && now - r.at > ms) out.push({ _jl: 'tp', id: r.id, r, at: r.at });
+  });
+  return out.sort((a, b) => a.at - b.at);
+}
+const itemCard = i => i._jl == 'ag' ? agCard(i.d) : i._jl == 'tp' ? jlTpCard(i.r) : i.sec == 'phones' ? phCard(i) : i.sec == 'case' ? csCard(i) : i.sec == 'acc' ? acCard(i) : i.sec == 'glass' ? gl2(i) : '';
+function jlTpCard(r) {
+  return `<div class="card"><div class="row2"><b>تعبئة ${esc(r.op)} — بطاقة ${r.n} درهم</b><span class="m">${r.val <= 0 ? 'نفد' : r.est ? '≈' + r.val : 'العدد ' + r.val}</span></div><div class="m">آخر تأكيد قبل ${Math.floor((Date.now() - r.at) / 864e5)} يوم</div><div class="sub"><button class="btn s sm" onclick="go('tp')">فتح شاشة التعبئة</button></div></div>`;
+}
+function rCf(id) { const i = find(id); if (i) upd(() => touch(i)); }
+function rCfAg(e) {
+  const d = agD(e); if (!d) return;
+  upd(() => {
+    let g = S.ag.find(x => x.id == d.id);
+    if (!g) { g = { id: d.id, kind: d.kind, conn: d.conn, tier: d.tier, pw: d.pw }; S.ag.push(g); }
+    g.by = S.me; g.at = Date.now();
+    d.mem.forEach(m => touch(m));
+  });
+}
+function rCfTp(id) {
+  const r = (S.tp || []).find(x => x.id == id); if (!r) return;
+  upd(() => { r.by = S.me; r.at = Date.now(); });
+}
+VW.jl = () => {
+  const a = rnd().slice(0, 30);
+  return {
+    t: 'الجولة اليومية',
+    h: '<p class="m">أكّد ما لم يتغير وعدّل ما تغيّر. الأقدم أولاً.</p>'
+      + (a.map(i => {
+        const cfFn = i._jl == 'ag' ? `rCfAg('${encodeURIComponent(i.id)}')` : i._jl == 'tp' ? `rCfTp('${i.id}')` : `rCf('${i.id}')`;
+        return `<div>${itemCard(i)}<button class="btn s" onclick="${cfFn}">تأكيد: كما هو</button></div>`;
+      }).join('') || '<p class="m">كل شيء مؤكد حديثاً.</p>')
+  };
+};
 HOME.after.push(() => { const n = rnd().length; return n ? `<button class="btn s" onclick="go('jl')">الجولة اليومية (${n})</button>` : ''; });
 
 /* ============================ الباركود و IMEI والبيع السريع المتتالي ============================ */
@@ -698,6 +785,23 @@ HK.hide.push(() => { stopInlineScan(); bcStop(); });
 const bcLbl = i => i.sec == 'phones' ? i.brand + ' ' + i.name : i.sec == 'case' ? i.name : acName(i);
 const isImei = c => /^\d{14,17}$/.test(c);
 
+/* اختيار سريع للون/نوع البوشيط عند البيع السريع بالباركود إذا كان له عدة ألوان متوفرة */
+function bcPickCsVar(it) {
+  const avs = (it.v || []).filter(x => x.n > 0);
+  if (!avs.length) return toast('نفد هذا البوشيط بالفعل');
+  setTimeout(() => {
+    $('sh').innerHTML = `<div class="bar"></div><h3>بيع سريع (−1): بوشيط ${esc(it.name)}</h3><p class="m">اختر النوع/اللون الذي بيع:</p>`
+      + avs.map(x => `<button class="btn s" onclick="finish('${x.id}')">${esc([x.g, x.c].filter(Boolean).join(' · ') || 'عام')} (المتوفر: ${x.n})</button>`).join('')
+      + `<button class="btn s" onclick="finish(null)">إلغاء</button>`;
+    sheetOpen(vid => {
+      if (!vid) return;
+      const v = (it.v || []).find(x => x.id == vid); if (!v || v.n <= 0) return;
+      const lbl = [v.g, v.c].filter(Boolean).join(' · ') || 'عام';
+      commit(`بيع سريع (−1): بوشيط ${it.name} (${lbl})`, () => { v.n = Math.max(0, v.n - 1); touch(it); S.cfg.bcQuick = Date.now(); });
+    });
+  }, 180);
+}
+
 /* تنفيذ البيع السريع (-1) عند مسح باركود صنف واحد موجود */
 function bcQuickSell(it) {
   if (it.sec == 'phones') {
@@ -713,8 +817,10 @@ function bcQuickSell(it) {
       toast('هذا الإكسسوار بدون عدد رقمي — حُدِّثت البطاقة أمامك');
     }
   } else if (it.sec == 'case' && (it.v || []).length) {
-    const v = it.v.find(x => x.n > 0) || it.v[0];
-    if (v.n <= 0) return !toast('نفد هذا البوشيط بالفعل');
+    const avs = it.v.filter(x => x.n > 0);
+    if (!avs.length) return !toast('نفد هذا البوشيط بالفعل');
+    if (avs.length > 1) { bcPickCsVar(it); return true; }
+    const v = avs[0];
     commit('بيع سريع (−1): بوشيط ' + it.name, () => { v.n = Math.max(0, v.n - 1); touch(it); });
     return true;
   }
@@ -729,6 +835,7 @@ function bcHome() {
       bcBeep(true);
       const r2 = $('res') || r;
       r2.innerHTML = m.map(itemCard).join('') + x;
+      if (bcQ() && m.length == 1 && !x && m[0].sec == 'case' && (m[0].v || []).filter(v => v.n > 0).length > 1) bcPickCsVar(m[0]);
       return;
     }
     bcBeep(false);
@@ -741,7 +848,9 @@ function bcHome() {
     if (!bcQ()) return false;
     const nc = nz(c), m = S.items.filter(i => i.sec != 'glass' && (i.code == c || (i.imei && nz(i.imei).includes(nc)))), x = BCM.map(f => f(c)).join('');
     if (m.length == 1 && !x) {
-      const it = m[0], ok = bcQuickSell(it);
+      const it = m[0];
+      if (it.sec == 'case' && (it.v || []).filter(v => v.n > 0).length > 1) return false;   // نخرج من الكاميرا لاختيار اللون المباع
+      const ok = bcQuickSell(it);
       bcBeep(ok);
       if (ok) {
         S.cfg.bcQuick = Date.now();
@@ -763,7 +872,7 @@ function bcLink() { $('sh').innerHTML = '<div class="bar"></div><h3>ربط ال�
 function bcF(q) { const n = nz(q); $('pr').innerHTML = S.items.filter(i => i.sec != 'glass' && n && nz(hay(i)).includes(n)).slice(0, 8).map(i => `<button class="card row2" onclick="bcSet('${i.id}')"><b>${esc(bcLbl(i))}</b></button>`).join(''); }
 function bcSet(id) {
   const i = find(id); if (!i) return;
-  upd(() => { if (i.sec == 'phones' && isImei(BCODE)) i.imei = i.imei ? (i.imei.includes(BCODE) ? i.imei : i.imei + ' · ' + BCODE) : BCODE; i.code = i.code || BCODE; touch(i); });
+  upd(() => { if (i.sec == 'phones' && isImei(BCODE)) i.imei = i.imei ? (i.imei.includes(BCODE) ? i.imei : i.imei + ' · ' + BCODE) : BCODE; i.code = i.code || BCODE; i.by = S.me; });
   finish(null); toast('تم ربط الباركود بنجاح');
 }
 HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1;margin:0" onclick="bcHome()">${I('scan')} مسح باركود</button><button class="btn ${bcQ() ? '' : 's'} sm" style="min-height:50px" onclick="upd(()=>S.cfg.bcQuick=bcQ()?0:Date.now())" title="خصم قطعة تلقائياً عند المسح (15 دقيقة)">${I('zap')} ${bcQ() ? 'البيع السريع مفعّل' : 'بيع سريع −1'}</button></div>`);
@@ -825,7 +934,7 @@ VW.st_br = () => ({ t: 'ألوان الماركات', h: '<p class="m">اللو�
 /* إعداد كل نوع إكسسوار: صفحة مستقلة (ما يظهر + خاصيات + العرض + الحد) */
 const akProps = k => S.fields.filter(f => f.sec == 'acc' && (f.kinds || []).includes(k));
 function akTog(j, key) {
-  if (!can('tags')) return toast('للمدير فقط');
+  if (!isAdmin()) return toast('للمدير فقط');
   const k = S.tags.kind[j];
   upd(() => {
     S.cfg.kc = S.cfg.kc || {}; S.cfg.gkc = S.cfg.gkc || {};
@@ -835,7 +944,7 @@ function akTog(j, key) {
   });
 }
 function akLim(j, w) {
-  if (!can('tags')) return toast('للمدير فقط');
+  if (!isAdmin()) return toast('للمدير فقط');
   const k = S.tags.kind[j], grp = w == 'g', cur = grp ? gkc(k).lim : kc(k).lim, gen = lim(grp ? 'agl' : 'acl');
   ask('الحد — ' + k, [{ k: 'n', l: (grp ? '«قارب النفاد» عند مجموع المجموعة ≤' : '«قليل» لكل قطعة من هذا النوع عند ≤') + ' (فارغ = الحد العام ' + gen + ')', t: 'tel', v: cur ?? '' }]).then(v => {
     if (!v) return; const n = v.n.trim();
@@ -866,7 +975,7 @@ VW.st_ak = () => ({
 });
 /* إدارة الخانات المخصصة */
 let FE = {};
-VW.st_fx = () => ({ t: 'الخانات المخصصة', h: '<p class="m">خانة إضافية بخيارات تظهر في نموذج القسم وعلى البطاقة وتدخل في البحث.</p>' + (can('tags') ? '<button class="btn" onclick="feEd(null)">+ إضافة خانة</button>' : '') + Object.keys(SECN).filter(s => !V.fs || V.fs == s).map(s => `<h3>${SECN[s]}</h3>` + (S.fields.filter(f => f.sec == s).map(f => `<button class="card row2" onclick="feEd('${f.id}')"><b style="flex:1">${esc(f.name)}</b><span class="m">${f.kinds && f.kinds.length ? esc(f.kinds.join('، ')) : 'الكل'} · ${f.multi ? 'عدة قيم' : 'قيمة'} · ${f.opts.length}</span></button>`).join('') || '<p class="m">لا شيء</p>')).join('') });
+VW.st_fx = () => ({ t: 'الخانات المخصصة', h: '<p class="m">خانة إضافية بخيارات تظهر في نموذج القسم وعلى البطاقة وتدخل في البحث.</p>' + (isAdmin() ? '<button class="btn" onclick="feEd(null)">+ إضافة خانة</button>' : '') + Object.keys(SECN).filter(s => !V.fs || V.fs == s).map(s => `<h3>${SECN[s]}</h3>` + (S.fields.filter(f => f.sec == s).map(f => `<button class="card row2" onclick="feEd('${f.id}')"><b style="flex:1">${esc(f.name)}</b><span class="m">${f.kinds && f.kinds.length ? esc(f.kinds.join('، ')) : 'الكل'} · ${f.multi ? 'عدة قيم' : 'قيمة'} · ${f.opts.length}</span></button>`).join('') || '<p class="m">لا شيء</p>')).join('') });
 function feR() {
   if ($('fen')) { FE.name = $('fen').value; FE.opts = $('feo').value; FE.unit = $('feu').value; }
   const kl = FE.sec == 'phones' ? S.tags.brand : FE.sec == 'acc' ? S.tags.kind : null;
@@ -878,7 +987,7 @@ function feR() {
 function feK(j) { const k = (FE.sec == 'phones' ? S.tags.brand : S.tags.kind)[j]; FE.kinds = FE.kinds.includes(k) ? FE.kinds.filter(x => x != k) : [...FE.kinds, k]; feR(); }
 function feOk() { FE.name = $('fen').value.trim(); FE.opts = $('feo').value; FE.unit = $('feu').value.trim(); if (!FE.name) return toast('اكتب اسم الخانة'); finish({ ok: 1 }); }
 function feEd(id, kj) {
-  if (!can('tags')) return toast('للمدير فقط'); const f = id ? S.fields.find(x => x.id == id) : null;
+  if (!isAdmin()) return toast('للمدير فقط'); const f = id ? S.fields.find(x => x.id == id) : null;
   FE = f ? { id: f.id, name: f.name, sec: f.sec, kinds: [...(f.kinds || [])], multi: !!f.multi, unit: f.unit || '', opts: f.opts.join('\n') } : { id: '', name: '', sec: kj != null ? 'acc' : V.fs || 'acc', kinds: kj != null ? [S.tags.kind[kj]] : [], multi: false, unit: '', opts: '' };
   feR();
   sheetOpen(v => {
@@ -890,3 +999,118 @@ function feEd(id, kj) {
     });
   });
 }
+
+/* ============================ إدارة الوسوم المتقدمة (تعديل الاسم + فحص الاستعمال والدمج عند الحذف) ============================ */
+function tgCount(g, val) {
+  let n = 0;
+  if (['brand', 'color', 'cap', 'ram', 'kind', 'conn', 'tier', 'pw'].includes(g)) {
+    S.items.forEach(i => {
+      if (i[g] === val) n++;
+      else if (g == 'color' && i.sec == 'case' && (i.v || []).some(x => x.c === val)) n++;
+    });
+  }
+  if (g == 'brand') S.gg.forEach(x => { if (Object.values(x.br || {}).includes(val)) n++; });
+  if (g == 'gender') S.items.forEach(i => { if (i.sec == 'case' && (i.v || []).some(x => x.g === val)) n++; });
+  if (g == 'glass') S.items.forEach(i => { if (i.sec == 'glass' && i.ty === val && (sumv(i.stock) > 0 || Object.keys(i.lv || {}).length > 0)) n++; });
+  if (g == 'fault') {
+    (S.rp || []).forEach(r => { if ((r.fault || '').split('،').map(s => s.trim()).includes(val)) n++; });
+    (S.guide || []).forEach(d => { if (d.f === val) n++; });
+  }
+  return n;
+}
+function tgReplace(g, oldV, newV) {
+  if (oldV === newV) return;
+  if (['brand', 'color', 'cap', 'ram', 'kind', 'conn', 'tier', 'pw'].includes(g)) {
+    S.items.forEach(i => {
+      if (i[g] === oldV) i[g] = newV;
+      if (g == 'color' && i.sec == 'case') (i.v || []).forEach(x => { if (x.c === oldV) x.c = newV; });
+    });
+  }
+  if (g == 'gender') S.items.forEach(i => { if (i.sec == 'case') (i.v || []).forEach(x => { if (x.g === oldV) x.g = newV; }); });
+  if (g == 'brand') {
+    S.gg.forEach(x => { if (x.br) Object.keys(x.br).forEach(m => { if (x.br[m] === oldV) { if (newV) x.br[m] = newV; else delete x.br[m]; } }); });
+    S.fields.forEach(f => { if (f.sec == 'phones' && Array.isArray(f.kinds)) f.kinds = [...new Set(f.kinds.map(k => k === oldV ? newV : k).filter(Boolean))]; });
+    ['bcol', 'bl'].forEach(c => { const o = S.cfg && S.cfg[c]; if (o && o[oldV] !== undefined) { if (newV && o[newV] === undefined) o[newV] = o[oldV]; delete o[oldV]; } });
+  }
+  if (g == 'kind') {
+    S.fields.forEach(f => { if (f.sec == 'acc' && Array.isArray(f.kinds)) f.kinds = [...new Set(f.kinds.map(k => k === oldV ? newV : k).filter(Boolean))]; });
+    ['kc', 'gkc'].forEach(c => { const o = S.cfg && S.cfg[c]; if (o && o[oldV] !== undefined) { if (newV && o[newV] === undefined) o[newV] = o[oldV]; delete o[oldV]; } });
+  }
+  if (['kind', 'conn', 'tier', 'pw'].includes(g)) {
+    (S.ag || []).forEach(a => { if (a[g] === oldV) { a[g] = newV; a.id = gkey(a); } });
+  }
+  if (g == 'glass') {
+    const o = S.cfg && S.cfg.gtl;
+    if (o && o[oldV] !== undefined) { if (newV && o[newV] === undefined) o[newV] = o[oldV]; delete o[oldV]; }
+    if (!newV) {
+      S.items = S.items.filter(i => !(i.sec == 'glass' && i.ty === oldV));
+    } else {
+      S.items = S.items.filter(i => {
+        if (i.sec != 'glass' || i.ty !== oldV) return true;
+        const t = gitem(i.gid, newV);
+        if (!t || t === i) { i.ty = newV; return true; }
+        t.stock = t.stock || {}; for (const m in (i.stock || {})) t.stock[m] = (t.stock[m] || 0) + i.stock[m];
+        if (i.lv) { t.lv = t.lv || {}; Object.assign(t.lv, i.lv); }
+        return false;
+      });
+    }
+  }
+  if (g == 'fault') {
+    (S.rp || []).forEach(r => {
+      if (!r.fault) return;
+      const pts = r.fault.split('،').map(s => s.trim()).filter(Boolean);
+      if (pts.includes(oldV)) r.fault = [...new Set(pts.map(x => x === oldV ? newV : x).filter(Boolean))].join('، ');
+    });
+    (S.guide || []).forEach(d => { if (d.f === oldV && newV) d.f = newV; });
+  }
+}
+window.tgRen = (g, i) => {
+  if (!can('tags')) return toast('للمدير فقط');
+  const oldV = S.tags[g][i];
+  ask('تعديل اسم الوسم', [{ k: 't', l: 'الاسم الجديد (سيُحدّث كل القطع المرتبطة به)', v: oldV }]).then(v => {
+    const t = v && v.t.trim(); if (!t || t === oldV) return;
+    commit('تم تعديل الوسم إلى «' + t + '»', () => {
+      if (S.tags[g].includes(t)) S.tags[g].splice(i, 1);
+      else S.tags[g][i] = t;
+      tgReplace(g, oldV, t);
+    });
+  });
+};
+window.tgDelSmart = (g, i) => {
+  if (!can('tags')) return toast('للمدير فقط');
+  const val = S.tags[g][i], cnt = tgCount(g, val), others = S.tags[g].filter((_, idx) => idx !== i);
+  if (!cnt) {
+    sure('حذف الوسم «' + val + '» ؟ (غير مستعمل في أي قطعة)').then(y => {
+      if (y) commit('تم حذف الوسم', () => { S.tags[g].splice(i, 1); tgReplace(g, val, ''); });
+    });
+    return;
+  }
+  const opts = ['— مسح الوسم من القطع دون بديل —', ...others];
+  ask(`«${val}» مستعمل في ${cnt} موضع`, [
+    { k: 'm', l: 'اختر وسماً بديلاً لنقل/دمج القطع إليه قبل الحذف:', t: 'sel', o: opts, v: others[0] || opts[0] }
+  ], 'دمج وحذف', true).then(v => {
+    if (!v) return;
+    const target = v.m === opts[0] ? '' : v.m;
+    commit(target ? `تم دمج «${val}» في «${target}»` : `تم حذف «${val}»`, () => {
+      S.tags[g].splice(i, 1);
+      tgReplace(g, val, target);
+    });
+  });
+};
+/* ربط شاشة الوسوم ودالة الحذف بالنسخة الذكية بعد تحميل كل الملفات */
+HK.render.push(function tgUpgrade() {
+  if (window._tgUp) return; window._tgUp = 1;
+  window.tgDel = window.tgDelSmart;
+  VW.st_tg = () => {
+    const g = V.g, ed = can('tags');
+    return {
+      t: TG[g],
+      h: (ed ? '<p class="m">اضغط على الاسم لتعديله في كل القطع، أو × لحذفه/دمجه.</p>' : '<p class="m">التعديل للمدير فقط.</p>')
+        + `<div>${S.tags[g].map((t, i) => {
+          const c = tgCount(g, t);
+          return `<span class="tag">${ed ? `<span onclick="tgRen('${g}',${i})">${esc(t)}</span>` : esc(t)}${c ? `<small class="m" style="font-size:.75rem">(${c})</small>` : ''}${ed ? `<b onclick="tgDel('${g}',${i})">×</b>` : ''}</span>`;
+        }).join('')}</div>`
+        + (ed ? `<button class="btn" onclick="tgAdd('${g}')">+ إضافة</button>` : '')
+    };
+  };
+});

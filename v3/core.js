@@ -29,7 +29,7 @@ Object.assign(IC, {
   trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
   alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   keyboard: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/>',
-  hash: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>'
+  hash: '<line x1="4" x2="20" y1="9" x2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>'
 });
 
 /* ---------- السجلات (تسجّل فيها الملفات الأخرى بدل تعديل بعضها) ---------- */
@@ -54,7 +54,7 @@ const LM = [
 ];
 
 /* ---------- البحث: توحيد الكتابة (عربي/إنجليزي/أرقام) ---------- */
-const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g'};
+const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g'};
 const KS=Object.keys(AL).sort((a,b)=>b.length-a.length);
 const nz=s=>{s=String(s||'').toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/[\u064B-\u0652]/g,'');for(const k of KS)s=s.split(k).join(AL[k]);return s.replace(/[\s\-_]/g,'')};
 const NZC = new WeakMap();   // ذاكرة مؤقتة خارج البيانات (لا تُحفظ ولا تُزامَن)
@@ -78,7 +78,7 @@ const DEF = {
     pw: ['10W', '18W', '20W', '25W', '33W', '45W', '65W'],
     fault: ['تغيير شاشة', 'كونكتور الشحن', 'بطارية', 'مشكلة شبكة', 'سقط في الماء', 'صوت / مايك', 'سوفتوير', 'تغيير ظهر']
   },
-  items: [], rp: [], trash: [], req: [], gg: [], guide: [], ag: [], used: [], debt: []
+  items: [], rp: [], trash: [], req: [], gg: [], guide: [], ag: [], used: [], debt: [], tp: [], fields: []
 };
 let LOAD_BAD = 0;   // 1 = ملف بيانات هذا الجهاز تالف عند الإقلاع (يوقف المزامنة ويعرض استعادة نسخة تلقائية)
 function load(chk) {
@@ -159,7 +159,7 @@ addEventListener('unhandledrejection', e => errUi((e.reason && e.reason.message)
 
 /* ---------- الرموز السرية (SHA-256 مملّحة؛ القديمة تُقبل ثم تُحدَّث تلقائياً) ---------- */
 const hsL=s=>{let h=5381;for(const c of String(s))h=(h*33^c.charCodeAt(0))>>>0;return h.toString(36)};
-const SHK=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+const SHK=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,092722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
 function sha256(m){const l=m.length,n=((l+9+63)>>6)<<6,b=new Uint8Array(n);b.set(m);b[l]=128;const dv=new DataView(b.buffer);dv.setUint32(n-8,Math.floor(l*8/4294967296));dv.setUint32(n-4,(l*8)>>>0);
 let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];const w=new Uint32Array(64);
 for(let o=0;o<n;o+=64){for(let i=0;i<16;i++)w[i]=dv.getUint32(o+i*4);
@@ -176,12 +176,11 @@ _hc=s;_hr='h2:'+Array.from(m,v=>v.toString(16).padStart(2,'0')).join('');return 
 const hv=(p,st)=>{if(!st)return false;p=String(p??'');if(st===hs(p))return true;
 if(st===hsL(p)){const n=hs(p);let ch=0;if(S.pin===st){S.pin=n;ch=1}if(S.cfg&&S.cfg.lk===st){S.cfg.lk=n;ch=1}(S.users||[]).forEach(u=>{if(u.pin===st){u.pin=n;ch=1}});if(ch)save();return true}return false};
 
-
 /* ---------- الصلاحيات ---------- */
-const isAdmin = () => !!(S.users.find(u => u.name == S.me) || {}).admin;
-const can = k => S.perm[k] == 'e' || isAdmin();
 const admOk = () => { try { return sessionStorage.getItem('admOk') == '1'; } catch (e) { return false; } };
 const admSet = v => { try { v ? sessionStorage.setItem('admOk', '1') : sessionStorage.removeItem('admOk'); } catch (e) { } };
+const isAdmin = () => !!(S.users.find(u => u.name == S.me) || {}).admin && (!S.pin || admOk());
+const can = k => S.perm[k] == 'e' || isAdmin();
 const needAdm = f => function (...a) {
   if (!isAdmin()) return toast('للمدير فقط');
   ask('تأكيد: رمز المدير', [{ k: 'p', l: 'الرمز', t: 'password' }], 'تأكيد').then(v => {
@@ -272,13 +271,13 @@ function sure(msg, ok = 'نعم', danger = true) {
 
 /* ---------- التعديل مع التراجع والحذف والاسترجاع ---------- */
 function upd(fn) { fn(); save(); render(); }
-const snap = () => JSON.stringify({ items: S.items, req: S.req, tags: S.tags, gg: S.gg, guide: S.guide, ag: S.ag, debt: S.debt, used: (S.used || []).map(u => ({ ...u, img: u.img ? 1 : 0 })), rp: S.rp.map(r => ({ ...r, img: r.img ? 1 : 0 })) });
+const snap = () => JSON.stringify({ items: S.items, req: S.req, tags: S.tags, gg: S.gg, guide: S.guide, ag: S.ag, debt: S.debt, tp: S.tp, fields: S.fields, used: (S.used || []).map(u => ({ ...u, img: u.img ? 1 : 0 })), rp: S.rp.map(r => ({ ...r, img: r.img ? 1 : 0 })) });
 function commit(label, fn) {
   const b = snap(), im = Object.fromEntries([...S.rp, ...(S.used || [])].map(r => [r.id, r.img]));
   fn(); save(); render();
   toast(label, () => {
     const o = JSON.parse(b);
-    S.items = o.items; S.req = o.req; S.tags = o.tags; S.gg = o.gg; S.guide = o.guide; S.ag = o.ag; S.debt = o.debt || S.debt;
+    S.items = o.items; S.req = o.req; S.tags = o.tags; S.gg = o.gg; S.guide = o.guide; S.ag = o.ag; S.debt = o.debt || S.debt; S.tp = o.tp || S.tp; S.fields = o.fields || S.fields;
     S.used = (o.used || []).map(u => ({ ...u, img: im[u.id] || '' }));
     S.rp = o.rp.map(r => ({ ...r, img: im[r.id] || '' }));
   });
@@ -295,6 +294,10 @@ function del(coll, id, label) {
 function restore(id) {
   const t = S.trash.find(x => x.id == id); if (!t) return;
   S.trash = S.trash.filter(x => x != t);
+  if (t.coll == 'used' && t.obj && t.obj.repOf) {
+    const it = S.items.find(x => x.id == t.obj.repOf);
+    if (it && it.cnt > 0) it.cnt = Math.max(0, it.cnt - 1);
+  }
   S[t.coll] = S[t.coll] || []; S[t.coll].push(t.obj); save(); render();
 }
 const row = (l, fn, sub) => `<button class="card row2" onclick="${fn}"><b>${esc(l)}</b><span class="m">${esc(sub || '')}</span></button>`;

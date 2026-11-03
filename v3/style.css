@@ -77,13 +77,6 @@ nav button.on .ic{background:var(--ab)}
 #sc{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:2px;margin-top:4px;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 26px);mask-image:linear-gradient(to right,transparent 0,#000 26px)}
 #sc .tag{flex:none;white-space:nowrap;margin:0}
 
-/* ---- شريط البحث مع زر المايكروفون الصوتي ---- */
-.srch-w{display:flex;align-items:center;gap:6px}
-.srch-w input{flex:1;min-width:0}
-.mic-b{min-width:48px;min-height:48px;border-radius:12px;padding:0;color:var(--p);transition:background .15s,color .15s,border-color .15s}
-.mic-b.on{background:#dc2626;color:#fff;border-color:#dc2626;animation:micPulse 1.2s infinite}
-@keyframes micPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-
 /* ---- شارة رقم التذكرة القصير في الصيانة ---- */
 .tk,.tk-b,.rp-tk{display:inline-flex;align-items:center;justify-content:center;padding:2px 9px;border-radius:8px;background:var(--ab);color:var(--p);font-weight:800;font-size:.88rem;letter-spacing:.5px;direction:ltr;margin-inline-end:6px;flex:none}
 
@@ -132,9 +125,7 @@ nav button.on .ic{background:var(--ab)}
 /* ---- الأيقونة العائمة السريعة (FAB) ---- */
 #fab{position:fixed;bottom:calc(74px + env(safe-area-inset-bottom));inset-inline-end:16px;z-index:12;display:flex;flex-direction:column;align-items:center;gap:10px}
 .fab-b{width:52px;height:52px;border-radius:16px;border:0;background:var(--p);color:var(--onp);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(37,99,235,.32);cursor:pointer;font:inherit}
-.fab-b.s{width:42px;height:42px;border-radius:13px;background:var(--c);color:var(--t);border:1px solid var(--b);box-shadow:0 4px 12px rgba(15,23,42,.1)}
 .fab-b .ic{width:1.45rem;height:1.45rem}
-.fab-b.s .ic{width:1.15rem;height:1.15rem}
 
 /* ---- من الأنماط التي كانت تُحقن من ملفات JS ---- */
 .dotl{display:inline-block;width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 3px rgba(128,128,128,.18);flex:none}

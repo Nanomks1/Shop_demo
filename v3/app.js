@@ -180,22 +180,14 @@ VW.st_look = () => {
   return {
     t: 'المظهر والعرض',
     h: '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
-      + `<button class="card row2" onclick="upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة والبحث السريع</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
+      + `<button class="card row2" onclick="upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة السريعة في الرئيسية</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
       + '<h3>الثيم (لهذا الجهاز فقط)</h3>' + THM.map(([k, n, d, c]) => { const on = (S.cfg.th || 'a') == k; return `<button class="card row2 ${on ? 'sel' : ''}" onclick="upd(()=>S.cfg.th='${k}')"><span class="sw3">${c.map(x => `<i style="background:${x}"></i>`).join('')}</span><b>${n}<div class="m" style="font-weight:400">${d}</div></b>${on ? I('check') : ''}</button>`; }).join('')
       + '<h3>حجم الخط</h3>' + [[15, 'صغير'], [17, 'عادي'], [19, 'كبير'], [21, 'أكبر']].map(([v, l]) => `<button class="tag ${S.cfg.fs == v ? 'on' : ''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')
   };
 };
 
-/* ---------- الأيقونة العائمة الذكية (FAB) ---------- */
+/* ---------- الأيقونة العائمة الذكية (FAB — في الرئيسية فقط) ---------- */
 function fabAct() {
-  if (V.v == 'sec') {
-    if (V.k == 'phones') return phAdd();
-    if (V.k == 'glass') return glAdd();
-    if (V.k == 'case') return csAdd();
-    if (V.k == 'acc') return acAdd();
-  }
-  if (V.v == 'rp') return rEd(null);
-  if (V.v == 'gd') return gdEd(null);
   $('sh').innerHTML = `<div class="bar"></div><h3>إجراء سريع</h3>`
     + `<button class="btn" onclick="finish(1)">${I('mobile')} + إضافة هاتف</button>`
     + `<button class="btn s" onclick="finish(2)">${I('tool')} + استلام صيانة</button>`
@@ -215,16 +207,15 @@ function fabUpd() {
     document.body.insertAdjacentHTML('beforeend', '<div id="fab" hidden></div>');
     el = $('fab');
   }
-  const show = S.cfg.fab !== 0 && ['home'].includes(V.v);
+  const show = S.cfg.fab !== 0 && V.v == 'home';
   el.hidden = !show;
   if (!show) return;
-  el.innerHTML = (V.v != 'home' ? `<button class="fab-b s" onclick="goSearch()" aria-label="بحث">${ic('search')}</button>` : '')
-    + `<button class="fab-b" onclick="fabAct()" aria-label="إضافة">${ic('plus')}</button>`;
+  el.innerHTML = `<button class="fab-b" onclick="fabAct()" aria-label="إضافة">${ic('plus')}</button>`;
 }
 HK.render.push(fabUpd);
 
 /* ---------- الحدود ---------- */
-VW.st_lim = () => VW.st();   // احتياط فقط: لم تعد هناك شاشة حدود مجمّعة، كل حد في صفحة قسمه
+VW.st_lim = () => VW.st();   // احتياط فقط: كل حد في صفحة قسمه
 const LMIN1 = ['alk', 'stale'];
 const limShow = k => k == 'gmin' ? lim(k) - 1 : lim(k);   // حد الأنتي كاس يُخزَّن (أقل من) ويُعرض (≤) بدون تغيير بياناتك
 function limEd(k) {
@@ -238,24 +229,129 @@ function limEd(k) {
   });
 }
 
-/* ---------- الوسوم ---------- */
+/* ---------- الوسوم (مع تعديل الاسم، فحص الاستعمال، والدمج الآمن) ---------- */
+function tgUsed(g, t) {
+  let n = 0;
+  if (['brand', 'color', 'cap', 'ram', 'kind', 'conn', 'tier', 'pw'].includes(g)) {
+    S.items.forEach(i => { if (i[g] == t) n++; });
+  }
+  if (g == 'brand') S.gg.forEach(x => { if (Object.values(x.br || {}).includes(t)) n++; });
+  if (g == 'color') S.items.forEach(i => (i.v || []).forEach(v => { if (v.c == t) n++; }));
+  if (g == 'gender') S.items.forEach(i => (i.v || []).forEach(v => { if (v.g == t) n++; }));
+  if (g == 'glass') S.items.forEach(i => { if (i.sec == 'glass' && i.ty == t && (sumv(i.stock) > 0 || Object.keys(i.lv || {}).length > 0)) n++; });
+  if (g == 'fault') {
+    S.rp.forEach(r => { if ((r.fault || '').split('،').map(s => s.trim()).includes(t)) n++; });
+    S.guide.forEach(gd => { if (gd.f == t) n++; });
+  }
+  return n;
+}
+function tgReplace(g, oldT, newT) {
+  if (['brand', 'color', 'cap', 'ram', 'kind', 'conn', 'tier', 'pw'].includes(g)) {
+    S.items.forEach(i => { if (i[g] == oldT) i[g] = newT; });
+  }
+  if (g == 'brand') {
+    S.gg.forEach(x => { if (x.br) Object.keys(x.br).forEach(m => { if (x.br[m] == oldT) x.br[m] = newT; }); });
+    ['bcol', 'bl'].forEach(k => { const o = S.cfg[k]; if (o && o[oldT] !== undefined) { if (newT && o[newT] === undefined) o[newT] = o[oldT]; delete o[oldT]; } });
+    S.fields.forEach(f => { if (f.sec == 'phones' && Array.isArray(f.kinds)) f.kinds = [...new Set(f.kinds.map(x => x == oldT ? newT : x).filter(Boolean))]; });
+  }
+  if (g == 'color') S.items.forEach(i => (i.v || []).forEach(v => { if (v.c == oldT) v.c = newT; }));
+  if (g == 'gender') S.items.forEach(i => (i.v || []).forEach(v => { if (v.g == oldT) v.g = newT; }));
+  if (['kind', 'conn', 'tier', 'pw'].includes(g)) {
+    S.ag.forEach(ag => {
+      if (ag[g] == oldT) {
+        ag[g] = newT;
+        ag.id = [ag.kind, ag.conn || '', ag.tier || '', ag.pw || ''].join('|').replace(/\//g, '-');
+      }
+    });
+    if (g == 'kind') {
+      ['kc', 'gkc'].forEach(k => { const o = S.cfg[k]; if (o && o[oldT] !== undefined) { if (newT && o[newT] === undefined) o[newT] = o[oldT]; delete o[oldT]; } });
+      S.fields.forEach(f => { if (f.sec == 'acc' && Array.isArray(f.kinds)) f.kinds = [...new Set(f.kinds.map(x => x == oldT ? newT : x).filter(Boolean))]; });
+    }
+  }
+  if (g == 'glass') {
+    if (newT) {
+      S.gg.forEach(grp => {
+        const oldI = gitem(grp.id, oldT), newI = gitem(grp.id, newT);
+        if (oldI && newI && oldI != newI) {
+          newI.stock = newI.stock || {};
+          for (const m in (oldI.stock || {})) newI.stock[m] = (newI.stock[m] || 0) + oldI.stock[m];
+          if (oldI.lv) { newI.lv = newI.lv || {}; Object.assign(newI.lv, oldI.lv); }
+          if (newI.min == null && oldI.min != null) newI.min = oldI.min;
+          if (!newI.price && oldI.price) newI.price = oldI.price;
+          S.items = S.items.filter(x => x != oldI);
+        } else if (oldI) oldI.ty = newT;
+      });
+    } else {
+      S.items = S.items.filter(i => !(i.sec == 'glass' && i.ty == oldT));
+    }
+    if (S.cfg.gtl && S.cfg.gtl[oldT] !== undefined) { if (newT && S.cfg.gtl[newT] === undefined) S.cfg.gtl[newT] = S.cfg.gtl[oldT]; delete S.cfg.gtl[oldT]; }
+  }
+  if (g == 'fault') {
+    S.rp.forEach(r => {
+      if (!r.fault) return;
+      const pts = r.fault.split('،').map(s => s.trim());
+      if (pts.includes(oldT)) r.fault = [...new Set(pts.map(x => x == oldT ? newT : x).filter(Boolean))].join('، ');
+    });
+    S.guide.forEach(gd => { if (gd.f == oldT && newT) gd.f = newT; });
+  }
+}
+
 VW.st_tags = () => ({ t: 'الوسوم', h: Object.keys(TG).map(g => row(TG[g], `go('st_tg',{g:'${g}'})`, S.tags[g].length)).join('') });
 VW.st_tg = () => {
   const g = V.g, ed = can('tags');
   return {
     t: TG[g],
-    h: (ed ? '' : '<p class="m">التعديل للمدير فقط.</p>')
-      + `<div>${S.tags[g].map((t, i) => `<span class="tag">${esc(t)}${ed ? `<b onclick="tgDel('${g}',${i})">×</b>` : ''}</span>`).join('')}</div>`
+    h: (ed ? '<p class="m">اضغط على الاسم لتعديله، أو (×) لحذفه أو دمجه في وسم آخر.</p>' : '<p class="m">التعديل للمدير فقط.</p>')
+      + `<div>${S.tags[g].map((t, i) => `<span class="tag"><span ${ed ? `onclick="tgEd('${g}',${i})"` : ''}>${esc(t)}</span>${ed ? `<b onclick="tgDel('${g}',${i})" style="padding-inline-start:4px">×</b>` : ''}</span>`).join('')}</div>`
       + (ed ? `<button class="btn" onclick="tgAdd('${g}')">+ إضافة</button>` : '')
   };
 };
-function tgAdd(g) { ask('وسم جديد: ' + TG[g], [{ k: 't', l: 'الاسم' }]).then(v => { const t = v && v.t.trim(); if (t && !S.tags[g].includes(t)) upd(() => { S.tags[g].push(t); if (g == 'brand' && typeof autoBc == 'function') autoBc(t); }); }); }
+function tgAdd(g) {
+  if (!can('tags')) return toast('للمدير فقط');
+  ask('وسم جديد: ' + TG[g], [{ k: 't', l: 'الاسم' }]).then(v => {
+    const t = v && v.t.trim();
+    if (t && !S.tags[g].includes(t)) upd(() => { S.tags[g].push(t); if (g == 'brand' && typeof autoBc == 'function') autoBc(t); });
+  });
+}
+function tgEd(g, i) {
+  if (!can('tags')) return toast('للمدير فقط');
+  const oldT = S.tags[g][i]; if (oldT == null) return;
+  const used = tgUsed(g, oldT);
+  ask('تعديل الوسم «' + oldT + '»', [{ k: 't', l: 'الاسم الجديد' + (used ? ' (سيُحدَّث في ' + used + ' موضع تلقائياً)' : ''), v: oldT }]).then(v => {
+    const newT = v && v.t.trim();
+    if (!newT || newT == oldT) return;
+    if (S.tags[g].includes(newT)) {
+      sure('«' + newT + '» موجود مسبقاً. هل تريد دمج «' + oldT + '» فيه؟', 'دمج', false).then(y => {
+        if (!y) return;
+        commit('تم دمج الوسم', () => { tgReplace(g, oldT, newT); S.tags[g].splice(i, 1); });
+      });
+      return;
+    }
+    commit('تم تعديل الاسم', () => { S.tags[g][i] = newT; tgReplace(g, oldT, newT); });
+  });
+}
 function tgDel(g, i) {
-  sure('حذف الوسم «' + S.tags[g][i] + '» ؟').then(y => {
-    if (!y) return;
-    const o = [...S.tags[g]];
-    upd(() => S.tags[g].splice(i, 1));
-    toast('تم الحذف', () => { S.tags[g] = o; });
+  if (!can('tags')) return toast('للمدير فقط');
+  const oldT = S.tags[g][i]; if (oldT == null) return;
+  const used = tgUsed(g, oldT), others = S.tags[g].filter((_, k) => k != i);
+  if (g == 'glass' && !others.length) return toast('لا يمكن حذف آخر نوع زجاج');
+  if (!used) {
+    sure('حذف الوسم «' + oldT + '» ؟').then(y => {
+      if (!y) return;
+      const o = [...S.tags[g]];
+      upd(() => { S.tags[g].splice(i, 1); tgReplace(g, oldT, ''); });
+      toast('تم الحذف', () => { S.tags[g] = o; });
+    });
+    return;
+  }
+  const opts = g == 'glass' ? others : ['— حذف الوسم وإزالته من القطع —', ...others];
+  ask('«' + oldT + '» مستعمل في ' + used + ' موضع', [{ k: 'to', l: g == 'glass' ? 'انقل مخزونه إلى نوع زجاج آخر قبل الحذف:' : 'اختر وسماً لنقل القطع إليه أو احذفه:', t: 'sel', o: opts, v: others[0] || opts[0] }], 'تأكيد الحذف', true).then(v => {
+    if (!v) return;
+    const target = v.to == '— حذف الوسم وإزالته من القطع —' ? '' : v.to;
+    commit(target ? 'تم النقل والحذف' : 'تم الحذف', () => {
+      tgReplace(g, oldT, target);
+      S.tags[g].splice(i, 1);
+    });
   });
 }
 
@@ -420,7 +516,7 @@ async function makeSafeBackupJson(pinOrHash) {
 let AB_T = 0, AB_FH = null;
 /* النسخ التلقائية داخل الهاتف (IndexedDB): آخر حفظ + نسخة يومية (آخر 7 أيام) + نسخة قبل كل استعادة (آخر 3). الصور تُستثنى لخفة الحجم. */
 function bkCopy() { return JSON.parse(JSON.stringify(S, function (k, v) { return (k === 'img' && typeof v === 'string' && v.startsWith('data:') && this.id) ? 'idb:' + this.id : v; })); }
-const bkSize = d => (d.items || []).length + (d.rp || []).length + (d.gg || []).length;
+const bkSize = d => (d.items || []).length + (d.rp || []).length + (d.gg || []).length + (d.tp || []).length + (d.used || []).length + (d.debt || []).length;
 function bkPrune(pre, n) { AUTOBK.all().then(all => Object.keys(all).filter(k => k.startsWith(pre)).sort().reverse().slice(n).forEach(k => AUTOBK.del(k))).catch(() => { }); }
 function snapPre() {
   if (!S.users.length) return Promise.resolve();

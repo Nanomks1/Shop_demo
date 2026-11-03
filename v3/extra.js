@@ -24,6 +24,7 @@ HK.save.push(() => {
 
 /* ---------- شراء المستعمل ---------- */
 let UR = {}, UI = '', UCAMS = null;
+const isUsInInv = u => !!(u && u.inv && (!u.invId || S.items.some(x => x.id == u.invId)));
 function usDup(imei, selfId) {
   const n = nz(imei); if (n.length < 6) return '';
   if (S.items.some(i => i.imei && nz(i.imei).includes(n))) return 'المخزون';
@@ -121,7 +122,7 @@ async function usCommit(rec, v) {
   if (v.img && v.img.startsWith('data:image')) { putImg(id, v.img); v.img = 'idb:' + id; }
   const o = { id, ...v, by: S.me, at: Date.now() };
   S.used.push(o);
-  /* إن كان العملية روپريز (استبدال)، نخصم الهاتف المباع من المخزون تلقائياً */
+  /* إن كانت العملية روپريز (استبدال)، نخصم الهاتف المباع من المخزون تلقائياً */
   if (v.repOf) {
     const it = S.items.find(x => x.id == v.repOf);
     if (it && it.cnt > 0) { it.cnt = Math.max(0, it.cnt - 1); it.by = S.me; it.at = Date.now(); }
@@ -135,7 +136,22 @@ async function usCommit(rec, v) {
 }
 const usAdd = pre => usOpen(pre || {});
 function usEd(id) { const u = S.used.find(x => x.id == id); if (u) usOpen(u); }
-function usDel(id) { const u = S.used.find(x => x.id == id); if (u) del('used', id, 'شراء ' + u.dev); }
+function usDel(id) {
+  const u = S.used.find(x => x.id == id); if (!u) return;
+  if (!can('del')) return toast('الحذف للمدير فقط');
+  sure('حذف «شراء ' + u.dev + '» ؟' + (u.repOf ? ' (سيُعاد الهاتف المباع في الروپريز إلى المخزون)' : '')).then(y => {
+    if (!y) return;
+    const i = S.used.findIndex(x => x.id == id); if (i < 0) return;
+    const o = S.used.splice(i, 1)[0], t = { id: uid(), coll: 'used', obj: o, label: 'شراء ' + o.dev, t: Date.now() };
+    const repIt = o.repOf ? S.items.find(x => x.id == o.repOf) : null;
+    if (repIt) { repIt.cnt += 1; repIt.by = S.me; }
+    S.trash.push(t); save(); render();
+    toast('تم الحذف', () => {
+      if (repIt && repIt.cnt > 0) repIt.cnt = Math.max(0, repIt.cnt - 1);
+      restore(t.id);
+    });
+  });
+}
 function usZoom(id) {
   const u = S.used.find(x => x.id == id), src = u && uImg(u); if (!src) return;
   $('sh').innerHTML = `<div class="bar"></div><h3>${esc(u.dev + ' — ' + u.name)}</h3><img src="${src}" style="width:100%;max-height:70vh;object-fit:contain;border-radius:12px"><div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>`;
@@ -144,10 +160,16 @@ function usZoom(id) {
 function usInv(id) {
   const u = S.used.find(x => x.id == id); if (!u) return;
   $('sh').innerHTML = '';
-  sheetOpen(v => { phDone(v, PR); if (v && v.add === undefined) { u.inv = 1; save(); render(); } });
   const br = (typeof brOfName == 'function' ? brOfName(u.dev) : '') || '';
   const nm = br ? u.dev.replace(new RegExp('^' + br + '\\s*', 'i'), '').trim() || u.dev : u.dev;
-  phForm({ brand: br, name: nm, imei: u.imei || '', cond: 'مستعمل', cnt: 1 });
+  sheetOpen(v => {
+    if (!v) return;
+    phDone(v, PR);
+    const added = S.items.filter(x => x.sec == 'phones' && x.brand == v.brand && nz(x.name) == nz(v.name)).sort((a, b) => (b.at || 0) - (a.at || 0))[0];
+    u.inv = 1; if (added) u.invId = added.id;
+    save(); render();
+  });
+  phForm({ brand: br, name: nm, imei: u.imei || '', price: u.price || '', note: u.note || '', cond: 'مستعمل', cnt: 1 });
 }
 /* استدعاء سريع للروپريز من بطاقة الهاتف في المخزون */
 window.usFromRep = function (itemId) {
@@ -157,13 +179,13 @@ window.usFromRep = function (itemId) {
   usOpen({ repOf: it.id, repTxt: title + (it.price ? ' (' + it.price + ')' : ''), repPr: xn(it.price) });
 };
 const usedCard = u => {
-  const im = uImg(u);
+  const im = uImg(u), inInv = isUsInInv(u);
   return `<div class="card"><div class="row2">${im ? `<img onclick="usZoom('${u.id}')" src="${im}" style="cursor:pointer;width:54px;height:54px;object-fit:cover;border-radius:10px">` : ''}<div style="flex:1"><b>${esc(u.dev)}</b><div class="m">البائع: ${esc(u.name)}${u.tel ? ' · ' + xTel(u.tel) : ''}</div></div>${u.price ? `<span class="cmp-pr">${esc(u.price)}</span>` : ''}</div>`
     + (u.cin ? `<div class="m" style="font-weight:600;color:var(--p)">${I('idcard')} CIN: <bdi>${esc(u.cin)}</bdi></div>` : `<div class="m" style="color:#d97706">بدون رقم بطاقة وطنية (CIN)</div>`)
     + (u.repTxt ? `<div class="m">روپريز مقابل: ${esc(u.repTxt)}${u.diff ? ' · الفرق المقبوض: <b>' + esc(u.diff) + '</b>' : ''}</div>` : '')
     + (u.imei ? `<div class="m">IMEI: <bdi>${esc(u.imei)}</bdi></div>` : '') + (u.note ? `<div class="m">${esc(u.note)}</div>` : '')
-    + `<div class="m">${fd(u.at)} · ${esc(u.by || '')}${u.inv ? ' · ' + I('check') + ' أُدخل للمخزون' : ''}</div>`
-    + `<div class="sub">${u.inv ? '' : `<button class="btn s sm" onclick="usInv('${u.id}')">إدخال للمخزون</button>`}<button class="btn s sm" onclick="usEd('${u.id}')">تعديل</button><button class="btn s sm" onclick="usDel('${u.id}')">حذف</button></div></div>`;
+    + `<div class="m">${fd(u.at)} · ${esc(u.by || '')}${inInv ? ' · ' + I('check') + ' أُدخل للمخزون' : ''}</div>`
+    + `<div class="sub">${inInv ? '' : `<button class="btn s sm" onclick="usInv('${u.id}')">إدخال للمخزون</button>`}<button class="btn s sm" onclick="usEd('${u.id}')">تعديل</button><button class="btn s sm" onclick="usDel('${u.id}')">حذف</button></div></div>`;
 };
 const usMatch = (u, n) => nz([u.dev, u.name, u.cin, u.tel, u.imei, u.note, u.repTxt].join(' ')).includes(n);
 VW.usd = () => {
@@ -181,7 +203,7 @@ function usF() {
   $('usl').innerHTML = L.slice(0, 60).map(usedCard).join('') || '<p class="m">لا توجد سجلات</p>';
 }
 
-/* ---------- الديون (مع التجميع وتذكير الواتساب والربط مع الصيانة) ---------- */
+/* ---------- الديون (مع التجميع وتذكير الواتساب والربط الحي مع الصيانة) ---------- */
 const dRem = d => Math.max(0, xn(d.amt) - (d.pays || []).reduce((a, p) => a + xn(p[1]), 0));
 
 /* فحص الديون المفتوحة لزبون معين بالهاتف أو الاسم (تُستعمل هنا وفي الصيانة) */
@@ -222,7 +244,11 @@ function dbtFromRp(id) {
 }
 const dbtRp = r => {
   if (r.st != 'dn') return '';
-  if (r.debt) return `<div class="m" style="color:#d97706;font-weight:700">${I('wallet')} سُجّل الباقي كدين</div>`;
+  const ld = (S.debt || []).find(x => (r.debt && x.id == r.debt) || x.rp == r.id);
+  if (ld) {
+    const rem = dRem(ld), done = ld.paid || rem <= 0;
+    return `<div class="m" style="color:${done ? '#16a34a' : '#d97706'};font-weight:700">${I('wallet')} ${done ? 'سُدِّد باقي الإصلاح' : 'سُجّل الباقي كدين (' + rem + ' درهم)'}</div>`;
+  }
   return xn(r.cap) > (xn(r.dep) + xn(r.paid)) ? `<div class="sub"><button class="btn s sm" onclick="dbtFromRp('${r.id}')">${I('wallet')} تسجيل الباقي كدين</button></div>` : '';
 };
 function dbtPay(id) {

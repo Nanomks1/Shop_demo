@@ -8,7 +8,7 @@
   Object.assign(IC, { topup: '<path d="M5 20v-4M10 20v-8M15 20V8M20 20V4"/>' });
 
   const OPS = [['IAM', '#2563eb'], ['ORANGE', '#ea580c'], ['INWI', '#9333ea']];
-  const CARDS = [5, 10, 20, 50], PH = [1], TOTAL = OPS.length * (CARDS.length + PH.length);
+  const CARDS = [5, 10, 20, 50], PH = [1];
   const D0 = { gv: 15, bo: 30, br: 10, cl: { 5: 3, 10: 3, 20: 3, 50: 3 }, rh: 10 };
   const GREY = '#94a3b8', DC = { 5: '#0d9488', 10: '#2563eb', 20: '#7c3aed', 50: '#db2777' };
 
@@ -33,11 +33,13 @@
   const lastPh = () => T().filter(r => r.k == 'p' && r.at).sort((a, b) => b.at - a.at)[0];
 
   let svT = 0;
-  function put(op, k, n, v, est) {
+  function put(op, k, n, v, est, now) {
     let r = rec(op, k, n);
     if (!r) { r = { id: rid(op, k, n), op, k, n }; T().push(r); }
     r.val = v; r.est = est ? 1 : 0; r.at = Date.now(); r.by = S.me || '';
-    clearTimeout(svT); svT = setTimeout(save, 150);   // الحفظ بعد الرسم حتى لا يتأخر الضغط
+    clearTimeout(svT);
+    if (now) save();
+    else svT = setTimeout(save, 150);   // الحفظ بعد الرسم حتى لا يتأخر الضغط
   }
   const gvOf = n => Math.max(cf().gm[n], cf().cl[n] + 1);
 
@@ -51,11 +53,22 @@
     });
     return L;
   };
-  /* «تم» في التقرير: هاتف ← الرصيد الجديد · بطاقة ← الكمية التي وصلت */
+  /* «تم» في التقرير: هاتف ← الرصيد الجديد · بطاقة ← الكمية التي وصلت (مع حفظ فوري وتراجع) */
   window.tpFix = id => {
     const p = id.split('_'), op = p[1], k = p[2][0], n = +p[2].slice(1);
-    if (k == 'p') ask(op + ' — الهاتف', [{ k: 'v', l: 'الرصيد الجديد بعد التعبئة (درهم)', t: 'tel' }], 'تم').then(v => { const x = v && num(v.v); if (x != null) { put(op, 'p', n, x); render(); toast('تم تحديث الرصيد'); } });
-    else ask(op + ' — بطاقة ' + n, [{ k: 'v', l: 'الكمية التي وصلت', t: 'tel' }], 'تم الشراء').then(v => { const x = v && num(v.v); if (x > 0) { put(op, 'c', n, (val(op, 'c', n) || 0) + Math.round(x)); render(); toast('تمت الإضافة'); } });
+    const snapTp = () => JSON.stringify(T());
+    if (k == 'p') ask(op + ' — الهاتف', [{ k: 'v', l: 'الرصيد الجديد بعد التعبئة (درهم)', t: 'tel' }], 'تم').then(v => {
+      const x = v && num(v.v); if (x == null) return;
+      const prev = snapTp();
+      put(op, 'p', n, x, 0, true); render();
+      toast('تم تحديث الرصيد', () => { S.tp = JSON.parse(prev); });
+    });
+    else ask(op + ' — بطاقة ' + n, [{ k: 'v', l: 'الكمية التي وصلت', t: 'tel' }], 'تم الشراء').then(v => {
+      const x = v && num(v.v); if (!(x > 0)) return;
+      const prev = snapTp();
+      put(op, 'c', n, (val(op, 'c', n) || 0) + Math.round(x), 0, true); render();
+      toast('تمت الإضافة', () => { S.tp = JSON.parse(prev); });
+    });
   };
 
   /* ---------- التحديث في مكانه بلا إعادة رسم (حتى لا تُغلق لوحة المفاتيح) ---------- */
@@ -137,7 +150,6 @@
   window.okTpE = () => okE() || (toast('للمدير فقط'), false);
 
   /* ---------- الرئيسية والمزيد ---------- */
-  /* إلغاء تذكير اليوم مع تأكيد وتراجع؛ يعود غداً تلقائياً */
   window.tpSkip = () => sure('لن تُسجَّل أرصدة التعبئة اليوم؟ سيختفي التذكير حتى الغد.', 'نعم، لا تسجيل اليوم', false).then(ok => {
     if (!ok) return;
     S.cfg.tx = new Date().toDateString(); save(); render();
@@ -151,39 +163,25 @@
     const t = tally(), p = [];
     if (t.r) p.push(`<span class="dotl" style="background:${DT.r};margin-inline-end:4px"></span>${t.r} نافد`);
     if (t.y) p.push(`<span class="dotl" style="background:${DT.y};margin-inline-end:4px"></span>${t.y} قارب`);
-    const sub = t.u == TOTAL ? 'لم تُسجَّل أرصدة بعد' : p.length ? p.join(' &nbsp; ') : 'كل شيء متوفر';
-    return `<button class="card row2 tph" onclick="go('tp')"><span class="tpic">${ic('ctopup')}</span><span style="flex:1;min-width:0"><b style="display:block">التعبئة</b><span class="m">${sub}</span></span></button>`;
+    const sub = p.length ? p.join(' · ') : (t.g ? 'كل الأرصدة والبطاقات متوفرة' : 'اضغط لتسجيل الأرصدة والبطاقات');
+    return `<button class="card tph row2" onclick="go('tp')"><span class="tpic">${ic('ctopup')}</span><div style="flex:1;min-width:0"><b>التعبئة</b><div class="m">${sub}</div></div></button>`;
   });
-  MORE.push({ g: 'lim', o: 20, l: 'حدود التعبئة', d: 'حدود كل رصيد وكل بطاقة (قارب / متوفر) وساعة تذكير الصباح', fn: "go('st_tp')" });
+  MORE.push({ g: 'sec', o: 55, l: 'حدود التعبئة', d: 'حدود أرصدة الهواتف وبطاقات التعبئة وتذكير الصباح', fn: "go('st_tp')" });
 
-  /* ---------- الأنماط ---------- */
-  const st = document.createElement('style');
-  st.textContent = `
-.tpop{border-top:5px solid var(--oc);padding:12px}
-.tpoh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px}
-.tpoh b{font-size:1.15rem;letter-spacing:.5px}
-.tpoh .m{font-size:.78rem}
-.tpl{margin:10px 2px 2px;font-size:.82rem;font-weight:600;color:var(--m)}
-.tpr{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:12px;margin:3px 0}
-.tpr.r{background:color-mix(in srgb,#dc2626 12%,transparent)}
-.tpr.y{background:color-mix(in srgb,#d97706 12%,transparent)}
-.tpr .dotl{background:${GREY}}
-.tpn{flex:1;min-width:0;font-weight:600}
-.tpt{flex:1;font-size:.78rem;font-weight:700;text-align:start}
-.tpr.c{gap:6px;border-inline-start:5px solid var(--dc);padding-inline-start:6px}
-.tpd{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:3rem;padding:3px 6px;border-radius:12px;background:var(--dc);color:#fff;font-size:1.25rem;font-weight:800;line-height:1.1}
-.tpd small{font-size:.6rem;font-weight:600;opacity:.95}
-.tps{flex:1;min-width:0;height:44px;padding:0 2px;border:1.5px solid var(--k);border-radius:12px;background:color-mix(in srgb,var(--k) 10%,var(--c));color:var(--k);font:inherit;font-weight:800;font-size:.82rem;cursor:pointer}
-.tps.g{--k:#16a34a}.tps.y{--k:#d97706}.tps.r{--k:#dc2626}
-.tps.on{background:var(--k);color:#fff}
-.tpr.c .tpi{border-color:var(--dc)}
-.tpr.r .tpt{color:#dc2626}.tpr.y .tpt{color:#d97706}
-.tpi{width:3.7rem;min-height:44px;margin:0;padding:0 6px;text-align:center;direction:ltr;font:inherit;font-weight:700;font-size:1.1rem;border:1px solid var(--b);border-radius:12px;background:var(--bg);color:var(--t)}
-.tpu{width:2.6rem;font-size:.8rem}
-.tph .tpic{width:2.7rem;height:2.7rem;flex:none;border-radius:14px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,#0891b2 16%,var(--c));color:#0891b2}
-.tph .tpic .ic{width:1.5rem;height:1.5rem}
-.sch{display:flex;align-items:center;gap:8px;color:var(--t)}
-.sch::before{content:"";width:5px;height:1.15em;border-radius:3px;background:var(--sc,var(--m))}
-.rlist.sx{border-inline-start:5px solid var(--sc,var(--b))}`;
-  document.head.appendChild(st);
+  /* ---------- أنماط CSS الخاصة بالتعبئة وأقسام التقرير الملوّنة ---------- */
+  const s = document.createElement('style');
+  s.textContent = `.tph{cursor:pointer;padding:12px 14px}.tph .tpic{width:2.7rem;height:2.7rem;border-radius:14px;background:var(--ab);color:var(--p);display:flex;align-items:center;justify-content:center;flex:none}
+.tpop{border-top:4px solid var(--oc);padding:12px 14px}.tpoh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.tpoh b{font-size:1.05rem;color:var(--oc)}
+.tpl{font-size:.78rem;color:var(--m);margin:10px 0 4px;font-weight:600}
+.tpr{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--b)}.tpr:last-child{border-bottom:0}
+.tpr.r{background:color-mix(in srgb,#dc2626 6%,transparent);margin-inline:-8px;padding-inline:8px;border-radius:10px}
+.tpr.y{background:color-mix(in srgb,#d97706 6%,transparent);margin-inline:-8px;padding-inline:8px;border-radius:10px}
+.tpn{flex:1;font-weight:600;font-size:.9rem}.tpt{font-size:.75rem;font-weight:700;color:#dc2626}.tpr.y .tpt{color:#d97706}
+.tpd{min-width:48px;padding:4px 6px;border-radius:9px;background:color-mix(in srgb,var(--dc) 14%,var(--c));color:var(--dc);font-weight:800;font-size:.95rem;text-align:center;line-height:1.1}
+.tpd small{display:block;font-size:.62rem;font-weight:600;opacity:.85}
+.tps{flex:1;min-height:38px;border-radius:10px;border:1px solid var(--b);background:var(--bg);color:var(--t);font:inherit;font-size:.78rem;font-weight:600;padding:0 4px;cursor:pointer}
+.tps.g.on{background:#16a34a;color:#fff;border-color:#16a34a}.tps.y.on{background:#d97706;color:#fff;border-color:#d97706}.tps.r.on{background:#dc2626;color:#fff;border-color:#dc2626}
+.tpi{width:76px;min-height:38px;padding:4px 8px;text-align:center;font-weight:700;border-radius:10px}.tpu{font-size:.78rem}
+.sch{color:var(--sc)!important;display:flex;align-items:center;gap:4px}.rlist.sx{border-inline-start:5px solid var(--sc)}`;
+  document.head.appendChild(s);
 })();

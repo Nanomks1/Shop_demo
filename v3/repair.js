@@ -16,7 +16,8 @@ const WAR_OPTS = [[0, 'بدون ضمان'], [3, '3 أيام'], [7, '7 أيام']
 const WAR_SEL = ['بدون ضمان (0 يوم)', '3 أيام', '7 أيام', '15 يوم', '30 يوم'];
 let ZP = [], ZK = [], ZI = '', ZD = 0, ZR = {}, ZW = 0, GPM = [];
 const rf = id => S.rp.find(r => r.id == id);
-const rnum = t => { t = String(t || '').replace(/\D/g, ''); return t[0] == '0' ? '212' + t.slice(1) : t; };
+const rnum = t => { t = String(t || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, ''); return t[0] == '0' ? '212' + t.slice(1) : t; };
+const rph8 = t => rnum(t).slice(-8);
 const sn1 = x => /^\s*\d+(\.\d+)?\s*$/.test(x || '');
 const d0 = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
 const dh = p => sn1(p) ? String(p).trim() + ' درهم' : (p || '');
@@ -77,11 +78,10 @@ function warInfo(r) {
 const warToLbl = d => { d = +d || 0; if (!d) return WAR_SEL[0]; const f = WAR_OPTS.find(x => x[0] === d); return f ? f[1] : d + ' يوم'; };
 const lblToWar = s => { const m = String(s || '').match(/\d+/); return m ? +m[0] : 0; };
 
-/* ---------- تنظيف الصور والرموز بعد التسليم + ضمان فرادة التذاكر ---------- */
+/* ---------- تنظيف الصور والرموز بعد مرور rpKeep يوماً على التسليم + ضمان فرادة التذاكر ---------- */
 function cleanOldRpMedia() {
   const now = Date.now(), base = lim('rpKeep') * 864e5; let chg = fixDupTk();
   S.rp.forEach(r => {
-    if (r.st == 'dn' && (r.lock || (r.pat && r.pat.length))) { r.lock = ''; r.pat = []; chg = 1; }   // رمز/نمط قفل الزبون يُمحى فور التسليم
     if (r.st != 'dn' || !r.t2) return;
     if (now - r.t2 > base && (r.img || IMG[r.id] || r.lock || (r.pat && r.pat.length))) {
       r.img = ''; r.lock = ''; r.pat = []; MEDIA.del(r.id).catch(e => errLog('حذف صورة قديمة: ' + (e && e.message || e))); delete IMG[r.id]; chg = 1;
@@ -127,12 +127,15 @@ VW.rp = () => {
 };
 
 /* ---------- تغيير الحالة، الاتصال، الحذف ---------- */
-function rSt(id, x) { const r = rf(id); commit('تم التحديث', () => { if (x == 'in') { r.st = 'in'; r.res = ''; } else { r.st = 'rd'; r.res = x; r.t1 = Date.now(); } r.loc = ''; r.lb = S.me; });
+function rSt(id, x) {
+  const r = rf(id);
+  commit('تم التحديث', () => { if (x == 'in') { r.st = 'in'; r.res = ''; } else { r.st = 'rd'; r.res = x; r.t1 = Date.now(); } r.loc = ''; r.lb = S.me; });
 }
 function rLoc(id, k) {
   const r = rf(id); if (!r || !LOC[k]) return;
   const off = r.loc == k;
-  commit(off ? 'أُلغي مكان الهاتف' : 'مكان الهاتف: ' + LOC[k], () => { r.loc = off ? '' : k; r.lb = S.me; }); }
+  commit(off ? 'أُلغي مكان الهاتف' : 'مكان الهاتف: ' + LOC[k], () => { r.loc = off ? '' : k; r.lb = S.me; });
+}
 function rCL(id) { const r = rf(id); commit('تم تسجيل الاتصال', () => (r.calls = r.calls || []).push(fd(Date.now()) + ' ' + S.me)); }
 function rDel(id) { const r = rf(id); del('rp', id, (r.tk ? '#' + r.tk + ' ' : '') + r.name + ' — ' + r.dev); }
 
@@ -161,7 +164,18 @@ function applyRpAddon(opt) {
   const p = opt.k.split(':');
   if (p[0] == 'gl') {
     const g = S.gg.find(x => x.id == p[1]), ty = S.tags.glass[+p[2]], m = p.slice(3).join(':');
-    if (g && ty) { const i = glGet(g.id, ty); if (i.stock && i.stock[m] > 0) i.stock[m]--; touch(i); return 'أنتي كاس ' + ty + ' (' + m + ')'; }
+    if (g && ty) {
+      const i = glGet(g.id, ty);
+      const tM = mval(i, m) > 0 ? m : (g.models.find(x => mval(i, x) > 0) || m);
+      if (i.stock && i.stock[tM] > 0) {
+        i.stock[tM]--;
+      } else if (i.lv && i.lv[tM] && i.lv[tM] != 'r') {
+        const step = { a: 'b', b: 'c', c: 'y', y: 'r' };
+        i.lv[tM] = step[i.lv[tM]] || 'r';
+      }
+      touch(i);
+      return 'أنتي كاس ' + ty + ' (' + m + ')';
+    }
   } else if (p[0] == 'cs') {
     const i = find(p[1]), v = i && (i.v || []).find(x => x.id == p[2]);
     if (v && v.n > 0) { v.n--; touch(i); return 'بوشيط ' + i.name + ' (' + ([v.g, v.c].filter(Boolean).join('·') || 'عام') + ')'; }
@@ -196,7 +210,7 @@ function rDV(id, pre) {
     const picked = addons.find(x => x.l == v.addon);
     commit('تم التسليم', () => {
       const addTxt = applyRpAddon(picked);
-      r.st = 'dn'; r.t2 = Date.now(); r.dby = S.me; r.lock = ''; r.pat = []; r.paid = v.p.trim() || '0';
+      r.st = 'dn'; r.t2 = Date.now(); r.dby = S.me; r.paid = v.p.trim() || '0';
       r.tst = v.tested == DVO[1] ? Date.now() : 0; if (r.res == 'ok') r.war = lblToWar(v.war);
       const dn = (v.dnote || '').trim();
       r.dnote = [dn, addTxt ? 'مرفق: ' + addTxt : ''].filter(Boolean).join(' · ');
@@ -264,10 +278,10 @@ function camSnap() {
 HK.hide.push(camStop);
 function rKc() { $('rk').innerHTML = RK.map(k => `<button class="tag ${ZK.includes(k) ? 'on' : ''}" onclick="rKt('${k}')">${k}</button>`).join(''); }
 function rKt(k) { ZK = ZK.includes(k) ? ZK.filter(x => x != k) : [...ZK, k]; rKc(); }
-function rH() {   // زبون سابق + تنبيه ضمان ساري + تنبيه ديون مفتوحة
+function rH() {   // زبون سابق + تنبيه ضمان ساري + تنبيه ديون مفتوحة (مطابقة بآخر 8 أرقام)
   const box = $('rh'); if (!box) return;
   const telVal = ($('r_t') || {}).value || '', nameVal = ($('r_n') || {}).value || '';
-  const t = telVal.replace(/\D/g, ''), m = t.length > 5 ? S.rp.filter(r => r != ZR && String(r.tel).replace(/\D/g, '') == t) : [];
+  const t = rph8(telVal), m = t.length >= 8 ? S.rp.filter(r => r != ZR && rph8(r.tel) === t) : [];
   const parts = [];
   if (m.length) parts.push(`<div>زبون سابق: ${m.length} مرة، آخرها ${esc(m[m.length - 1].dev)}</div>`);
   const aw = m.map(r => ({ r, w: warInfo(r) })).filter(x => x.r.st == 'dn' && x.w && x.w.active);

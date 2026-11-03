@@ -17,6 +17,28 @@
   window.rcTt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عنوان التقرير', [{ k: 't', l: 'العنوان (فارغ = بدون عنوان)', v: rcf().tt }]).then(v => { if (v) rcSet({ tt: v.t.trim() }); }); };
   window.rcFt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عبارة آخر التقرير', [{ k: 't', l: 'مثال: شكراً — فارغ = بدون عبارة', v: rcf().ft }]).then(v => { if (v) rcSet({ ft: v.t.trim() }); }); };
 
+  /* إدخال كمية مخصصة يدوياً (#) للأنتي كاس ومجموعات الإكسسوارات من التقرير */
+  window.rcManual = (fnName, arg) => {
+    if (fnName == 'agBuy' && typeof agCnt == 'function') return agCnt(arg);
+    if (fnName == 'buyG') {
+      const i = find(arg), g = i && S.gg.find(x => x.id == i.gid);
+      if (!i || !g) return;
+      ask('شراء أنتي كاس ' + i.ty + ' — ' + g.models.join(' / '), [{ k: 'n', l: 'الكمية الإجمالية التي وصلت للمجموعة', t: 'tel', v: String(gLim(i, i.ty)) }], 'تم الشراء').then(v => {
+        const n = v && ci(v.n); if (!n) return;
+        commit('تم شراء أنتي كاس (+' + n + ')', () => {
+          const m0 = g.models[0];
+          i.stock = i.stock || {};
+          g.models.forEach(m => { if (i.lv) delete i.lv[m]; });
+          i.stock[m0] = (i.stock[m0] || 0) + n;
+          touch(i);
+        });
+        if (typeof reqChk == 'function') reqChk(g.models.join(' '), 1);
+      });
+      return;
+    }
+    if (typeof window[fnName] == 'function') window[fnName](arg);
+  };
+
   /* الشراء السريع بضغطة واحدة من التقرير (عند تفعيل خيار qb في إعدادات التقرير) */
   window.rcQuick = (fnName, arg) => {
     if (fnName == 'buyP') {
@@ -28,13 +50,13 @@
       const i = find(arg); if (!i) return;
       commit('تم شراء بوشيط ' + i.name + ' (+3)', () => {
         const z = (i.v || []).filter(x => x.n <= 0), t = z.length ? z : (i.v || []);
-        t.forEach(x => x.n += 3); touch(i);
+        t.forEach(x => x.n += 3); i.need = ''; touch(i);
       });
       if (typeof reqChk == 'function') reqChk('بوشيط ' + i.name);
     } else if (fnName == 'buyA') {
       const i = find(arg); if (!i) return;
       if (typeof i.cnt == 'number') {
-        const add = acLim(i) + 3;
+        const add = Math.max(1, acLim(i) + 2 - i.cnt);
         commit('تم الشراء (+' + add + '): ' + acTitle(i), () => { i.cnt += add; touch(i); });
       } else {
         commit('تم الشراء: ' + acTitle(i), () => { i.st = 'g'; touch(i); });
@@ -119,9 +141,11 @@
     const c = rcf(), act = l.x[3] || '';
     const m = act.match(/^([a-zA-Z]+)\('([^']*)'\)$/);
     const fn = m ? m[1] : '', arg = m ? m[2] : '';
-    const hasPrompt = fn == 'buyP' || fn == 'buyC' || fn == 'buyA' || (fn == 'tpFix' && arg.includes('_c'));
+    const isGrp = fn == 'buyG' || fn == 'agBuy';
+    const hasPrompt = fn == 'buyP' || fn == 'buyC' || fn == 'buyA' || isGrp || (fn == 'tpFix' && arg.includes('_c'));
     const mainClick = c.qb && hasPrompt ? `rcQuick('${fn}','${arg}')` : act;
-    const askBtn = c.qb && hasPrompt ? `<button class="rck s" title="إدخال الكمية يدوياً" onclick="${act}">${I('hash')}</button>` : '';
+    const showNumBtn = isGrp || (c.qb && hasPrompt);
+    const askBtn = showNumBtn ? `<button class="rck s" title="إدخال الكمية يدوياً" onclick="rcManual('${fn}','${arg}')">${I('hash')}</button>` : '';
     return `<div class="rrow ${l.x[2] == 'r' ? 'r' : ''}"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span class="rt">${nwCnt(esc(l.s))}</span>${askBtn}<button class="rck" aria-label="تم الشراء" onclick="${mainClick}">${I('check')}</button></div>`;
   };
   VW.rep = () => {

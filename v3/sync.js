@@ -4,7 +4,7 @@
    ============================================================ */
 const SY_URL='https://jvubqqvwuonvgowqwvqa.supabase.co';
 const SY_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2dWJxcXZ3dW9udmdvd3F3dnFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NjU1MjksImV4cCI6MjEwODQ0MTUyOX0.wKnUu_HFa0eByC9ypH7kGyEeIJSUPH87hp56ZhROApw';
-const SY_ARR=['items','rp','req','gg','guide','fields','ag','used','debt'],SY_ONE=['tags','perm','users','pin','cfg'],SY_ENC=['rp','req','used','debt'],SY_LOC=['fs','th','fab','cmp','bcQuick'],syIsEnc=k=>SY_ENC.includes(k.split('/')[0])||k.startsWith('meta/img:')||k=='one/users'||k=='one/pin',SY_E0='1970-01-01T00:00:00+00:00';
+const SY_ARR=['items','rp','req','gg','guide','fields','ag','used','debt','tp'],SY_ONE=['tags','perm','users','pin','cfg'],SY_ENC=['rp','req','used','debt'],SY_LOC=['fs','th','fab','cmp','bcQuick'],syIsEnc=k=>SY_ENC.includes(k.split('/')[0])||k.startsWith('meta/img:')||k=='one/users'||k=='one/pin',SY_E0='1970-01-01T00:00:00+00:00';
 const SYM={off:'متوقفة',ok:'متصلة',busy:'جارٍ المزامنة…',offline:'لا يوجد إنترنت (سيُعاد المحاولة)',err:'خطأ'};
 let SYS={st:'off',msg:'',busy:false,key:null,last:null,t:0,rr:0,again:0},SYR='first';
 const syLS=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
@@ -38,14 +38,30 @@ if((!r||!r.ok)&&(pass||c.pass))r=await syF(SY_URL+'/auth/v1/token?grant_type=pas
 if(!r||!r.ok){const e=new Error('auth');e.code='auth';throw e}const j=await r.json();localStorage.setItem('shopSyncTok',JSON.stringify({at:j.access_token,rt:j.refresh_token,exp:Date.now()+j.expires_in*1000}));return j.access_token}
 async function syReq(path,opt={}){const at=await syTok(),r=await syF(SY_URL+'/rest/v1/'+path,{...opt,headers:{apikey:SY_KEY,Authorization:'Bearer '+at,'Content-Type':'application/json',...(opt.headers||{})}});if(!r.ok){const e=new Error('http '+r.status);e.code=(r.status==401||r.status==403)?'auth':r.status;throw e}return r.status==204?null:r.json()}
 
-/* قراءة وكتابة السجلات المحلية (شاملة صور الصيانة وصور المستعمل) */
+/* قراءة وكتابة السجلات المحلية (شاملة صور الصيانة وصور المستعمل والتعبئة) */
 function syCollect(){const m={};SY_ARR.forEach(c=>(S[c]||[]).forEach(r=>{if(r&&r.id!=null)m[c+'/'+r.id]=((c=='rp'||c=='used')&&r.img)?{...r,img:'idb:'+r.id}:r}));SY_ONE.forEach(k=>{let v=S[k];if(k=='cfg'){v={...S.cfg};SY_LOC.forEach(x=>delete v[x])}m['one/'+k]=v});['rp','used'].forEach(c=>(S[c]||[]).forEach(r=>{if(r&&r.id!=null&&IMG[r.id])m['meta/img:'+r.id]=syImgStub(r.id)}));return m}
 const syImgStub=id=>({l:IMG[id].length,t:IMG[id].slice(-24)});
 function syApplyImg(r,k,val,st,cm){const pid=String(r.id).slice(4),rr=S.rp.find(x=>x.id==pid)||(S.used||[]).find(x=>x.id==pid);
 if(val===null){if(IMG[pid]){delete IMG[pid];MEDIA.del(pid).catch(()=>{})}delete cm[k];st.base[k]={h:'',ts:r.ts,d:1};return 1}
 IMG[pid]=val;MEDIA.put(pid,val).catch(e=>errLog('حفظ صورة: '+(e&&e.message||e)));if(rr)rr.img=val;
 const sb=syImgStub(pid);cm[k]=sb;st.base[k]={h:syH(JSON.stringify(sb)),ts:r.ts};return 1}
-function syPut(c,id,val){if(c=='one'){if(id=='cfg'){const l={};SY_LOC.forEach(x=>{if(S.cfg&&x in S.cfg)l[x]=S.cfg[x]});S.cfg={...val,...l}}else if(val!==null)S[id]=val;return}
+
+/* دمج الوسوم بالجمع عند التزامن المتوازي بين هاتفين */
+function syMergeTags(rem, hadLocalChange, tagSnap) {
+  if (!rem || typeof rem != 'object') return rem;
+  if (!hadLocalChange) return rem;
+  const out = { ...rem };
+  Object.keys(S.tags || {}).forEach(g => {
+    const locArr = Array.isArray(S.tags[g]) ? S.tags[g] : [];
+    const remArr = Array.isArray(rem[g]) ? rem[g] : [];
+    const baseArr = (tagSnap && Array.isArray(tagSnap[g])) ? tagSnap[g] : [];
+    const addedLoc = baseArr.length ? locArr.filter(x => !baseArr.includes(x)) : locArr;
+    out[g] = [...new Set([...remArr, ...addedLoc])];
+  });
+  return out;
+}
+
+function syPut(c,id,val,hadLocalChange,st){if(c=='one'){if(id=='cfg'){const l={};SY_LOC.forEach(x=>{if(S.cfg&&x in S.cfg)l[x]=S.cfg[x]});S.cfg={...val,...l}}else if(id=='tags'&&val){S.tags=syMergeTags(val,hadLocalChange,st&&st.tagSnap)}else if(val!==null)S[id]=val;return}
 const a=S[c]=S[c]||[],i=a.findIndex(x=>x.id==id);if(val===null){if(i>=0)a.splice(i,1)}else if(i>=0)a[i]=val;else a.push(val)}
 
 /* منع تكرار أرقام تذاكر الصيانة القصيرة (Offline-Safe) وتحديث العداد بعد المزامنة */
@@ -71,11 +87,15 @@ for(const k in st.base){if(!(k in cur)&&!st.base[k].d&&!st.dt[k]){st.dt[k]=n;ch=
 
 /* تطبيق صف قادم من الخادم */
 async function syApply(r,st,cm,force){const k=r.coll+'/'+r.id,b=st.base[k];if(r.coll=='meta'&&!String(r.id).startsWith('img:'))return 0;if(!force&&b&&b.ts===r.ts)return 0;
-if(!force){const loc=cm[k],lh=loc===undefined?null:syH(JSON.stringify(loc));if(b?(lh===null?!b.d:lh!==b.h):lh!==null)return 0}
+const loc=cm[k],lh=loc===undefined?null:syH(JSON.stringify(loc)),hadLoc=b?(lh===null?!b.d:lh!==b.h):lh!==null;
+if(!force&&hadLoc&&k!='one/tags')return 0;
 let val=null;if(!r.deleted){let js=r.data;if(r.enc)js=await syDec(js);val=JSON.parse(js);if(r.coll=='items'&&val&&val._resEnc){val.res=JSON.parse(await syDec(val._resEnc));delete val._resEnc}}
 if(r.coll=='meta')return syApplyImg(r,k,val,st,cm);
-syPut(r.coll,r.id,val);cm[k]=val===null?undefined:(k=='one/cfg'?(()=>{const v={...S.cfg};SY_LOC.forEach(x=>delete v[x]);return v})():val);if(val===null)delete cm[k];
-st.base[k]=val===null?{h:'',ts:r.ts,d:1}:{h:syH(JSON.stringify(cm[k])),ts:r.ts};return 1}
+syPut(r.coll,r.id,val,hadLoc&&!st.fresh,st);
+cm[k]=val===null?undefined:(k=='one/cfg'?(()=>{const v={...S.cfg};SY_LOC.forEach(x=>delete v[x]);return v})():k=='one/tags'?S.tags:val);if(val===null)delete cm[k];
+const newH=val===null?'':syH(JSON.stringify(cm[k]));
+if(k=='one/tags'){st.tagSnap=JSON.parse(JSON.stringify(S.tags));if(val&&newH!==syH(JSON.stringify(val)))st.dt[k]=Date.now()}
+st.base[k]=val===null?{h:'',ts:r.ts,d:1}:{h:k=='one/tags'&&val?syH(JSON.stringify(val)):newH,ts:r.ts};return 1}
 async function syPull(st,force){let n=0;const cm=syCollect();for(;;){const rows=await syReq('records?srv=gt.'+encodeURIComponent(st.cur)+'&order=srv.asc&limit=20');for(const r of rows)n+=await syApply(r,st,cm,force);if(rows.length)st.cur=rows[rows.length-1].srv;syPut2(st);if(rows.length<20)break}return n}
 
 /* دورة المزامنة */
@@ -84,7 +104,9 @@ if(typeof navigator!='undefined'&&navigator.onLine===false){syStat('offline');re
 SYS.busy=true;syStat('busy');try{await syGetKey();let st=syStt(),chg=0;
 if(st.fresh){chg+=await syPull(st,true);delete st.fresh;syPut2(st)}
 if(!syCfg().eu){const s0=syStt();delete s0.base['one/users'];delete s0.base['one/pin'];syPut2(s0);const c0=syCfg();c0.eu=1;localStorage.setItem('shopSyncCfg',JSON.stringify(c0))}
-syMark();st=syStt();const cur=syCollect(),rows=[],n=Date.now();
+syMark();st=syStt();
+if(st.dt['one/tags']){const g=await syReq('records?coll=eq.one&id=eq.tags');if(g[0]&&(!st.base['one/tags']||g[0].ts!==st.base['one/tags'].ts)){const cm0=syCollect();chg+=await syApply(g[0],st,cm0,true)}}
+const cur=syCollect(),rows=[],n=Date.now();
 for(const k in cur){const h=syH(JSON.stringify(cur[k]));if(!st.base[k]||st.base[k].h!==h){const[cc,id]=k.split('/'),enc=syIsEnc(k);let obj=cc=='meta'?IMG[id.slice(4)]:cur[k];if(cc=='meta'&&!obj)continue;if(cc=='items'&&obj&&obj.res){obj={...obj,_resEnc:await syEnc(JSON.stringify(obj.res))};delete obj.res}const js=JSON.stringify(obj);rows.push({coll:cc,id,data:enc?await syEnc(js):js,enc,deleted:false,ts:st.dt[k]||n,who:S.me||'',_k:k,_h:h})}}
 for(const k in st.base){if(!(k in cur)&&!st.base[k].d){const[cc,id]=k.split('/');rows.push({coll:cc,id,data:null,enc:false,deleted:true,ts:st.dt[k]||n,who:S.me||'',_k:k,_h:'',_d:1})}}
 const dl=rows.filter(r=>r.deleted&&r.coll!='meta').length,tot=Object.keys(st.base).filter(k=>!st.base[k].d&&!k.startsWith('meta/')).length;
@@ -92,7 +114,7 @@ if(dl>=10&&dl>tot*0.5&&!SYS.okDel){SYS.big=dl;SYS.busy=false;syStat('err','تو�
 SYS.big=0;
 const lost=[];const BT=[];{let cb=[],sz=0;for(const r of rows){const l=(r.data||'').length;if(cb.length&&(cb.length>=20||sz+l>300000)){BT.push(cb);cb=[];sz=0}cb.push(r);sz+=l}if(cb.length)BT.push(cb)}
 for(const b of BT){const res=await syReq('records?on_conflict=coll,id&select=coll,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(b.map(({_k,_h,_d,...r})=>r))}),ok=new Set(res.map(x=>x.coll+'/'+x.id));
-for(const r of b){st.base[r._k]=r._d?{h:'',ts:r.ts,d:1}:{h:r._h,ts:r.ts};delete st.dt[r._k];if(!ok.has(r._k))lost.push(r)}syPut2(st)}
+for(const r of b){st.base[r._k]=r._d?{h:'',ts:r.ts,d:1}:{h:r._h,ts:r.ts};if(r._k=='one/tags')st.tagSnap=JSON.parse(JSON.stringify(S.tags));delete st.dt[r._k];if(!ok.has(r._k))lost.push(r)}syPut2(st)}
 const cm=syCollect();for(const r of lost){const g=await syReq('records?coll=eq.'+encodeURIComponent(r.coll)+'&id=eq.'+encodeURIComponent(r.id));if(g[0])chg+=await syApply(g[0],st,cm,true)}
 chg+=await syPull(st,false);for(const k in st.base){if(k.startsWith('meta/img:')&&st.base[k].d&&n-st.base[k].ts>90*864e5)delete st.base[k]}syPut2(st);
 if(chg){syFixTickets();if(typeof cleanOldRpMedia=='function')cleanOldRpMedia();save();window._syDirty=0;syRender()}
@@ -123,7 +145,7 @@ try{
     if(!S.items.length&&!S.rp.length&&!(S.req||[]).length&&!(S.gg||[]).length){v={...v,r:'extra'};toast('المحل يحتوي بيانات: سيُحمَّل هذا الجهاز كجهاز إضافي')}
     else if(!(await sure('المحل يحتوي بيانات سابقة. رفع بيانات هذا الجهاز قد يستبدل الموظفين ورمز المدير والإعدادات على كل الأجهزة. هل تريد المتابعة؟','متابعة والرفع',false)))throw 'cancel';
   }
-  if(v.r=='extra'){await snapPre();SY_ARR.forEach(c=>{S[c]=[]})}syPut2({cur:SY_E0,base:{},dt:{},fresh:v.r=='extra'?1:0});save();syKick(true);toast('بدأت المزامنة بأمان')
+  if(v.r=='extra'){await snapPre();SY_ARR.forEach(c=>{S[c]=[]})}syPut2({cur:SY_E0,base:{},dt:{},fresh:v.r=='extra'?1:0,tagSnap:JSON.parse(JSON.stringify(S.tags))});save();syKick(true);toast('بدأت المزامنة بأمان')
 }catch(e){
   if(old)localStorage.setItem('shopSyncCfg',old);else localStorage.removeItem('shopSyncCfg');
   if(oldTok)localStorage.setItem('shopSyncTok',oldTok);
