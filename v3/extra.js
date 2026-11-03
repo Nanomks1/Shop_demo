@@ -146,10 +146,7 @@ function usDel(id) {
     const repIt = o.repOf ? S.items.find(x => x.id == o.repOf) : null;
     if (repIt) { repIt.cnt += 1; repIt.by = S.me; }
     S.trash.push(t); save(); render();
-    toast('تم الحذف', () => {
-      if (repIt && repIt.cnt > 0) repIt.cnt = Math.max(0, repIt.cnt - 1);
-      restore(t.id);
-    });
+    toast('تم الحذف', () => restore(t.id));   // restore وحدها تعيد خصم الهاتف المباع دون خصم مزدوج
   });
 }
 function usZoom(id) {
@@ -334,12 +331,13 @@ function dbtF() {
   if ($('dbtl')) $('dbtl').innerHTML = F.map(dbtCard).join('') || '<p class="m">لا توجد ديون</p>';
 }
 
-/* ---------- الإحصائيات (بدون أي حسابات مالية) ---------- */
+/* ---------- الإحصائيات (مع تقسيم الأعطال المركبة بالفاصلة) ---------- */
 const stCnt = (arr, f) => { const m = {}; arr.forEach(x => { const k = f(x); if (k) m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
 const stBars = (L, none) => { const mx = Math.max(1, ...L.map(x => x[1])); return L.length ? L.map(([l, n]) => `<div class="brow"><span class="bl">${esc(l)}</span><div class="bt"><i style="width:${Math.round(n / mx * 100)}%"></i></div><b>${n}</b></div>`).join('') : `<p class="m">${none}</p>`; };
 VW.stat = () => {
   const p = V.p ?? 30, since = p ? Date.now() - p * 864e5 : 0, rp = S.rp.filter(r => (r.t0 || 0) >= since);
-  const F = stCnt(rp, r => String(r.fault || '').trim()).slice(0, 8);
+  const faults = rp.flatMap(r => String(r.fault || '').split('،').map(s => s.trim()).filter(Boolean));
+  const F = stCnt(faults, x => x).slice(0, 8);
   const Rq = {}; S.req.forEach(q => { const t = String(q.t || '').replace(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/g, '').replace(/[-–—:،.]/g, ' ').replace(/\s+/g, ' ').trim(), k = nz(t); if (k) { Rq[k] = Rq[k] || [t, 0]; Rq[k][1]++; } });
   const R = Object.values(Rq).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6 + i); return d; });

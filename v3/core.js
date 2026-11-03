@@ -16,7 +16,7 @@ const IC={home:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path 
 Object.assign(IC,{lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M8 7v10M12 7v10M16 7v10"/>',mobile:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',box:'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12M3.3 7l8.7 5 8.7-5"/>',plug:'<path d="M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>',check:'<path d="M20 6 9 17l-5-5"/>',bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/>',tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',send:'<path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/>',cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>'});
 Object.assign(IC,{search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'});
 const ic = n => (typeof CI != 'undefined' && CI[n]) ? `<svg class="ic ci" viewBox="0 0 100 100" aria-hidden="true">${CI[n]}</svg>` : `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
-const I = n => ic(n).replace('class="ic"', 'class="ic s"');
+const I = n => ic(n).replace('class="ic', 'class="ic s');
 
 /* ---------- أيقونات SVG إضافية حديثة (بدون إيموجي) ---------- */
 Object.assign(IC, {
@@ -29,7 +29,7 @@ Object.assign(IC, {
   trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
   alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   keyboard: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/>',
-  hash: '<line x1="4" x2="20" y1="9" x2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>'
+  hash: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>'
 });
 
 /* ---------- السجلات (تسجّل فيها الملفات الأخرى بدل تعديل بعضها) ---------- */
@@ -117,24 +117,41 @@ function kvStore(db, store) {
 }
 const MEDIA = kvStore('AzizShopMedia', 'imgs'), AUTOBK = kvStore('AzizShopAutoBackup', 'bk');
 
-/* خزنة الصور: الصورة تعيش في IndexedDB، والسجل في localStorage يحمل الوسم 'idb:المعرّف' فقط (للصيانة وشراء المستعمل) */
+/* خزنة الصور: الصورة تعيش في IndexedDB، والسجل في الذاكرة وlocalStorage يحمل الوسم 'idb:المعرّف' فقط */
 const IMG = {};
 const putImg = (id, d) => { if (!id || !d) return; IMG[id] = d; MEDIA.put(id, d).catch(e => errLog('حفظ صورة: ' + (e && e.message || e))); };
 const delImg = id => { if (!id || !(id in IMG)) return; delete IMG[id]; MEDIA.del(id).catch(e => errLog('حذف صورة: ' + (e && e.message || e))); };
-function imgReplacer(k, v) {              // يُستعمل مع JSON.stringify عند الحفظ فقط
-  if (k === 'img' && this && this.id && (typeof this.st === 'string' || typeof this.dev === 'string')) {   // سجل صيانة أو شراء مستعمل
-    if (typeof v === 'string' && v.startsWith('data:image')) { putImg(this.id, v); return 'idb:' + this.id; }
+function imgReplacer(k, v) {
+  if (k === 'img' && this && this.id && (typeof this.st === 'string' || typeof this.dev === 'string')) {
+    if (typeof v === 'string' && v.startsWith('data:image')) { putImg(this.id, v); this.img = 'idb:' + this.id; return this.img; }
     if (!v && IMG[this.id]) delImg(this.id);
   }
   return v;
 }
 function imgInit() {
   let moved = 0;
-  [...(S.rp || []), ...(S.used || [])].forEach(r => { if (r.img && r.img.startsWith('data:image')) { putImg(r.id, r.img); moved = 1; } });
+  [...(S.rp || []), ...(S.used || [])].forEach(r => {
+    if (r && r.id && typeof r.img === 'string' && r.img.startsWith('data:image')) {
+      putImg(r.id, r.img); r.img = 'idb:' + r.id; moved = 1;
+    }
+  });
   MEDIA.all().then(all => {
-    Object.assign(IMG, all);
+    const valid = new Set([
+      ...(S.rp || []).map(r => r && r.id),
+      ...(S.used || []).map(u => u && u.id),
+      ...(S.trash || []).filter(t => t.coll == 'rp' || t.coll == 'used').map(t => t.obj && t.obj.id)
+    ]);
+    Object.keys(all).forEach(id => {
+      if (!valid.has(id)) MEDIA.del(id).catch(() => {});
+      else IMG[id] = all[id];
+    });
     let ch = 0;
-    [...(S.rp || []), ...(S.used || [])].forEach(r => { if (r.img && r.img.startsWith('idb:') && IMG[r.id]) { r.img = IMG[r.id]; ch = 1; } });
+    [...(S.rp || []), ...(S.used || [])].forEach(r => {
+      if (r && r.id && IMG[r.id]) {
+        if (!r.img || r.img.startsWith('data:image')) r.img = 'idb:' + r.id;
+        ch = 1;
+      }
+    });
     if (moved) save();
     if (ch) render();
   }).catch(e => errLog('قراءة الصور: ' + (e && e.message || e)));
@@ -218,7 +235,7 @@ function hideSheet() {
   $('ov').hidden = true; SH = false;
   const r = SHR; SHR = null; r && r.res(r.val);
 }
-const finish = v => { if (SHR) SHR.val = v; history.back(); };
+const finish = v => { if (!SHR) return; SHR.val = v; history.back(); };
 
 /* ---------- لوحة الأرقام (مع التبديل إلى لوحة الحروف) ---------- */
 function pinPadHtml (id, ph = 'أدخل الرمز', onEnter = '') {
@@ -271,15 +288,15 @@ function sure(msg, ok = 'نعم', danger = true) {
 
 /* ---------- التعديل مع التراجع والحذف والاسترجاع ---------- */
 function upd(fn) { fn(); save(); render(); }
-const snap = () => JSON.stringify({ items: S.items, req: S.req, tags: S.tags, gg: S.gg, guide: S.guide, ag: S.ag, debt: S.debt, tp: S.tp, fields: S.fields, used: (S.used || []).map(u => ({ ...u, img: u.img ? 1 : 0 })), rp: S.rp.map(r => ({ ...r, img: r.img ? 1 : 0 })) });
+const snap = () => JSON.stringify({ items: S.items, req: S.req, tags: S.tags, cfg: S.cfg, gg: S.gg, guide: S.guide, ag: S.ag, debt: S.debt, tp: S.tp, fields: S.fields, used: (S.used || []).map(u => ({ ...u, img: u.img ? 1 : 0 })), rp: S.rp.map(r => ({ ...r, img: r.img ? 1 : 0 })) });
 function commit(label, fn) {
-  const b = snap(), im = Object.fromEntries([...S.rp, ...(S.used || [])].map(r => [r.id, r.img]));
+  const b = snap(), im = Object.fromEntries([...S.rp, ...(S.used || [])].map(r => [r.id, [r.img, IMG[r.id]]]));
   fn(); save(); render();
   toast(label, () => {
     const o = JSON.parse(b);
-    S.items = o.items; S.req = o.req; S.tags = o.tags; S.gg = o.gg; S.guide = o.guide; S.ag = o.ag; S.debt = o.debt || S.debt; S.tp = o.tp || S.tp; S.fields = o.fields || S.fields;
-    S.used = (o.used || []).map(u => ({ ...u, img: im[u.id] || '' }));
-    S.rp = o.rp.map(r => ({ ...r, img: im[r.id] || '' }));
+    S.items = o.items; S.req = o.req; S.tags = o.tags; S.cfg = o.cfg || S.cfg; S.gg = o.gg; S.guide = o.guide; S.ag = o.ag; S.debt = o.debt || S.debt; S.tp = o.tp || S.tp; S.fields = o.fields || S.fields;
+    S.used = (o.used || []).map(u => { const m = im[u.id]; if (m && m[1] && !IMG[u.id]) putImg(u.id, m[1]); return { ...u, img: m && m[0] ? 'idb:' + u.id : '' }; });
+    S.rp = o.rp.map(r => { const m = im[r.id]; if (m && m[1] && !IMG[r.id]) putImg(r.id, m[1]); return { ...r, img: m && m[0] ? 'idb:' + r.id : '' }; });
   });
 }
 function del(coll, id, label) {

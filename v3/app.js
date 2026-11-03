@@ -229,129 +229,13 @@ function limEd(k) {
   });
 }
 
-/* ---------- الوسوم (مع تعديل الاسم، فحص الاستعمال، والدمج الآمن) ---------- */
-function tgUsed(g, t) {
-  let n = 0;
-  if (['brand', 'color', 'cap', 'ram', 'kind', 'conn', 'tier', 'pw'].includes(g)) {
-    S.items.forEach(i => { if (i[g] == t) n++; });
-  }
-  if (g == 'brand') S.gg.forEach(x => { if (Object.values(x.br || {}).includes(t)) n++; });
-  if (g == 'color') S.items.forEach(i => (i.v || []).forEach(v => { if (v.c == t) n++; }));
-  if (g == 'gender') S.items.forEach(i => (i.v || []).forEach(v => { if (v.g == t) n++; }));
-  if (g == 'glass') S.items.forEach(i => { if (i.sec == 'glass' && i.ty == t && (sumv(i.stock) > 0 || Object.keys(i.lv || {}).length > 0)) n++; });
-  if (g == 'fault') {
-    S.rp.forEach(r => { if ((r.fault || '').split('،').map(s => s.trim()).includes(t)) n++; });
-    S.guide.forEach(gd => { if (gd.f == t) n++; });
-  }
-  return n;
-}
-function tgReplace(g, oldT, newT) {
-  if (['brand', 'color', 'cap', 'ram', 'kind', 'conn', 'tier', 'pw'].includes(g)) {
-    S.items.forEach(i => { if (i[g] == oldT) i[g] = newT; });
-  }
-  if (g == 'brand') {
-    S.gg.forEach(x => { if (x.br) Object.keys(x.br).forEach(m => { if (x.br[m] == oldT) x.br[m] = newT; }); });
-    ['bcol', 'bl'].forEach(k => { const o = S.cfg[k]; if (o && o[oldT] !== undefined) { if (newT && o[newT] === undefined) o[newT] = o[oldT]; delete o[oldT]; } });
-    S.fields.forEach(f => { if (f.sec == 'phones' && Array.isArray(f.kinds)) f.kinds = [...new Set(f.kinds.map(x => x == oldT ? newT : x).filter(Boolean))]; });
-  }
-  if (g == 'color') S.items.forEach(i => (i.v || []).forEach(v => { if (v.c == oldT) v.c = newT; }));
-  if (g == 'gender') S.items.forEach(i => (i.v || []).forEach(v => { if (v.g == oldT) v.g = newT; }));
-  if (['kind', 'conn', 'tier', 'pw'].includes(g)) {
-    S.ag.forEach(ag => {
-      if (ag[g] == oldT) {
-        ag[g] = newT;
-        ag.id = [ag.kind, ag.conn || '', ag.tier || '', ag.pw || ''].join('|').replace(/\//g, '-');
-      }
-    });
-    if (g == 'kind') {
-      ['kc', 'gkc'].forEach(k => { const o = S.cfg[k]; if (o && o[oldT] !== undefined) { if (newT && o[newT] === undefined) o[newT] = o[oldT]; delete o[oldT]; } });
-      S.fields.forEach(f => { if (f.sec == 'acc' && Array.isArray(f.kinds)) f.kinds = [...new Set(f.kinds.map(x => x == oldT ? newT : x).filter(Boolean))]; });
-    }
-  }
-  if (g == 'glass') {
-    if (newT) {
-      S.gg.forEach(grp => {
-        const oldI = gitem(grp.id, oldT), newI = gitem(grp.id, newT);
-        if (oldI && newI && oldI != newI) {
-          newI.stock = newI.stock || {};
-          for (const m in (oldI.stock || {})) newI.stock[m] = (newI.stock[m] || 0) + oldI.stock[m];
-          if (oldI.lv) { newI.lv = newI.lv || {}; Object.assign(newI.lv, oldI.lv); }
-          if (newI.min == null && oldI.min != null) newI.min = oldI.min;
-          if (!newI.price && oldI.price) newI.price = oldI.price;
-          S.items = S.items.filter(x => x != oldI);
-        } else if (oldI) oldI.ty = newT;
-      });
-    } else {
-      S.items = S.items.filter(i => !(i.sec == 'glass' && i.ty == oldT));
-    }
-    if (S.cfg.gtl && S.cfg.gtl[oldT] !== undefined) { if (newT && S.cfg.gtl[newT] === undefined) S.cfg.gtl[newT] = S.cfg.gtl[oldT]; delete S.cfg.gtl[oldT]; }
-  }
-  if (g == 'fault') {
-    S.rp.forEach(r => {
-      if (!r.fault) return;
-      const pts = r.fault.split('،').map(s => s.trim());
-      if (pts.includes(oldT)) r.fault = [...new Set(pts.map(x => x == oldT ? newT : x).filter(Boolean))].join('، ');
-    });
-    S.guide.forEach(gd => { if (gd.f == oldT && newT) gd.f = newT; });
-  }
-}
-
+/* ---------- الوسوم (القائمة العامة وإضافة وسم؛ التعديل والحذف الذكي موحدان في المخزون) ---------- */
 VW.st_tags = () => ({ t: 'الوسوم', h: Object.keys(TG).map(g => row(TG[g], `go('st_tg',{g:'${g}'})`, S.tags[g].length)).join('') });
-VW.st_tg = () => {
-  const g = V.g, ed = can('tags');
-  return {
-    t: TG[g],
-    h: (ed ? '<p class="m">اضغط على الاسم لتعديله، أو (×) لحذفه أو دمجه في وسم آخر.</p>' : '<p class="m">التعديل للمدير فقط.</p>')
-      + `<div>${S.tags[g].map((t, i) => `<span class="tag"><span ${ed ? `onclick="tgEd('${g}',${i})"` : ''}>${esc(t)}</span>${ed ? `<b onclick="tgDel('${g}',${i})" style="padding-inline-start:4px">×</b>` : ''}</span>`).join('')}</div>`
-      + (ed ? `<button class="btn" onclick="tgAdd('${g}')">+ إضافة</button>` : '')
-  };
-};
 function tgAdd(g) {
   if (!can('tags')) return toast('للمدير فقط');
   ask('وسم جديد: ' + TG[g], [{ k: 't', l: 'الاسم' }]).then(v => {
     const t = v && v.t.trim();
     if (t && !S.tags[g].includes(t)) upd(() => { S.tags[g].push(t); if (g == 'brand' && typeof autoBc == 'function') autoBc(t); });
-  });
-}
-function tgEd(g, i) {
-  if (!can('tags')) return toast('للمدير فقط');
-  const oldT = S.tags[g][i]; if (oldT == null) return;
-  const used = tgUsed(g, oldT);
-  ask('تعديل الوسم «' + oldT + '»', [{ k: 't', l: 'الاسم الجديد' + (used ? ' (سيُحدَّث في ' + used + ' موضع تلقائياً)' : ''), v: oldT }]).then(v => {
-    const newT = v && v.t.trim();
-    if (!newT || newT == oldT) return;
-    if (S.tags[g].includes(newT)) {
-      sure('«' + newT + '» موجود مسبقاً. هل تريد دمج «' + oldT + '» فيه؟', 'دمج', false).then(y => {
-        if (!y) return;
-        commit('تم دمج الوسم', () => { tgReplace(g, oldT, newT); S.tags[g].splice(i, 1); });
-      });
-      return;
-    }
-    commit('تم تعديل الاسم', () => { S.tags[g][i] = newT; tgReplace(g, oldT, newT); });
-  });
-}
-function tgDel(g, i) {
-  if (!can('tags')) return toast('للمدير فقط');
-  const oldT = S.tags[g][i]; if (oldT == null) return;
-  const used = tgUsed(g, oldT), others = S.tags[g].filter((_, k) => k != i);
-  if (g == 'glass' && !others.length) return toast('لا يمكن حذف آخر نوع زجاج');
-  if (!used) {
-    sure('حذف الوسم «' + oldT + '» ؟').then(y => {
-      if (!y) return;
-      const o = [...S.tags[g]];
-      upd(() => { S.tags[g].splice(i, 1); tgReplace(g, oldT, ''); });
-      toast('تم الحذف', () => { S.tags[g] = o; });
-    });
-    return;
-  }
-  const opts = g == 'glass' ? others : ['— حذف الوسم وإزالته من القطع —', ...others];
-  ask('«' + oldT + '» مستعمل في ' + used + ' موضع', [{ k: 'to', l: g == 'glass' ? 'انقل مخزونه إلى نوع زجاج آخر قبل الحذف:' : 'اختر وسماً لنقل القطع إليه أو احذفه:', t: 'sel', o: opts, v: others[0] || opts[0] }], 'تأكيد الحذف', true).then(v => {
-    if (!v) return;
-    const target = v.to == '— حذف الوسم وإزالته من القطع —' ? '' : v.to;
-    commit(target ? 'تم النقل والحذف' : 'تم الحذف', () => {
-      tgReplace(g, oldT, target);
-      S.tags[g].splice(i, 1);
-    });
   });
 }
 
@@ -483,7 +367,7 @@ setInterval(() => {
 }, 15000);
 
 /* ---------- النسخ الاحتياطي ---------- */
-/* تشفير بيانات الزبائن داخل ملف النسخة */
+/* تشفير بيانات الزبائن ورموز الموظفين داخل ملف النسخة */
 async function bkKey(pin) {
   const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: new TextEncoder().encode('aziz-bk-v1'), iterations: 150000, hash: 'SHA-256' }, k, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
@@ -501,15 +385,15 @@ async function bkDecObj(b64, pin) {
   return JSON.parse(new TextDecoder().decode(pt));
 }
 async function makeSafeBackupJson(pinOrHash) {
-  const copy = JSON.parse(JSON.stringify(S));
-  const resMap = {};
+  const copy = bkCopy();
+  const resMap = {}, upins = {};
   (copy.items || []).forEach(i => { if (i.res) { resMap[i.id] = i.res; delete i.res; } });
+  (copy.users || []).forEach(u => { if (u.pin) { upins[u.name] = u.pin; delete u.pin; } });
   const CC = ['rp', 'used', 'debt'];
-  const custData = { rp: copy.rp || [], req: copy.req || [], used: copy.used || [], debt: copy.debt || [], res: resMap, trash: (copy.trash || []).filter(t => CC.includes(t.coll)) };
+  const custData = { rp: copy.rp || [], req: copy.req || [], used: copy.used || [], debt: copy.debt || [], res: resMap, upins, trash: (copy.trash || []).filter(t => CC.includes(t.coll)) };
   copy._encCust = await bkEncObj(custData, pinOrHash);
   copy.rp = []; copy.req = []; copy.used = []; copy.debt = []; copy.trash = (copy.trash || []).filter(t => !CC.includes(t.coll));
   delete copy.pin; if (copy.cfg) delete copy.cfg.lk;
-  (copy.users || []).forEach(u => delete u.pin);
   return JSON.stringify(copy);
 }
 
@@ -541,9 +425,14 @@ async function linkAutoFile() {
   if (!window.showSaveFilePicker) return toast('متصفحك يعتمد الحفظ التلقائي الداخلي');
   try {
     AB_FH = await window.showSaveFilePicker({ suggestedName: 'aziz-shop-auto-backup.json', types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+    AUTOBK.put('fh', AB_FH).catch(() => {});
     schedAutoBk(); render(); toast('تم ربط ملف الحفظ التلقائي بنجاح');
   } catch (e) { }
 }
+AUTOBK.get('fh').then(async h => {
+  if (h && h.queryPermission && (await h.queryPermission({ mode: 'readwrite' })) === 'granted') AB_FH = h;
+}).catch(() => {});
+
 function restSnap(key) {
   if (!isAdmin()) return toast('للمدير فقط');
   AUTOBK.get(key).then(rec => {
@@ -594,10 +483,11 @@ function RST(f) {
             delete d._encCust;
             d.rp = cust.rp || []; d.req = cust.req || []; d.used = cust.used || []; d.debt = cust.debt || [];
             (d.items || []).forEach(i => { if (cust.res && cust.res[i.id]) i.res = cust.res[i.id]; });
+            if (cust.upins) (d.users || []).forEach(u => { if (cust.upins[u.name]) u.pin = cust.upins[u.name]; });
             d.trash = [...(d.trash || []), ...(cust.trash || [])];
             d.pin = d.pin || S.pin;
             if (S.cfg && S.cfg.lk) d.cfg = { ...(d.cfg || {}), lk: S.cfg.lk };
-            S = { ...load(), ...d }; save(); location.reload();
+            await pre; S = { ...load(), ...d }; save(); location.reload();
           } catch (e) { toast('الرمز خاطئ، تعذر فك تشفير بيانات الزبائن'); }
         });
       });
@@ -617,7 +507,7 @@ VW.st_bk = () => {
   const n = (localStorage.getItem('shop3') || '').length, p = Math.round(n / 5e4), er = JSON.parse(localStorage.getItem('shopErr') || '[]');
   return {
     t: 'النسخ الاحتياطي',
-    h: '<p class="m">يتم تشفير بيانات الزبائن الحساسة (الصيانة، الطلبات، الحجوزات) داخل ملف النسخة الاحتياطية لحمايتها من التسريب.</p>'
+    h: '<p class="m">يتم تشفير بيانات الزبائن الحساسة (الصيانة، الطلبات، الحجوزات، ورموز الموظفين) داخل ملف النسخة الاحتياطية لحمايتها من التسريب.</p>'
       + '<button class="btn" onclick="BKP()">حفظ ملف النسخة في الهاتف (محمي)</button>'
       + (window.showSaveFilePicker ? `<button class="btn s" onclick="linkAutoFile()">${AB_FH ? I('check') + ' مرتبط بملف تلقائي (اضغط لتغييره)' : 'ربط ملف حفظ تلقائي مباشر بالهاتف'}</button>` : '')
       + '<button class="btn s" onclick="go(\'st_snap\')">النسخ التلقائية الداخلية (آخر 7 أيام)</button>'
