@@ -44,7 +44,15 @@ function homeQuickBar() {
     + P('rp', `go('rp',{tab:'${rpRd ? 'rd' : 'in'}'})`, 'tool', rpIn + rpRd, 'في الصيانة', rpRd ? rpRd + ' جاهز للتسليم' : '')
     + P(need ? 'al' : 'ok', "go('rep')", need ? 'alert' : 'check', need, 'نواقص المخزون', need ? '' : 'مكتمل')
     + P(rq ? 'rp' : 'ok', "go('rep')", 'chat', rq, 'طلبات الزبائن', '')
-    + `</div>`;
+    + `</div>`
+    + todayLine();
+}
+/* سطر صغير: كم هاتفاً استلمنا وسلّمنا اليوم */
+function todayLine() {
+  if (!S.rp.length) return '';
+  const day = new Date(); day.setHours(0, 0, 0, 0); const t = day.getTime();
+  const a = S.rp.filter(r => r.t0 >= t).length, b = S.rp.filter(r => r.st == 'dn' && r.t2 >= t).length;
+  return `<div class="m" style="text-align:center;margin:-2px 0 8px">اليوم: استلمنا <b>${a}</b> · سلّمنا <b>${b}</b></div>`;
 }
 (() => {
   const s = document.createElement('style');
@@ -67,7 +75,7 @@ VW.home = () => {
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
-      + `<input id="q_inp" placeholder="ابحث: هاتف، تذكرة #A101، زجاج، بوشيط، زبون..." value="${esc(Q)}" oninput="sq(this.value)">`
+      + `<input id="q_inp" placeholder="ابحث: هاتف، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)">`
       + `<div id="sc">${scopeChips()}</div><div id="res"></div>`
       + homeQuickBar() + scan + topup
       + '<h3>الأقسام</h3>'
@@ -208,7 +216,7 @@ function fabUpd() {
     document.body.insertAdjacentHTML('beforeend', '<div id="fab" hidden></div>');
     el = $('fab');
   }
-  const show = S.cfg.fab !== 0 && ['home', 'sec', 'rp', 'gd'].includes(V.v);
+  const show = S.cfg.fab !== 0 && ['home'].includes(V.v);
   el.hidden = !show;
   if (!show) return;
   el.innerHTML = (V.v != 'home' ? `<button class="fab-b s" onclick="goSearch()" aria-label="بحث">${ic('search')}</button>` : '')

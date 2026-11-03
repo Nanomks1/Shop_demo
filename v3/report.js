@@ -112,6 +112,9 @@
   };
 
   /* ---------- شاشة التقرير ---------- */
+  const nwCnt = h => h.replace(/((?:—\s*)?العدد\s*[0-9٠-٩]+)\s*$/, '<span style="white-space:nowrap">$1</span>');
+  const SECI = { topup: 'ctopup', phones: 'cphone', glass: 'cglass', pochette: 'ccase', acc: 'cacc' };
+  const secT = b => (SECI[b.k] ? I(SECI[b.k]) + ' ' : '') + esc(String(b.t).replace(/^[^\u0600-\u06FFA-Za-z0-9]+/, ''));
   const rrow = l => {
     const c = rcf(), act = l.x[3] || '';
     const m = act.match(/^([a-zA-Z]+)\('([^']*)'\)$/);
@@ -119,7 +122,7 @@
     const hasPrompt = fn == 'buyP' || fn == 'buyC' || fn == 'buyA' || (fn == 'tpFix' && arg.includes('_c'));
     const mainClick = c.qb && hasPrompt ? `rcQuick('${fn}','${arg}')` : act;
     const askBtn = c.qb && hasPrompt ? `<button class="rck s" title="إدخال الكمية يدوياً" onclick="${act}">${I('hash')}</button>` : '';
-    return `<div class="rrow ${l.x[2] == 'r' ? 'r' : ''}"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span class="rt">${esc(l.s)}</span>${askBtn}<button class="rck" aria-label="تم الشراء" onclick="${mainClick}">${I('check')}</button></div>`;
+    return `<div class="rrow ${l.x[2] == 'r' ? 'r' : ''}"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span class="rt">${nwCnt(esc(l.s))}</span>${askBtn}<button class="rck" aria-label="تم الشراء" onclick="${mainClick}">${I('check')}</button></div>`;
   };
   VW.rep = () => {
     const c = rcf(), s = stkL(), lv = window.RLV || c.lv, f = window.reportSectionFilter;
@@ -144,7 +147,7 @@
         const ex = EXP['r_' + b.k], L = !ex && b.ls.length > 6 ? b.ls.slice(0, 5) : b.ls;
         x = L.map(rrow).join('') + (b.ls.length > 6 ? `<button class="tag" style="width:100%;justify-content:center;margin:6px 0 0" onclick="toggleExp('r_${b.k}')">${ex ? 'طيّ ▴' : 'عرض الباقي (+' + (b.ls.length - 5) + ') ▾'}</button>` : '');
       }
-      if (x) h += `<h3 class="sch" style="--sc:${SCOL[b.k] || '#64748b'}">${b.t} <span class="m">(${b.ls.length})</span></h3><div class="card rlist sx" style="--sc:${SCOL[b.k] || '#64748b'}">${x}</div>`; else if (c.em) h += `<h3>${b.t}</h3><p class="m">لا نقص</p>`;
+      if (x) h += `<h3 class="sch" style="--sc:${SCOL[b.k] || '#64748b'}">${secT(b)} <span class="m">(${b.ls.length})</span></h3><div class="card rlist sx" style="--sc:${SCOL[b.k] || '#64748b'}">${x}</div>`; else if (c.em) h += `<h3>${secT(b)}</h3><p class="m">لا نقص</p>`;
     });
     if ((F == 'all' || F == 'phones') && c.st && !c.hs.includes('phones') && s.length)
       h += '<h3>الهواتف المتوفرة</h3><div class="card rlist">' + s.map(i => `<div class="rrow"><span class="rt">${esc(stkN(i))}</span><span class="m">${i.cnt}${rsQ(i) ? ' (محجوز ' + rsQ(i) + ')' : ''}${c.pr && i.price ? ' · ' + esc(dh(i.price)) : ''}</span></div>`).join('') + '</div>';

@@ -74,7 +74,7 @@ nav button.on .ic{background:var(--ab)}
 .bkb span{flex:1;color:var(--m)}
 .bkb .btn.sm{min-height:32px;padding:0 12px;font-size:.85rem}
 .bkx{background:none;border:0;color:var(--m);font-size:1rem;padding:4px 8px;cursor:pointer}
-#sc{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:2px;margin-top:4px}
+#sc{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:2px;margin-top:4px;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 26px);mask-image:linear-gradient(to right,transparent 0,#000 26px)}
 #sc .tag{flex:none;white-space:nowrap;margin:0}
 
 /* ---- شريط البحث مع زر المايكروفون الصوتي ---- */
@@ -184,8 +184,9 @@ nav button.on .ic{background:var(--ab)}
 .rrow.col{flex-direction:column;align-items:stretch;gap:6px}
 .rrow .rt{flex:1;min-width:0;line-height:1.5}
 .rrow.r .rt{font-weight:700}
-.rck{flex:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--b);background:var(--c);color:var(--p);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.rck.s{width:34px;height:36px;border-radius:10px;color:var(--m);background:var(--bg);font-size:.85rem}
+.rck{flex:none;width:40px;height:40px;border-radius:12px;border:1px solid transparent;background:var(--ab);color:var(--p);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rck.s{width:34px;height:36px;border-radius:10px;color:var(--m);background:var(--bg);border-color:var(--b);font-size:.85rem}
+.sch .ic.s{width:1.5em;height:1.5em;vertical-align:-.45em;margin-inline-end:.3em}
 .rck:active{transform:scale(.92)}
 .rbar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:6;display:flex;gap:10px;margin-top:14px;padding:8px;border-radius:16px;background:var(--c);border:1px solid var(--b)}
 .rbar .btn{margin:0;flex:1}

@@ -64,17 +64,7 @@ function fixDupTk() {
 })();
 
 /* ---------- فحص ديون الزبون المفتوحة ---------- */
-function rpDebts(tel, name) {
-  const dTel = String(tel || '').replace(/\D/g, '').slice(-8);
-  const nName = nz(name || '');
-  return (S.debt || []).filter(d => {
-    if (d.paid) return false;
-    const dt = String(d.tel || '').replace(/\D/g, '').slice(-8);
-    if (dTel.length >= 8 && dt.length >= 8 && dTel == dt) return true;
-    if (nName.length >= 4 && nz(d.name) == nName) return true;
-    return false;
-  });
-}
+function rpDebts(tel, name) { return typeof dbtCustOpen == 'function' ? dbtCustOpen(tel, name) : []; }
 const rpDebtSum = L => L.reduce((a, d) => a + (typeof dRem == 'function' ? dRem(d) : Math.max(0, (+d.amt || 0))), 0);
 
 /* ---------- الضمان ---------- */
@@ -108,7 +98,7 @@ function rc(r) {
   const oDebts = r.st != 'dn' ? rpDebts(r.tel, r.name) : [], oSum = oDebts.length ? rpDebtSum(oDebts) : 0;
   const B = (t, f, p) => `<button class="btn ${p ? '' : 's'} sm" onclick="${f}">${t}</button>`;
   return `<div class="card ${bCls}"><div class="row2">${im ? `<img onclick="rpZoom('${i}')" src="${im}" style="cursor:pointer;width:56px;height:56px;object-fit:cover;border-radius:10px">` : ''}<div style="flex:1"><b>${r.tk ? `<span class="tk-b">#${esc(r.tk)}</span>` : ''}${esc(r.name)}</b><div class="m">${esc(r.dev)} — ${esc(r.fault)}</div></div>${(r.pat || []).length > 1 ? `<svg viewBox="0 0 120 120" width="52">${PI(r.pat)}</svg>` : ''}</div>`
-    + `<div class="m"><a href="tel:${esc(r.tel)}">${esc(r.tel)}</a></div><div class="m">استلام: <bdi>${fd(r.t0)}</bdi> · ${esc(r.by)}${n && r.st != 'dn' ? ' · منذ ' + n + ' يوم' : ''}</div>`
+    + `<div class="m"><bdi>${esc(r.tel)}</bdi></div><div class="m">استلام: <bdi>${fd(r.t0)}</bdi> · ${esc(r.by)}${n && r.st != 'dn' ? ' · منذ ' + n + ' يوم' : ''}</div>`
     + (r.st == 'dn' ? `<div class="m">تسليم: <bdi>${fd(r.t2)}</bdi> · ${esc(r.dby || '')}</div>` : '') + (r.cap ? `<div class="m">السعر المتفق: ${esc(r.cap)}</div>` : '') + (r.dep ? `<div class="m">العربون: ${esc(r.dep)}</div>` : '') + (r.st == 'dn' ? `<div class="m">المقبوض: ${esc(r.paid)}</div>` : '') + (typeof dbtRp == 'function' ? dbtRp(r) : '')
     + (oSum > 0 ? `<div class="rs" style="color:#dc2626;cursor:pointer" onclick="go('dbt')">${I('alert')} تنبيه: على هذا الزبون دين مفتوح (${oSum} درهم)</div>` : '')
     + ((r.chk || []).length ? `<div class="m">${esc(r.chk.join('، '))}</div>` : '') + (r.lock ? `<div class="m">PIN: ${esc(r.lock)}</div>` : '') + (w > 15 ? `<div class="rs">منسي منذ ${w} يوم</div>` : '')
@@ -116,10 +106,9 @@ function rc(r) {
     + fxShow(r) + (r.imei ? `<div class="m">IMEI: <bdi>${esc(r.imei)}</bdi></div>` : '') + (wi ? `<div class="m" style="color:${wi.active ? '#16a34a' : '#64748b'};font-weight:700">${I('shield')} ${esc(wi.label)}</div>` : '')
     + (r.st == 'dn' ? (r.tst ? `<div class="m" style="color:#16a34a;font-weight:700">${I('check')} جُرِّب مع الزبون وسُلِّم مصلوحاً (${esc(r.dby || '')})</div>` : (r.res == 'ok' ? '<div class="m">سُلِّم بدون توثيق التجربة</div>' : '')) + (r.dnote ? `<div class="m">ملاحظة التسليم: ${esc(r.dnote)}</div>` : '') : '')
     + (r.st == 'in' && shown('rp', 'loc') ? `<div style="margin-top:6px">${Object.keys(LOC).map(k => `<button class="tag ${r.loc == k ? 'on' : ''}" onclick="rLoc('${i}','${k}')">${LOC[k]}</button>`).join('')}</div>` : '')
-    + `<div class="sub">${r.tel ? `<a href="tel:${esc(r.tel)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a>` : ''}`
-    + (r.st == 'in' ? B('مصلوح', `rSt('${i}','ok')`, 1) + B('غير مصلوح', `rSt('${i}','fail')`) + B('رفض', `rSt('${i}','ref')`)
-      : r.st == 'rd' ? B('إبلاغ واتساب', `rWA('${i}')`, 1) + B('اتصلت', `rCL('${i}')`) + B('تسليم', `rDV('${i}')`, 1) + B('إرجاع للمحل', `rSt('${i}','in')`) : '')
-    + B('تعديل', `rEd('${i}')`) + B('حذف', `rDel('${i}')`) + `</div></div>`;
+    + (r.st == 'in' ? `<div class="sub">${B('مصلوح', `rSt('${i}','ok')`, 1)}${B('غير مصلوح', `rSt('${i}','fail')`)}${B('رفض', `rSt('${i}','ref')`)}</div>`
+      : r.st == 'rd' ? `<div class="sub">${B('تسليم', `rDV('${i}')`, 1)}${B('إبلاغ واتساب', `rWA('${i}')`)}${B('اتصلت', `rCL('${i}')`)}${B('إرجاع للمحل', `rSt('${i}','in')`)}</div>` : '')
+    + `<div class="sub">${r.tel ? `<a href="tel:${esc(r.tel)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a>` : ''}${B('تعديل', `rEd('${i}')`)}${B('حذف', `rDel('${i}')`)}</div></div>`;
 }
 function rpList() {
   const q = nz(V.q || ''), tab = V.tab || 'in', all = V.all && q;
@@ -131,8 +120,8 @@ VW.rp = () => {
   const tab = V.tab || 'in';
   return {
     t: 'الصيانة',
-    h: `<button class="btn" onclick="rEd(null)">+ استلام هاتف</button><button class="btn s" onclick="go('gd')">دليل أسعار الإصلاح</button><div class="stk-bar"><div>${Object.keys(TB).map(k => `<button class="tag ${tab == k ? 'on' : ''}" onclick="V.tab='${k}';render()">${TB[k]} (${S.rp.filter(r => r.st == k).length})</button>`).join('')}</div></div>`
-      + `<input placeholder="ابحث: تذكرة (A101)، اسم، رقم، جهاز، عطل" value="${esc(V.q)}" oninput="V.q=this.value;rpL()"><div>${FL.map(([k, l]) => `<button class="tag ${(V.d || 'all') == k ? 'on' : ''}" onclick="V.d='${k}';render()">${l}</button>`).join('')}<button class="tag ${V.all ? 'on' : ''}" onclick="V.all=!V.all;render()">كل التبويبات</button></div>`
+    h: `<div class="row2" style="gap:8px"><button class="btn" style="width:auto;flex:2" onclick="rEd(null)">+ استلام هاتف</button><button class="btn s" style="width:auto;flex:1" onclick="go('gd')">دليل الأسعار</button></div><div class="stk-bar"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${Object.keys(TB).map(k => `<button class="tag ${tab == k ? 'on' : ''}" style="margin:0;justify-content:center;padding:8px 4px" onclick="V.tab='${k}';render()">${TB[k]} (${S.rp.filter(r => r.st == k).length})</button>`).join('')}</div></div>`
+      + `<input placeholder="ابحث: تذكرة (A101)، اسم، رقم، جهاز، عطل" value="${esc(V.q)}" oninput="V.q=this.value;rpL()"><div class="row2" style="margin:6px 0"><select style="flex:1" aria-label="التاريخ" onchange="V.d=this.value;render()">${FL.map(([k, l]) => `<option value="${k}" ${(V.d || 'all') == k ? 'selected' : ''}>${k == 'all' ? 'كل التواريخ' : l}</option>`).join('')}</select><button class="tag ${V.all ? 'on' : ''}" style="margin:0;white-space:nowrap" onclick="V.all=!V.all;render()">كل التبويبات</button></div>`
       + `${V.d == 'date' ? `<input type="date" value="${V.dt || ''}" onchange="V.dt=this.value;render()">` : ''}<div id="rl">${rpList()}</div>`
   };
 };
@@ -165,9 +154,6 @@ function rpAddonOpts(dev) {
       });
     });
   }
-  S.items.filter(i => i.sec == 'acc' && typeof i.cnt == 'number' && i.cnt > 0).slice(0, 12).forEach(i => {
-    out.push({ k: `ac:${i.id}`, l: `${acName(i)}${i.price ? ' — ' + dh(i.price) : ''} (متوفر ${i.cnt})` });
-  });
   return out;
 }
 function applyRpAddon(opt) {
@@ -190,16 +176,16 @@ function applyRpAddon(opt) {
 function rDV(id, pre) {
   const r = rf(id), pr = pre || {}, cap = sn1(r.cap) ? +r.cap : null, dep = sn1(r.dep) ? +r.dep : 0;
   const def = (r.res == 'ok' && cap !== null) ? String(Math.max(0, cap - dep)) : '';
+  const addons = rpAddonOpts(r.dev);
   const oDebts = rpDebts(r.tel, r.name), oSum = oDebts.length ? rpDebtSum(oDebts) : 0;
   const debtHint = oSum > 0 ? ` [تنبيه: عليه دين سابق ${oSum} درهم]` : '';
   const lbl = (def ? (dep ? 'المتبقي ' + def + ' (السعر ' + cap + ' − العربون ' + dep + ') — هل هو المقبوض الآن؟ عدّله إن اختلف' : 'هل المبلغ المقبوض هو ' + def + ' ؟ عدّله إن اختلف')
-    : (dep ? 'المبلغ المقبوض الآن (العربون ' + r.dep + ' مقبوض سابقاً — اكتب 0 إن لم يُقبض شيء)' : 'المبلغ المقبوض (0 إن لم يُقبض شيء)')) + debtHint;
+    : (dep ? 'المبلغ المقبوض الآن (العربون ' + r.dep + ' مقبوض سابقاً — اكتب 0 إن لم يُقبض شيء)' : 'المبلغ المقبوض (0 إن لم يُقبض شيء)')) + debtHint + (addons.length > 1 ? ' — وإن أرفقتَ سلعة فأضف ثمنها' : '');
   const F = [{ k: 'p', l: lbl, t: 'tel', v: pr.p ?? def }];
   if (r.res == 'ok') {
     const cur = warToLbl(pr.war ?? r.war ?? 0), wo = WAR_SEL.includes(cur) ? WAR_SEL : [cur, ...WAR_SEL];
     F.unshift({ k: 'tested', l: (pr.err ? 'مطلوب، اختر أحد الخيارين: ' : '') + 'تجربة الإصلاح مع الزبون قبل التسليم (إجباري)', t: 'sel', o: DVO, v: pr.tested || DVO[0] }, { k: 'war', l: 'مدة ضمان الإصلاح (يبدأ اليوم)', t: 'sel', o: wo, v: cur });
   }
-  const addons = rpAddonOpts(r.dev);
   if (addons.length > 1) F.push({ k: 'addon', l: 'إرفاق سلعة من المخزون مع التسليم (تُخصم تلقائياً)', t: 'sel', o: addons.map(x => x.l), v: pr.addon || addons[0].l });
   F.push({ k: 'dnote', l: 'ملاحظة عند التسليم (اختياري)', v: pr.dnote ?? (r.dnote || '') });
   return ask('تسليم الهاتف: ' + (r.tk ? '#' + r.tk + ' ' : '') + r.name, F, 'تأكيد التسليم').then(v => {
@@ -234,18 +220,21 @@ function rForm(rec) {
   const shownImg = ZI.startsWith('data:') ? ZI : (rec.id && IMG[rec.id]) || '';
   const lockOpen = rec.lock || (rec.pat && rec.pat.length) ? ' open' : '';
   const tkShow = rec.tk || '';
+  const moreOpen = (rec.cap || rec.dep || rec.imei || ZI || +rec.war || rec.note || (rec.chk || []).length) ? ' open' : '';
   $('sh').innerHTML = `<div class="bar"></div><div class="row2"><h3 style="color:var(--t);margin:0;flex:1">${rec.id ? 'تعديل صيانة' : 'استلام هاتف'}</h3>${tkShow ? `<span class="tk-b" style="font-size:1.05rem;padding:4px 12px" title="اكتب هذا الرقم على ملصق الهاتف">#${esc(tkShow)}</span>` : '<span class="m">رقم التذكرة يظهر بعد الحفظ</span>'}</div>`
     + `<h3>الزبون</h3>${f('n', 'اسم الزبون', rec.name, '', 'oninput="rH()"')}${f('t', 'رقم الهاتف', rec.tel, 'tel', 'oninput="rH()"')}<div id="rh" class="m"></div>`
     + `<h3>الجهاز</h3><div style="margin-bottom:6px">${S.tags.brand.map((b, j) => `<button type="button" class="tag" onclick="pickRpBrand(${j})">${esc(b)}</button>`).join('')}</div>${f('v', 'نوع الهاتف', rec.dev, '', 'oninput="checkDeviceHistory();suggestGuidePrice()"')}<div id="rp_dev_hist" class="m" style="color:#d97706;font-weight:700"></div>`
-    + `<label${hh('rp', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="r_imei" value="${esc(rec.imei || '')}" placeholder="امسح باركود العلبة أو *#06#" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('r_imei')">${I('scan')} مسح</button></div></label>`
-    + `<div${hh('rp', 'img')}><label>صورة الهاتف</label><div class="row2"><button type="button" class="btn s sm" onclick="rCam()">التقاط صورة</button><button type="button" id="r_imx" class="btn s sm" onclick="rImDel()" ${shownImg ? '' : 'hidden'}>حذف الصورة</button></div><img id="r_im" ${shownImg ? `src="${shownImg}"` : 'hidden'} style="width:100%;border-radius:10px;margin-top:8px"><input id="r_i" type="file" accept="image/*" capture="environment" hidden onchange="rIM(this.files[0])"></div>`
     + `<h3>العطل</h3><div style="margin-bottom:6px">${S.tags.fault.map((x, j) => `<button type="button" class="tag" onclick="pickRpFault(${j})">${esc(x)}</button>`).join('')}</div>${f('f', 'العطل (المشكل)', rec.fault, '', 'oninput="suggestGuidePrice()"')}`
+    + `<details class="card" style="padding:10px 12px;margin-top:16px"${moreOpen}><summary><b>تفاصيل إضافية</b> <span class="m">(السعر، العربون، IMEI، الصورة، الضمان، ملاحظة)</span></summary>`
     + `<div${hh('rp', 'chk')}><label>حالة الجهاز عند الاستلام</label><div id="rk"></div></div>`
     + `<h3>السعر والضمان</h3>${f('c', 'السعر المتفق (رقم، أو: اتصل، أو من 100 إلى 150)', rec.cap)}<div id="rp_price_hint" style="margin-top:4px"></div>${f('d', 'العربون', rec.dep, 'tel')}`
     + `<label${hh('rp', 'war')}>ضمان الإصلاح (يبدأ من تاريخ التسليم)<div style="margin:4px 0">${WAR_OPTS.map(([d, l]) => `<button type="button" class="tag war-tg ${ZW === d ? 'on' : ''}" onclick="setRpWar(${d})">${l}</button>`).join('')}</div><input id="r_war" type="tel" value="${ZW || ''}" placeholder="أو اكتب عدد أيام الضمان (0 = بدون ضمان)" oninput="setRpWar(+this.value||0,1)"></label>`
+    + `<label${hh('rp', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="r_imei" value="${esc(rec.imei || '')}" placeholder="امسح باركود العلبة أو *#06#" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('r_imei')">${I('scan')} مسح</button></div></label>`
+    + `<div${hh('rp', 'img')}><label>صورة الهاتف</label><div class="row2"><button type="button" class="btn s sm" onclick="rCam()">التقاط صورة</button><button type="button" id="r_imx" class="btn s sm" onclick="rImDel()" ${shownImg ? '' : 'hidden'}>حذف الصورة</button></div><img id="r_im" ${shownImg ? `src="${shownImg}"` : 'hidden'} style="width:100%;border-radius:10px;margin-top:8px"><input id="r_i" type="file" accept="image/*" capture="environment" hidden onchange="rIM(this.files[0])"></div>`
+    + `<div id="fx"></div>${f('o', 'ملاحظة', '', '', '').replace(/<input id="r_o"[^>]*>/, `<textarea id="r_o">${esc(rec.note || '')}</textarea>`)}</details>`
     + `<details class="card" style="padding:10px 12px;margin-top:16px"${lockOpen}><summary><b>بيانات القفل</b> <span class="m">(PIN، نمط القفل)</span></summary>${f('l', 'رمز PIN (إن وجد)', rec.lock)}`
     + `<div${hh('rp', 'pat')}><label>نمط القفل (ارسمه بإصبعك)</label><svg id="zsv" viewBox="0 0 120 120" width="150" style="touch-action:none;background:var(--bg);border-radius:12px" onpointerdown="ZD=1;rP(event,1)" onpointermove="if(ZD)rP(event)" onpointerup="ZD=0" onpointercancel="ZD=0">${PI(ZP)}</svg> <button type="button" class="btn s sm" onclick="ZP=[];$('zsv').innerHTML=PI(ZP)">مسح</button></div></details>`
-    + `<div id="fx"></div>${f('o', 'ملاحظة', '', '', '').replace(/<input id="r_o"[^>]*>/, `<textarea id="r_o">${esc(rec.note || '')}</textarea>`)}<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="rSave()">حفظ</button></div>`;
+    + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="rSave()">حفظ</button></div>`;
   rKc(); rH(); fxR(); checkDeviceHistory(); suggestGuidePrice();
 }
 function setRpWar(d, typing) {

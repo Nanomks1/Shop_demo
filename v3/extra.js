@@ -190,9 +190,8 @@ window.dbtCustOpen = function (tel, name) {
   return (S.debt || []).filter(d => {
     if (d.paid || dRem(d) <= 0) return false;
     const dph = xNum(d.tel);
-    if (ph.length >= 8 && dph.length >= 8 && ph.slice(-8) === dph.slice(-8)) return true;
-    if (nm.length >= 3 && nz(d.name) === nm) return true;
-    return false;
+    if (ph.length >= 8 && dph.length >= 8) return ph.slice(-8) === dph.slice(-8);   // الهاتف معروف عند الطرفين: هو الحَكَم
+    return nm.length >= 4 && nz(d.name) === nm;   // وإلا: الاسم كاملاً مطابقاً تماماً
   });
 };
 function dbtSameCust(d) { return dbtCustOpen(d.tel, d.name); }
