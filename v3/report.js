@@ -5,8 +5,8 @@
 (() => {
   const RTABS = [['all', 'الشامل'], ['topup', 'التعبئة'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['pochette', 'البوشيط'], ['acc', 'الإكسسوارات']];
   const RSEC = { topup: ['التعبئة', '📶 التعبئة'], phones: ['الهواتف الناقصة', '📱 الهواتف'], glass: ['الأنتي كاس', '🛡️ الأنتي كاس'], pochette: ['البوشيط', '🅿️ البوشيط'], acc: ['الإكسسوارات', '🔌 الإكسسوارات'] };
-  const SCOL = { topup: '#0891b2', phones: '#2563eb', glass: '#0d9488', pochette: '#db2777', acc: '#7c3aed', parts: '#64748b', req: '#64748b' };
-  const RD = { lv: 'a', tt: 'تقرير محل عزيز', dt: 1, st: 1, pr: 0, pt: 1, rq: 1, pn: 1, em: 0, ft: '', hs: [], rr: 0, rd: 0, rm: 1, nd: [], rh: 16 };
+  const SCOL = { topup: '#0891b2', phones: '#2563eb', glass: '#0d9488', pochette: '#db2777', acc: '#7c3aed', req: '#64748b' };
+  const RD = { lv: 'a', tt: 'تقرير محل عزيز', dt: 1, st: 1, pr: 0, rq: 1, pn: 1, em: 0, ft: '', hs: [], rr: 0, rd: 0, rm: 1, nd: [], rh: 16, qb: 1 };
   const rcf = () => ({ ...RD, ...(S.cfg.rc || {}) });
   const okEdit = () => isAdmin() || !S.users.length;
   const rSecs = m => m == 'all' ? ['topup', 'phones', 'glass', 'pochette', 'acc'] : [m];
@@ -17,9 +17,51 @@
   window.rcTt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عنوان التقرير', [{ k: 't', l: 'العنوان (فارغ = بدون عنوان)', v: rcf().tt }]).then(v => { if (v) rcSet({ tt: v.t.trim() }); }); };
   window.rcFt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عبارة آخر التقرير', [{ k: 't', l: 'مثال: شكراً — فارغ = بدون عبارة', v: rcf().ft }]).then(v => { if (v) rcSet({ ft: v.t.trim() }); }); };
 
+  /* الشراء السريع بضغطة واحدة من التقرير (عند تفعيل خيار qb في إعدادات التقرير) */
+  window.rcQuick = (fnName, arg) => {
+    if (fnName == 'buyP') {
+      const i = find(arg); if (!i) return;
+      const add = Math.max(1, phLim(i) + 1 - av(i));
+      commit('تم الشراء (+' + add + '): ' + i.brand + ' ' + i.name, () => { i.cnt += add; touch(i); });
+      if (typeof reqChk == 'function') reqChk(i.brand + ' ' + i.name);
+    } else if (fnName == 'buyC') {
+      const i = find(arg); if (!i) return;
+      commit('تم شراء بوشيط ' + i.name + ' (+3)', () => {
+        const z = (i.v || []).filter(x => x.n <= 0), t = z.length ? z : (i.v || []);
+        t.forEach(x => x.n += 3); touch(i);
+      });
+      if (typeof reqChk == 'function') reqChk('بوشيط ' + i.name);
+    } else if (fnName == 'buyA') {
+      const i = find(arg); if (!i) return;
+      if (typeof i.cnt == 'number') {
+        const add = acLim(i) + 3;
+        commit('تم الشراء (+' + add + '): ' + acTitle(i), () => { i.cnt += add; touch(i); });
+      } else {
+        commit('تم الشراء: ' + acTitle(i), () => { i.st = 'g'; touch(i); });
+      }
+      if (typeof reqChk == 'function') reqChk(acName(i));
+    } else if (fnName == 'tpFix') {
+      const p = String(arg || '').split('_'), op = p[1], k = p[2] ? p[2][0] : '', n = p[2] ? +p[2].slice(1) : 0;
+      if (k == 'c') {
+        const c = (S.cfg && S.cfg.tp) || {}, cl = (c.cl && c.cl[n]) ?? 3, gm = (c.gm && c.gm[n]) ?? (c.gv ?? 15);
+        const v = Math.max(gm, cl + 1);
+        S.tp = S.tp || [];
+        let r = S.tp.find(x => x.id == arg);
+        const prev = r ? JSON.stringify(r) : null;
+        if (!r) { r = { id: arg, op, k: 'c', n }; S.tp.push(r); }
+        r.val = v; r.est = 1; r.at = Date.now(); r.by = S.me || '';
+        save(); render();
+        toast('تم توفير بطاقة ' + n + ' (' + op + ')', () => {
+          if (prev) Object.assign(r, JSON.parse(prev));
+          else S.tp = S.tp.filter(x => x.id != arg);
+        });
+      } else if (typeof tpFix == 'function') tpFix(arg);
+    } else if (fnName == 'buyG' && typeof buyG == 'function') buyG(arg);
+    else if (fnName == 'agBuy' && typeof agBuy == 'function') agBuy(arg);
+  };
+
   const lines = () => { const c = rcf(); let L = invLines(!!c.pn).concat(typeof tpLines == 'function' ? tpLines() : []); if ((window.RLV || c.lv) == 'r') L = L.filter(x => x[2] == 'r'); return L; };
   const secs = m => rSecs(m).filter(k => !rcf().hs.includes(k));
-  const partsL = () => S.rp.filter(r => r.st == 'in' && r.part);
   const dstr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); };
   /* أسطر اختيارية: الصيانة والديون */
   const rpLine = () => { const i = S.rp.filter(x => x.st == 'in').length, d = S.rp.filter(x => x.st == 'rd'), late = d.filter(x => Date.now() - (x.t1 || x.t0) > 15 * 864e5).length; return i || d.length ? 'الصيانة: ' + i + ' قيد الإصلاح · ' + d.length + ' جاهز للتسليم' + (late ? ' (منسي ' + late + ')' : '') : ''; };
@@ -35,17 +77,14 @@
     let s = x[1].replace(/\s—\s(?:العدد |المجموع |المتوفر )(≈?)(\d+)/, (m, a, n) => cnt(a, n)).replace(/\s—\s(\d+)$/, (m, n) => cnt('', n));
     if (x[2] == 'r' && !/نفد/.test(s)) s += ' — نفد'; return s;
   };
-  /* كتل التقرير: قسم لكل مجموعة + قطع الصيانة + طلبات الزبائن */
+  /* كتل التقرير: قسم لكل مجموعة + طلبات الزبائن */
   const blocks = mode => {
     const c = rcf(), L = lines(), out = [];
     secs(mode).forEach(k => {
       const ls = L.filter(x => x[0] == RSEC[k][0]).sort((a, b) => (a[2] == 'r' ? 0 : 1) - (b[2] == 'r' ? 0 : 1));
       out.push({ k, t: RSEC[k][1], ls: ls.map(x => ({ r: x[2] == 'r', s: k == 'topup' ? x[1] : fmtT(x), x })) });
     });
-    if (mode == 'all' || mode == 'acc') {
-      if (c.pt) out.push({ k: 'parts', t: 'قطع الصيانة', ls: partsL().map(r => ({ r: 0, s: r.part + (r.dev && !nz(r.part).includes(nz(r.dev)) ? ' — ' + r.dev : '') })) });
-      if (c.rq && mode == 'all') out.push({ k: 'req', t: 'طلبات الزبائن', ls: S.req.map(q => ({ r: 0, s: q.t, id: q.id })) });
-    }
+    if (c.rq && mode == 'all') out.push({ k: 'req', t: 'طلبات الزبائن', ls: S.req.map(q => ({ r: 0, s: q.t, id: q.id })) });
     return out;
   };
   /* تداخل العربي والإنجليزي: كل مقطع لاتيني يُعزل بعلامة اتجاه كي لا ينقلب ترتيب السطر */
@@ -55,7 +94,7 @@
     return s.charAt(0) == '*' ? w : '\u200F' + w + '\u200F';
   };
   window.generateReportText = function (mode = 'all') {
-    const c = rcf(), B = blocks(mode), o = [], N = B.filter(b => b.k != 'parts' && b.k != 'req');
+    const c = rcf(), B = blocks(mode), o = [], N = B.filter(b => b.k != 'req');
     const need = N.reduce((a, b) => a + b.ls.length, 0), red = N.reduce((a, b) => a + b.ls.filter(x => x.r).length, 0);
     const head = [c.tt ? '*' + c.tt + '*' : '', c.dt ? dstr() : ''].filter(Boolean).join(' — '); if (head) o.push(head);
     o.push(need ? 'المطلوب: ' + need + (red ? ' (نافد ' + red + ')' : '') : 'لا يوجد نقص حالياً');
@@ -63,7 +102,7 @@
     if (c.rr) { const x = rpLine(); if (x) o.push(x); }
     if (c.rd) { const x = dbLine(); if (x) o.push(x); }
     { const stl = rnd().length; if (stl) o.push('تنبيه: ' + stl + ' صنف لم يُؤكَّد منذ أكثر من ' + lim('stale') + ' أيام'); }
-    B.forEach(b => { if (!b.ls.length && !c.em) return; o.push(''); o.push('*' + b.t + '*'); if (b.ls.length) b.ls.forEach(x => o.push((b.k == 'parts' || b.k == 'req' ? '- ' : x.r ? '🔴 ' : '🟠 ') + x.s)); else o.push('- لا نقص'); });
+    B.forEach(b => { if (!b.ls.length && !c.em) return; o.push(''); o.push('*' + b.t + '*'); if (b.ls.length) b.ls.forEach(x => o.push((b.k == 'req' ? '- ' : x.r ? '🔴 ' : '🟠 ') + x.s)); else o.push('- لا نقص'); });
     if ((mode == 'all' || mode == 'phones') && c.st && !c.hs.includes('phones')) {
       const s = stkL();
       if (s.length) { o.push(''); o.push('*الهواتف المتوفرة*'); s.forEach(i => o.push('- ' + stkN(i) + ' — ' + i.cnt + (rsQ(i) ? ' (محجوز ' + rsQ(i) + ')' : '') + (c.pr && i.price ? ' — ' + dh(i.price) : ''))); }
@@ -73,7 +112,15 @@
   };
 
   /* ---------- شاشة التقرير ---------- */
-  const rrow = l => `<div class="rrow ${l.x[2] == 'r' ? 'r' : ''}"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span class="rt">${esc(l.s)}</span><button class="rck" aria-label="تم الشراء" onclick="${l.x[3]}">${I('check')}</button></div>`;
+  const rrow = l => {
+    const c = rcf(), act = l.x[3] || '';
+    const m = act.match(/^([a-zA-Z]+)\('([^']*)'\)$/);
+    const fn = m ? m[1] : '', arg = m ? m[2] : '';
+    const hasPrompt = fn == 'buyP' || fn == 'buyC' || fn == 'buyA' || (fn == 'tpFix' && arg.includes('_c'));
+    const mainClick = c.qb && hasPrompt ? `rcQuick('${fn}','${arg}')` : act;
+    const askBtn = c.qb && hasPrompt ? `<button class="rck s" title="إدخال الكمية يدوياً" onclick="${act}">${I('hash')}</button>` : '';
+    return `<div class="rrow ${l.x[2] == 'r' ? 'r' : ''}"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span class="rt">${esc(l.s)}</span>${askBtn}<button class="rck" aria-label="تم الشراء" onclick="${mainClick}">${I('check')}</button></div>`;
+  };
   VW.rep = () => {
     const c = rcf(), s = stkL(), lv = window.RLV || c.lv, f = window.reportSectionFilter;
     const tabs = RTABS.filter(([k]) => k == 'all' || !c.hs.includes(k));
@@ -89,8 +136,7 @@
     { const stl = rnd().length; if (stl) h += `<div class="card row2"><span style="flex:1">${I('alert')} ${stl} صنف لم يُؤكَّد منذ أكثر من ${lim('stale')} أيام</span><button class="btn sm" onclick="go('jl')">افتح الجولة</button></div>`; }
     B.forEach(b => {
       let x = '';
-      if (b.k == 'parts') x = b.ls.map(l => `<div class="rrow"><span class="rt">${esc(l.s)}</span></div>`).join('');
-      else if (b.k == 'req') x = b.ls.map(l => {
+      if (b.k == 'req') x = b.ls.map(l => {
         const ph = typeof rqTel == 'function' ? rqTel(l.s) : '';
         return `<div class="rrow col"><div class="row2"><span class="rt">${esc(l.s)}</span><button class="btn s sm" onclick="rqD('${l.id}')">مسح</button></div>${ph ? `<div class="sub"><a href="tel:${esc(ph)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a><button class="btn sm" onclick="rqWA('${l.id}')">${I('send')} إبلاغ واتساب</button></div>` : ''}</div>`;
       }).join('');
@@ -102,7 +148,7 @@
     });
     if ((F == 'all' || F == 'phones') && c.st && !c.hs.includes('phones') && s.length)
       h += '<h3>الهواتف المتوفرة</h3><div class="card rlist">' + s.map(i => `<div class="rrow"><span class="rt">${esc(stkN(i))}</span><span class="m">${i.cnt}${rsQ(i) ? ' (محجوز ' + rsQ(i) + ')' : ''}${c.pr && i.price ? ' · ' + esc(dh(i.price)) : ''}</span></div>`).join('') + '</div>';
-    if (!h.includes('<h3>')) h += '<p class="m" style="text-align:center;margin:24px 0">لا يوجد نقص حالياً</p>';
+    if (!h.includes('<h3')) h += '<p class="m" style="text-align:center;margin:24px 0">لا يوجد نقص حالياً</p>';
     h += `<details class="card" style="margin-top:14px"><summary><b>معاينة النص</b></summary><div style="white-space:pre-wrap;margin-top:8px;line-height:1.8">${esc(generateReportText(F))}</div></details>`
       + `<div class="rbar"><button class="btn" onclick="rcSend()">${I('send')} إرسال بالواتساب</button><button class="btn s" onclick="rcCopy()">نسخ</button></div>`;
     return { t: 'التقرير اليومي', h };
@@ -111,19 +157,22 @@
   /* ---------- إعدادات التقرير ---------- */
   const yn = v => v ? 'نعم' : 'لا', tog = (l, k) => row(l, 'rcSet({' + k + ':' + (rcf()[k] ? 0 : 1) + '})', yn(rcf()[k]));
   window.rcRh = () => { if (!okEdit()) return toast('للمدير فقط'); ask('ساعة بدء التذكير', [{ k: 'h', l: 'من 0 إلى 23 (مثال: 16)', v: String(rcf().rh) }]).then(v => { const h = v && parseInt(v.h, 10); if (h >= 0 && h <= 23) rcSet({ rh: h }); }); };
-  window.rcNd = i => { const n = rcf().nd.slice(), k = n.indexOf(i); k < 0 ? n.push(i) : n.splice(k, 1); rcSet({ nd: n }); };
+  window.rcNd = i => { const n = rcf().nd.slice(), k = n.indexOf(i); k < 0 ? n.push(i) : n.splice(i, 1); rcSet({ nd: n }); };
   VW.st_rep = () => {
     const c = rcf();
     return {
       t: 'إعدادات التقرير', h: '<p class="m">هذه الإعدادات تحدد ما يظهر في التقرير ونصّ الواتساب، وتنطبق على كل الأجهزة.</p>'
+        + '<h3>استلام السلعة من التقرير</h3>'
+        + tog('زر (✓) في التقرير: شراء سريع بضغطة واحدة', 'qb')
+        + '<p class="m" style="margin:2px 8px 12px;font-size:.8rem">عند تفعيله: ضغطة واحدة على (✓) تعتمد الكمية الافتراضية فوراً، ويظهر بجانبه زر (#) لمن أراد كتابة عدد مخصص.</p>'
         + '<h3>العنوان والتوقيع</h3>' + row('عنوان التقرير', 'rcTt()', c.tt || 'بدون') + tog('إظهار التاريخ بجانب العنوان', 'dt') + row('عبارة في آخر التقرير', 'rcFt()', c.ft || 'بدون')
-        + '<h3>ما الذي يُدرج</h3>' + tog('قائمة الهواتف المتوفرة', 'st') + tog('أسعار الهواتف المتوفرة', 'pr') + tog('قطع الصيانة المنتظرة', 'pt') + tog('طلبات الزبائن', 'rq') + tog('ملاحظات البوشيط (باقي / خاصنا)', 'pn') + tog('إظهار الأقسام التي لا نقص فيها', 'em')
+        + '<h3>ما الذي يُدرج</h3>' + tog('قائمة الهواتف المتوفرة', 'st') + tog('أسعار الهواتف المتوفرة', 'pr') + tog('طلبات الزبائن', 'rq') + tog('ملاحظات البوشيط (باقي / خاصنا)', 'pn') + tog('إظهار الأقسام التي لا نقص فيها', 'em')
         + '<h3>أسطر إضافية في التقرير</h3>' + tog('سطر الصيانة (قيد الإصلاح / جاهز / منسي)', 'rr') + tog('سطر الديون المفتوحة', 'rd')
         + '<h3>تذكير الإرسال</h3>' + tog('تذكير في الرئيسية إن لم يُرسل التقرير اليوم', 'rm') + row('ساعة بدء التذكير', 'rcRh()', c.rh + ':00')
         + '<p class="m">أيام بلا تذكير:</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((n, i) => `<button class="tag ${c.nd.includes(i) ? 'on' : ''}" onclick="rcNd(${i})">${n}</button>`).join('') + '</div>'
         + '<h3>المستوى الافتراضي</h3><div style="display:flex;gap:6px;margin-bottom:10px"><button class="tag ' + (c.lv == 'a' ? 'on' : '') + '" onclick="rcSet({lv:\'a\'})">النافد وقارب النفاد</button><button class="tag ' + (c.lv == 'r' ? 'on' : '') + '" onclick="rcSet({lv:\'r\'})">النافد فقط</button></div>'
         + '<h3>الأقسام الظاهرة في التقرير</h3>' + RTABS.filter(([k]) => k != 'all').map(([k, l]) => row(l, "rcHide('" + k + "')", yn(!c.hs.includes(k)))).join('')
-        + `<div style="margin-top:14px"><button class="btn s" onclick="rcSet({lv:'a',tt:'تقرير محل عزيز',dt:1,st:1,pr:0,pt:1,rq:1,pn:1,em:0,ft:'',hs:[],rr:0,rd:0,rm:1,nd:[],rh:16})">إرجاع الإعدادات الافتراضية</button></div>`
+        + `<div style="margin-top:14px"><button class="btn s" onclick="rcSet({lv:'a',tt:'تقرير محل عزيز',dt:1,st:1,pr:0,rq:1,pn:1,em:0,ft:'',hs:[],rr:0,rd:0,rm:1,nd:[],rh:16,qb:1})">إرجاع الإعدادات الافتراضية</button></div>`
     };
   };
   /* إلغاء تذكير اليوم (لا تقرير اليوم) مع تأكيد وتراجع؛ يعود التذكير غداً تلقائياً */
@@ -137,5 +186,5 @@
     if (!c.rm || (typeof noRem == 'function' && noRem()) || sentToday() || c.nd.includes(d.getDay()) || d.getHours() < c.rh || S.cfg.rx == d.toDateString()) return '';
     return `<div class="card row2">${I('alert')}<span style="flex:1">لم يُرسل تقرير اليوم بعد</span><button class="btn sm" onclick="go('rep')">افتح التقرير</button><button class="btn s sm" aria-label="لا تقرير اليوم" onclick="rcSkip()">✕</button></div>`;
   });
-  MORE.push({ g: 'rep', o: 10, l: 'إعدادات التقرير', d: 'ما يظهر في التقرير ونص الواتساب، وتذكير الإرسال', fn: "go('st_rep')" });
+  MORE.push({ g: 'rep', o: 10, l: 'إعدادات التقرير', d: 'ما يظهر في التقرير ونص الواتساب، الشراء السريع، وتذكير الإرسال', fn: "go('st_rep')" });
 })();

@@ -1,10 +1,12 @@
 /* ============================================================
-   app.js — الهيكل: الرئيسية، البحث، المزيد، المستخدمون، القفل،
+   app.js — الهيكل: الرئيسية، البحث (مع البحث الصوتي)، المزيد، المستخدمون، القفل،
    النسخ الاحتياطي، الإعدادات العامة، الأيقونة العائمة، والإقلاع.
    يُحمَّل آخر ملف (بعد ملفات الأقسام).
    ============================================================ */
 
-
+Object.assign(IC, {
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/>'
+});
 
 /* ---------- الأقسام ---------- */
 const SECS = [['phones', 'الهواتف', 'cphone'], ['glass', 'الأنتي كاس', 'cglass'], ['case', 'البوشيط', 'ccase'], ['acc', 'الإكسسوارات', 'cacc']];
@@ -14,8 +16,8 @@ VW.sec = VW.sec || (() => soon('قسم'));
 VW.rp = VW.rp || (() => soon('الصيانة'));
 VW.rep = VW.rep || (() => soon('التقرير'));
 
-/* ---------- البحث الموحّد ---------- */
-let SC = '';   // نطاق البحث الحالي
+/* ---------- البحث الموحّد + البحث الصوتي ---------- */
+let SC = '', VREC = null, V_ON = 0;   // نطاق البحث الحالي + حالة المايكروفون
 const scopeChips = () => [['', 'الكل'], ...SRCH.map(p => [p.k, p.l])].map(([k, l]) => `<button class="tag ${SC == k ? 'on' : ''}" onclick="scSet('${k}')">${l}</button>`).join('');
 /* مصادر بحث إضافية: الصيانة، طلبات الزبائن، دليل أسعار الإصلاح */
 SRCH.push(
@@ -33,7 +35,31 @@ function sq(q) {
   if (q && !QP) { QP = 1; history.pushState({ V, q: 1 }, ''); }
   Q = q; const r = $('res'); if (r) r.innerHTML = q ? srch(q) : '';
 }
-function goSearch() { go('home'); setTimeout(() => { const i = document.querySelector('main input'); if (i) i.focus(); }, 60); }
+function goSearch() { go('home'); setTimeout(() => { const i = $('q_inp') || document.querySelector('main input'); if (i) i.focus(); }, 60); }
+
+/* البحث الصوتي الفوري */
+function voiceSrch() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return toast('متصفحك لا يدعم البحث الصوتي');
+  if (V_ON && VREC) { try { VREC.stop(); } catch (e) { } return; }
+  try {
+    VREC = new SR();
+    VREC.lang = 'ar-MA';
+    VREC.interimResults = true;
+    VREC.maxAlternatives = 1;
+    V_ON = 1;
+    const mb = $('mic_b'); if (mb) mb.classList.add('on');
+    toast('تحدث الآن... (مثال: ريدمي 12)');
+    VREC.onresult = e => {
+      const txt = Array.from(e.results).map(r => r[0].transcript).join(' ').replace(/[.,،؟!]/g, '').trim();
+      const inp = $('q_inp'); if (inp) inp.value = txt;
+      sq(txt);
+    };
+    VREC.onerror = () => { toast('تعذر التقاط الصوت، حاول مرة أخرى'); };
+    VREC.onend = () => { V_ON = 0; const b = $('mic_b'); if (b) b.classList.remove('on'); };
+    VREC.start();
+  } catch (e) { V_ON = 0; toast('تعذر تشغيل المايكروفون'); }
+}
 
 /* ---------- شريط النظرة السريعة في الرئيسية ---------- */
 function homeQuickBar() {
@@ -66,10 +92,12 @@ VW.home = () => {
   const scan = T.filter(h => h.includes('bcHome()')).join('').replace('بيع سريع −1', 'بيع سريع (خصم 1)');
   const topup = A.filter(h => h.includes('tph')).join('');
   const more = T.filter(h => !h.includes('bcHome()')).join('') + A.filter(h => !h.includes('tph')).join('');
+  const hasSR = typeof window != 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
-      + `<input placeholder="ابحث في كل شيء: هاتف، زجاج، بوشيط، صيانة، زبون..." value="${esc(Q)}" oninput="sq(this.value)"><div id="sc">${scopeChips()}</div><div id="res"></div>`
+      + `<div class="srch-w"><input id="q_inp" placeholder="ابحث: هاتف، تذكرة #A101، زجاج، بوشيط، زبون..." value="${esc(Q)}" oninput="sq(this.value)">${hasSR ? `<button type="button" id="mic_b" class="ib mic-b ${V_ON ? 'on' : ''}" onclick="voiceSrch()" aria-label="بحث صوتي" title="بحث بالصوت">${ic('mic')}</button>` : ''}</div>`
+      + `<div id="sc">${scopeChips()}</div><div id="res"></div>`
       + homeQuickBar() + scan + topup
       + '<h3>الأقسام</h3>'
       + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="go('sec',{k:'${k}'})">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secCount(k)} صنف</span></span></button>`).join('')}</div>`
@@ -86,6 +114,7 @@ const MG = [
 ];
 /* مواضع أعمق تظهر في بحث الإعدادات: [الاسم, الدالة, القسم, كلمات مساعدة] */
 const STX = [
+  ['الشراء السريع بضغطة واحدة في التقرير (✓)', "go('st_rep')", 'التقرير اليومي', 'تأشير صح كمية افتراضية'],
   ['ساعة تذكير التقرير', "go('st_rep')", 'التقرير اليومي', 'موعد تنبيه إرسال'],
   ['أيام بلا تذكير', "go('st_rep')", 'التقرير اليومي', 'عطلة'],
   ['عنوان التقرير وعبارة الختام', "go('st_rep')", 'التقرير اليومي', 'توقيع'],
@@ -516,7 +545,7 @@ VW.st_bk = () => {
       + '<button class="btn s" onclick="go(\'st_snap\')">النسخ التلقائية الداخلية (آخر 7 أيام)</button>'
       + '<label>استعادة من ملف خارجي<input type="file" accept=".json" onchange="RST(this.files[0])"></label>'
       + `<h3>المساحة المستعملة</h3><div class="card"><div class="row2"><b>${p}%</b><span class="m">${(n / 1e6).toFixed(1)} مليون حرف من نحو 5</span></div><div class="meter"><div style="width:${Math.min(100, p)}%;background:${p > 70 ? '#dc2626' : 'var(--p)'}"></div></div>${p > 70 ? '<p class="m">اقتربت المساحة من الامتلاء. خذ نسخة احتياطية الآن.</p>' : ''}</div>`
-      + `<div class="card"><b>خزنة الصور (IndexedDB)</b><div class="m">صور الصيانة المحفوظة خارج ذاكرة المتصفح الضيقة: <b>${Object.keys(IMG).length}</b> (لا تستهلك من حد الـ 5 ميجابايت).</div></div>`
+      + `<div class="card"><b>خزنة الصور (IndexedDB)</b><div class="m">صور الصيانة والمستعمل المحفوظة خارج ذاكرة المتصفح الضيقة: <b>${Object.keys(IMG).length}</b> (لا تستهلك من حد الـ 5 ميجابايت).</div></div>`
       + '<div id="st_ab" class="m" style="margin:8px 0"></div>'
       + (er.length ? '<h3>آخر الأخطاء (للتشخيص)</h3>' + er.map(x => `<div class="m">${esc(x)}</div>`).join('') : '')
     , a: abStatus

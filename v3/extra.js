@@ -1,16 +1,29 @@
 /* ============================================================
    extra.js — شراء المستعمل · الديون · الإحصائيات
-   يُحمَّل بعد repair.js وقبل app.js. يسجّل نفسه في VW/HOME/MORE/SRCH/BCM.
+   يُحمَّل بعد repair.js وقبل app.js. يسجّل نفسه في VW/HOME/MORE/SRCH/BCM/HK.
    البيانات: S.used (شراء المستعمل) · S.debt (الديون) — وكلاهما يُزامَن ويُشفَّر مع بيانات الزبائن.
    ============================================================ */
 Object.assign(IC, {
   wallet: '<path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>',
-  chart: '<path d="M3 3v18h18"/><path d="M7 15v3M12 9v9M17 5v13"/>'
+  chart: '<path d="M3 3v18h18"/><path d="M7 15v3M12 9v9M17 5v13"/>',
+  idcard: '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4M14 14h4M5 16c.6-1.2 1.7-2 3-2s2.4.8 3 2"/>'
 });
 const xn = s => parseFloat(String(s || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^\d.]/g, '')) || 0;
 const xTel = t => t ? `<a href="tel:${esc(t)}">${esc(t)}</a>` : '';
+const xNum = t => { t = String(t || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, ''); return t[0] == '0' ? '212' + t.slice(1) : t; };
+
+/* ---------- خزنة صور المستعمل (تشترك مع IndexedDB في core.js) ---------- */
+const uImg = u => u && u.img && u.img.startsWith('data:') ? u.img : (u && IMG[u.id] || '');
+HK.save.push(() => {
+  (S.used || []).forEach(u => {
+    if (!u || !u.id) return;
+    if (typeof u.img === 'string' && u.img.startsWith('data:image')) { putImg(u.id, u.img); u.img = 'idb:' + u.id; }
+    else if (!u.img && IMG[u.id]) delImg(u.id);
+  });
+});
 
 /* ---------- شراء المستعمل ---------- */
+let UR = {}, UI = '', UCAMS = null;
 function usDup(imei, selfId) {
   const n = nz(imei); if (n.length < 6) return '';
   if (S.items.some(i => i.imei && nz(i.imei).includes(n))) return 'المخزون';
@@ -18,63 +31,177 @@ function usDup(imei, selfId) {
   if (S.used.some(u => u.id != selfId && u.imei && nz(u.imei).includes(n))) return 'سجل شراء المستعمل';
   return '';
 }
-function usForm(rec) {
-  return ask(rec.id ? 'تعديل شراء مستعمل' : 'شراء هاتف مستعمل', [
-    { k: 'dev', l: 'الجهاز / الموديل', v: rec.dev || '' },
-    { k: 'name', l: 'اسم البائع', v: rec.name || '' },
-    { k: 'tel', l: 'هاتف البائع', v: rec.tel || '' },
-    { k: 'imei', l: 'IMEI (اختياري)', v: rec.imei || '' },
-    { k: 'price', l: 'سعر الشراء', v: rec.price || '' },
-    { k: 'note', l: 'ملاحظة (الحالة، الملحقات...)', t: 'area', v: rec.note || '' }
-  ]);
+function usCamStop() { if (UCAMS) { UCAMS.getTracks().forEach(t => t.stop()); UCAMS = null; } const b = $('ucam_box'); if (b) b.remove(); }
+HK.hide.push(usCamStop);
+function usShowIm() { const m = $('u_im'); if (!m) return; m.src = UI; m.hidden = false; if ($('u_imx')) $('u_imx').hidden = false; }
+function usImDel() { UI = ''; const m = $('u_im'); if (m) { m.hidden = true; m.removeAttribute('src'); } if ($('u_imx')) $('u_imx').hidden = true; }
+function usIM(f) {
+  if (!f) return;
+  const im = new Image();
+  im.onload = () => {
+    const k = Math.min(1, 640 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+    c.width = im.width * k; c.height = im.height * k;
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    UI = c.toDataURL('image/jpeg', .6); usShowIm();
+  };
+  im.src = URL.createObjectURL(f);
 }
-async function usSave(rec, v) {
-  if (!v) return;
-  v = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, String(x || '').trim()]));
-  if (!v.dev || !v.name) { toast('اكتب الجهاز واسم البائع'); return usSave(rec, await usForm({ ...rec, ...v })); }
+function usCam() {
+  if ($('ucam_box')) return usCamStop();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return $('u_i').click();
+  $('u_im').insertAdjacentHTML('beforebegin', '<div id="ucam_box" class="card" style="margin:8px 0;padding:10px;text-align:center"><video id="ucam_v" autoplay playsinline muted style="width:100%;border-radius:12px"></video><div class="row2" style="margin-top:8px"><button type="button" class="btn sm" style="flex:1" onclick="usCamSnap()">التقاط</button><button type="button" class="btn s sm" onclick="usCamStop()">إلغاء</button></div></div>');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(s => {
+    const v = $('ucam_v'); if (!v) { s.getTracks().forEach(t => t.stop()); return; } UCAMS = s; v.srcObject = s;
+  }).catch(() => { usCamStop(); toast('تعذر فتح الكاميرا: اختر صورة من الجهاز'); $('u_i').click(); });
+}
+function usCamSnap() {
+  const v = $('ucam_v'); if (!v || !v.videoWidth) return toast('انتظر ظهور الصورة ثم اضغط التقاط');
+  const k = Math.min(1, 640 / Math.max(v.videoWidth, v.videoHeight)), c = document.createElement('canvas');
+  c.width = v.videoWidth * k; c.height = v.videoHeight * k;
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  UI = c.toDataURL('image/jpeg', .6); usCamStop(); usShowIm();
+}
+function pickUsBrand(j) {
+  const b = S.tags.brand[j], el = $('u_dev'); if (!el) return;
+  let cur = el.value.trim();
+  const o = S.tags.brand.find(x => x && cur.toLowerCase().startsWith(String(x).toLowerCase()));
+  if (o) cur = cur.slice(o.length).trim();
+  el.value = b + ' ' + cur; el.focus();
+}
+function usOpen(rec) {
+  UR = rec || {}; UI = UR.img || '';
+  const shownImg = UI.startsWith('data:') ? UI : (UR.id && IMG[UR.id]) || '';
+  $('sh').innerHTML = `<div class="bar"></div><h3>${UR.id ? 'تعديل شراء مستعمل' : (UR.repOf ? 'روپريز: استلام هاتف الزبون' : 'شراء هاتف مستعمل')}</h3>`
+    + (UR.repTxt ? `<div class="card" style="padding:8px 12px;margin:6px 0;border-inline-start:4px solid var(--p)"><b>مقابل بيع:</b> ${esc(UR.repTxt)}</div>` : '')
+    + `<label>الجهاز / الموديل</label><div style="margin-bottom:6px">${S.tags.brand.map((b, j) => `<button type="button" class="tag" onclick="pickUsBrand(${j})">${esc(b)}</button>`).join('')}</div>`
+    + `<input id="u_dev" value="${esc(UR.dev || '')}" placeholder="مثال: Samsung A54">`
+    + `<label>اسم البائع<input id="u_name" value="${esc(UR.name || '')}"></label>`
+    + `<label>رقم البطاقة الوطنية (CIN — للتوثيق القانوني)<input id="u_cin" value="${esc(UR.cin || '')}" placeholder="مثال: D123456"></label>`
+    + `<label>هاتف البائع<input id="u_tel" type="tel" value="${esc(UR.tel || '')}"></label>`
+    + `<label>IMEI / الرقم التسلسلي<div class="row2" style="margin-top:4px"><input id="u_imei" value="${esc(UR.imei || '')}" placeholder="امسح الباركود أو *#06#" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('u_imei')">${I('scan')} مسح</button></div></label>`
+    + `<div class="row2" style="gap:8px"><label style="flex:1">سعر شراء المستعمل<input id="u_price" type="tel" value="${esc(UR.price || '')}" oninput="usCalcDiff()"></label>${UR.repOf ? `<label style="flex:1">الفرق المقبوض (الصولد)<input id="u_diff" type="tel" value="${esc(UR.diff || '')}"></label>` : ''}</div>`
+    + `<div><label>صورة البطاقة الوطنية / الهاتف (محمية)</label><div class="row2"><button type="button" class="btn s sm" onclick="usCam()">التقاط صورة</button><button type="button" class="btn s sm" onclick="$('u_i').click()">من المعرض</button><button type="button" id="u_imx" class="btn s sm" onclick="usImDel()" ${shownImg ? '' : 'hidden'}>حذف الصورة</button></div><img id="u_im" ${shownImg ? `src="${shownImg}"` : 'hidden'} style="width:100%;border-radius:10px;margin-top:8px"><input id="u_i" type="file" accept="image/*" hidden onchange="usIM(this.files[0])"></div>`
+    + `<label>ملاحظة (الحالة، الملحقات...)<textarea id="u_note">${esc(UR.note || '')}</textarea></label>`
+    + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="usSub()">حفظ</button></div>`;
+  sheetOpen(v => { if (v) usCommit(UR, v); });
+}
+function usCalcDiff() {
+  if (!UR || !UR.repPr || !$('u_diff')) return;
+  const p = xn($('u_price').value), d = Math.max(0, UR.repPr - p);
+  $('u_diff').value = d ? String(d) : '0';
+}
+function usSub() {
+  const dev = $('u_dev').value.trim(), name = $('u_name').value.trim();
+  if (!dev || !name) return toast('اكتب الجهاز واسم البائع');
+  const v = {
+    dev, name,
+    cin: $('u_cin').value.trim().toUpperCase(),
+    tel: $('u_tel').value.trim(),
+    imei: $('u_imei').value.trim(),
+    price: $('u_price').value.trim(),
+    diff: $('u_diff') ? $('u_diff').value.trim() : (UR.diff || ''),
+    repOf: UR.repOf || '',
+    repTxt: UR.repTxt || '',
+    img: UI,
+    note: $('u_note').value.trim()
+  };
+  finish(v);
+}
+async function usCommit(rec, v) {
   const dup = v.imei ? usDup(v.imei, rec.id) : '';
-  if (dup && !(await sure('رقم IMEI هذا موجود مسبقاً في ' + dup + '. هل تتابع الحفظ؟', 'متابعة', false))) return usSave(rec, await usForm({ ...rec, ...v }));
-  if (rec.id) { Object.assign(rec, v, { lb: S.me }); save(); render(); toast('تم التعديل'); return; }
-  const o = { id: uid(), ...v, by: S.me, at: Date.now() };
-  S.used.push(o); save(); render();
-  toast('تم تسجيل الشراء', () => { S.used = S.used.filter(x => x.id != o.id); });
+  if (dup && !(await sure('رقم IMEI هذا موجود مسبقاً في ' + dup + '. هل تتابع الحفظ؟', 'متابعة', false))) {
+    return setTimeout(() => usOpen({ ...rec, ...v }), 220);
+  }
+  if (rec.id) {
+    if (!v.img && IMG[rec.id]) delImg(rec.id);
+    if (v.img && v.img.startsWith('data:image')) { putImg(rec.id, v.img); v.img = 'idb:' + rec.id; }
+    Object.assign(rec, v, { lb: S.me }); save(); render(); toast('تم التعديل'); return;
+  }
+  const id = uid();
+  if (v.img && v.img.startsWith('data:image')) { putImg(id, v.img); v.img = 'idb:' + id; }
+  const o = { id, ...v, by: S.me, at: Date.now() };
+  S.used.push(o);
+  /* إن كان العملية روپريز (استبدال)، نخصم الهاتف المباع من المخزون تلقائياً */
+  if (v.repOf) {
+    const it = S.items.find(x => x.id == v.repOf);
+    if (it && it.cnt > 0) { it.cnt = Math.max(0, it.cnt - 1); it.by = S.me; it.at = Date.now(); }
+  }
+  save(); render();
+  toast(v.repOf ? 'تم تسجيل الروپريز وخصم الهاتف المباع' : 'تم تسجيل الشراء', () => {
+    S.used = S.used.filter(x => x.id != o.id);
+    delImg(o.id);
+    if (v.repOf) { const it = S.items.find(x => x.id == v.repOf); if (it) it.cnt += 1; }
+  });
 }
-const usAdd = () => usForm({}).then(v => usSave({}, v));
-function usEd(id) { const u = S.used.find(x => x.id == id); if (u) usForm(u).then(v => usSave(u, v)); }
+const usAdd = pre => usOpen(pre || {});
+function usEd(id) { const u = S.used.find(x => x.id == id); if (u) usOpen(u); }
 function usDel(id) { const u = S.used.find(x => x.id == id); if (u) del('used', id, 'شراء ' + u.dev); }
+function usZoom(id) {
+  const u = S.used.find(x => x.id == id), src = u && uImg(u); if (!src) return;
+  $('sh').innerHTML = `<div class="bar"></div><h3>${esc(u.dev + ' — ' + u.name)}</h3><img src="${src}" style="width:100%;max-height:70vh;object-fit:contain;border-radius:12px"><div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>`;
+  sheetOpen(() => { });
+}
 function usInv(id) {
   const u = S.used.find(x => x.id == id); if (!u) return;
   $('sh').innerHTML = '';
   sheetOpen(v => { phDone(v, PR); if (v && v.add === undefined) { u.inv = 1; save(); render(); } });
-  phForm({ name: u.dev, imei: u.imei || '', cond: 'مستعمل', cnt: 1 });
+  const br = (typeof brOfName == 'function' ? brOfName(u.dev) : '') || '';
+  const nm = br ? u.dev.replace(new RegExp('^' + br + '\\s*', 'i'), '').trim() || u.dev : u.dev;
+  phForm({ brand: br, name: nm, imei: u.imei || '', cond: 'مستعمل', cnt: 1 });
 }
-const usedCard = u => `<div class="card"><div class="row2"><b style="flex:1">${esc(u.dev)}</b>${u.price ? `<span class="cmp-pr">${esc(u.price)}</span>` : ''}</div>`
-  + `<div class="m">البائع: ${esc(u.name)}${u.tel ? ' · ' + xTel(u.tel) : ''}</div>`
-  + (u.imei ? `<div class="m">IMEI: <bdi>${esc(u.imei)}</bdi></div>` : '') + (u.note ? `<div class="m">${esc(u.note)}</div>` : '')
-  + `<div class="m">${fd(u.at)} · ${esc(u.by || '')}${u.inv ? ' · ' + I('check') + ' أُدخل للمخزون' : ''}</div>`
-  + `<div class="sub">${u.inv ? '' : `<button class="btn s sm" onclick="usInv('${u.id}')">إدخال للمخزون</button>`}<button class="btn s sm" onclick="usEd('${u.id}')">تعديل</button><button class="btn s sm" onclick="usDel('${u.id}')">حذف</button></div></div>`;
+/* استدعاء سريع للروپريز من بطاقة الهاتف في المخزون */
+window.usFromRep = function (itemId) {
+  const it = S.items.find(x => x.id == itemId); if (!it) return;
+  if (typeof av == 'function' && av(it) <= 0) return toast('لا توجد قطع متاحة من هذا الهاتف');
+  const title = [it.brand, it.name, it.color, it.cap].filter(Boolean).join(' ');
+  usOpen({ repOf: it.id, repTxt: title + (it.price ? ' (' + it.price + ')' : ''), repPr: xn(it.price) });
+};
+const usedCard = u => {
+  const im = uImg(u);
+  return `<div class="card"><div class="row2">${im ? `<img onclick="usZoom('${u.id}')" src="${im}" style="cursor:pointer;width:54px;height:54px;object-fit:cover;border-radius:10px">` : ''}<div style="flex:1"><b>${esc(u.dev)}</b><div class="m">البائع: ${esc(u.name)}${u.tel ? ' · ' + xTel(u.tel) : ''}</div></div>${u.price ? `<span class="cmp-pr">${esc(u.price)}</span>` : ''}</div>`
+    + (u.cin ? `<div class="m" style="font-weight:600;color:var(--p)">${I('idcard')} CIN: <bdi>${esc(u.cin)}</bdi></div>` : `<div class="m" style="color:#d97706">بدون رقم بطاقة وطنية (CIN)</div>`)
+    + (u.repTxt ? `<div class="m">روپريز مقابل: ${esc(u.repTxt)}${u.diff ? ' · الفرق المقبوض: <b>' + esc(u.diff) + '</b>' : ''}</div>` : '')
+    + (u.imei ? `<div class="m">IMEI: <bdi>${esc(u.imei)}</bdi></div>` : '') + (u.note ? `<div class="m">${esc(u.note)}</div>` : '')
+    + `<div class="m">${fd(u.at)} · ${esc(u.by || '')}${u.inv ? ' · ' + I('check') + ' أُدخل للمخزون' : ''}</div>`
+    + `<div class="sub">${u.inv ? '' : `<button class="btn s sm" onclick="usInv('${u.id}')">إدخال للمخزون</button>`}<button class="btn s sm" onclick="usEd('${u.id}')">تعديل</button><button class="btn s sm" onclick="usDel('${u.id}')">حذف</button></div></div>`;
+};
+const usMatch = (u, n) => nz([u.dev, u.name, u.cin, u.tel, u.imei, u.note, u.repTxt].join(' ')).includes(n);
 VW.usd = () => {
   const L = S.used.slice().sort((a, b) => b.at - a.at), n = nz(V.q || '');
-  const F = n ? L.filter(u => nz([u.dev, u.name, u.tel, u.imei, u.note].join(' ')).includes(n)) : L;
+  const F = n ? L.filter(u => usMatch(u, n)) : L;
   return {
     t: 'شراء المستعمل',
     h: `<button class="btn" onclick="usAdd()">+ تسجيل شراء هاتف مستعمل</button>`
-      + `<input placeholder="ابحث بالاسم أو IMEI أو الموديل" value="${esc(V.q || '')}" oninput="V.q=this.value;usF()">`
+      + `<input placeholder="ابحث بالاسم، رقم البطاقة CIN، IMEI أو الموديل" value="${esc(V.q || '')}" oninput="V.q=this.value;usF()">`
       + `<div id="usl">${F.slice(0, 60).map(usedCard).join('') || '<p class="m">لا توجد سجلات</p>'}</div>`
   };
 };
 function usF() {
-  const n = nz(V.q || ''), L = S.used.slice().sort((a, b) => b.at - a.at).filter(u => !n || nz([u.dev, u.name, u.tel, u.imei, u.note].join(' ')).includes(n));
+  const n = nz(V.q || ''), L = S.used.slice().sort((a, b) => b.at - a.at).filter(u => !n || usMatch(u, n));
   $('usl').innerHTML = L.slice(0, 60).map(usedCard).join('') || '<p class="m">لا توجد سجلات</p>';
 }
 
-/* ---------- الديون ---------- */
+/* ---------- الديون (مع التجميع وتذكير الواتساب والربط مع الصيانة) ---------- */
 const dRem = d => Math.max(0, xn(d.amt) - (d.pays || []).reduce((a, p) => a + xn(p[1]), 0));
+
+/* فحص الديون المفتوحة لزبون معين بالهاتف أو الاسم (تُستعمل هنا وفي الصيانة) */
+window.dbtCustOpen = function (tel, name) {
+  const ph = xNum(tel), nm = nz(name || '');
+  return (S.debt || []).filter(d => {
+    if (d.paid || dRem(d) <= 0) return false;
+    const dph = xNum(d.tel);
+    if (ph.length >= 8 && dph.length >= 8 && ph.slice(-8) === dph.slice(-8)) return true;
+    if (nm.length >= 3 && nz(d.name) === nm) return true;
+    return false;
+  });
+};
+function dbtSameCust(d) { return dbtCustOpen(d.tel, d.name); }
+
 function dbtForm(rec) {
   return ask('دين جديد', [
     { k: 'name', l: 'اسم الزبون', v: rec.name || '' },
-    { k: 'tel', l: 'الهاتف (اختياري)', v: rec.tel || '' },
-    { k: 'amt', l: 'المبلغ', v: rec.amt || '' },
+    { k: 'tel', l: 'الهاتف (مهم للتذكير بالواتساب)', t: 'tel', v: rec.tel || '' },
+    { k: 'amt', l: 'المبلغ', t: 'tel', v: rec.amt || '' },
     { k: 'why', l: 'السبب', t: 'area', v: rec.why || '' }
   ]);
 }
@@ -90,19 +217,19 @@ async function dbtSave(rec, v) {
 const dbtAdd = () => dbtForm({}).then(v => dbtSave({}, v));
 function dbtFromRp(id) {
   const r = S.rp.find(x => x.id == id); if (!r) return;
-  const rest = Math.max(0, xn(r.cap) - xn(r.paid));
+  const rest = Math.max(0, xn(r.cap) - xn(r.dep) - xn(r.paid));
   const rec = { name: r.name, tel: r.tel, amt: rest ? String(rest) : '', why: 'باقي إصلاح ' + (r.dev || ''), rp: r.id };
   dbtForm(rec).then(v => dbtSave(rec, v));
 }
 const dbtRp = r => {
   if (r.st != 'dn') return '';
   if (r.debt) return `<div class="m" style="color:#d97706;font-weight:700">${I('wallet')} سُجّل الباقي كدين</div>`;
-  return xn(r.cap) > xn(r.paid) ? `<div class="sub"><button class="btn s sm" onclick="dbtFromRp('${r.id}')">${I('wallet')} تسجيل الباقي كدين</button></div>` : '';
+  return xn(r.cap) > (xn(r.dep) + xn(r.paid)) ? `<div class="sub"><button class="btn s sm" onclick="dbtFromRp('${r.id}')">${I('wallet')} تسجيل الباقي كدين</button></div>` : '';
 };
 function dbtPay(id) {
   const d = S.debt.find(x => x.id == id); if (!d) return;
   const rem = dRem(d);
-  ask('دفعة من ' + d.name, [{ k: 'a', l: 'المبلغ المدفوع (الباقي ' + rem + ')', v: String(rem) }], 'تسجيل').then(v => {
+  ask('دفعة من ' + d.name, [{ k: 'a', l: 'المبلغ المدفوع (الباقي ' + rem + ')', t: 'tel', v: String(rem) }], 'تسجيل').then(v => {
     const a = v && xn(v.a); if (!a) return;
     const b = JSON.stringify(d);
     d.pays = [...(d.pays || []), [Date.now(), a, S.me]];
@@ -111,23 +238,76 @@ function dbtPay(id) {
     toast(dRem(d) <= 0 ? 'سُدِّد الدين كاملاً' : 'بقي ' + dRem(d), () => { Object.assign(d, JSON.parse(b)); if (!JSON.parse(b).paid) delete d.paid; });
   });
 }
+/* تسديد دفعة تُوزّع تلقائياً على كل ديون الزبون المفتوحة (الأقدم فالأحدث) */
+function dbtPayAll(id) {
+  const d0 = S.debt.find(x => x.id == id); if (!d0) return;
+  const list = dbtSameCust(d0).sort((a, b) => a.at - b.at);
+  const tot = list.reduce((s, x) => s + dRem(x), 0);
+  ask('تسديد من إجمالي ديون ' + d0.name, [{ k: 'a', l: 'المبلغ المدفوع (الإجمالي ' + tot + ' درهم)', t: 'tel', v: String(tot) }], 'تسجيل').then(v => {
+    let left = v && xn(v.a); if (!left) return;
+    const snapAll = JSON.stringify(S.debt);
+    list.forEach(d => {
+      if (left <= 0) return;
+      const r = dRem(d), pay = Math.min(r, left);
+      if (pay > 0) {
+        d.pays = [...(d.pays || []), [Date.now(), pay, S.me]];
+        if (dRem(d) <= 0) d.paid = Date.now();
+        left -= pay;
+      }
+    });
+    save(); render();
+    toast('تم خصم الدفعة من ديون الزبون', () => { S.debt = JSON.parse(snapAll); });
+  });
+}
+/* تذكير لبق عبر واتساب */
+function dbtWA(id) {
+  const d = S.debt.find(x => x.id == id); if (!d) return;
+  const send = tel => {
+    const ph = xNum(tel); if (ph.length < 8) return toast('رقم الهاتف غير صالح');
+    const all = dbtSameCust(d), tot = all.reduce((s, x) => s + dRem(x), 0), rem = dRem(d);
+    const details = all.length > 1
+      ? `إجمالي المبلغ المتبقي هو ${tot} درهم (${all.map(x => dRem(x) + ' درهم: ' + (x.why || 'دين')).join(' + ')})`
+      : `المبلغ المتبقي هو ${rem} درهم${d.why ? ' (' + d.why + ')' : ''}`;
+    const msg = `السلام عليكم ${d.name}، نتمنى أن تكونوا بخير.\nتذكير ودي من محل عزيز بخصوص الحساب: ${details}.\nشكراً جزيلاً لتعاملكم وثقتكم.`;
+    location.href = 'https://wa.me/' + ph + '?text=' + encodeURIComponent(msg);
+  };
+  if (xNum(d.tel).length >= 8) return send(d.tel);
+  ask('رقم هاتف ' + d.name, [{ k: 't', l: 'أدخل رقم الهاتف لإرسال التذكير وحفظه', t: 'tel', v: d.tel || '' }], 'إرسال واتساب').then(v => {
+    if (!v || !v.t.trim()) return;
+    d.tel = v.t.trim(); save(); render(); send(d.tel);
+  });
+}
 function dbtDel(id) { const d = S.debt.find(x => x.id == id); if (d) del('debt', id, 'دين ' + d.name); }
 const dbtCard = d => {
-  const rem = dRem(d), open = !d.paid;
-  return `<div class="card ${open ? '' : 'rp-ok'}"><div class="row2"><b style="flex:1">${esc(d.name)}</b><span class="cmp-pr">${open ? rem : '✓'}</span></div>`
+  const rem = dRem(d), open = !d.paid, same = open ? dbtSameCust(d) : [];
+  const totSame = same.length > 1 ? same.reduce((s, x) => s + dRem(x), 0) : 0;
+  return `<div class="card ${open ? '' : 'rp-ok'}"><div class="row2"><b style="flex:1">${esc(d.name)}</b><span class="cmp-pr">${open ? rem + ' درهم' : '✓ مسدَّد'}</span></div>`
+    + (totSame ? `<div class="rs" style="font-size:.85rem;margin:2px 0">إجمالي ديون هذا الزبون: ${totSame} درهم (${same.length} ديون)</div>` : '')
     + (d.tel ? `<div class="m">${xTel(d.tel)}</div>` : '') + (d.why ? `<div class="m">${esc(d.why)}</div>` : '')
     + `<div class="m">${fd(d.at)} · ${esc(d.by || '')}${(d.pays || []).length ? ' · دفعات: ' + d.pays.length : ''}${open && rem < xn(d.amt) ? ' · من أصل ' + esc(d.amt) : ''}${d.paid ? ' · سُدِّد ' + fd(d.paid) : ''}</div>`
-    + `<div class="sub">${open ? `<button class="btn sm" onclick="dbtPay('${d.id}')">تسجيل دفعة</button>` : ''}<button class="btn s sm" onclick="dbtDel('${d.id}')">حذف</button></div></div>`;
+    + `<div class="sub">${open ? `<button class="btn sm" onclick="dbtPay('${d.id}')">تسجيل دفعة</button>${same.length > 1 ? `<button class="btn s sm" onclick="dbtPayAll('${d.id}')">دفعة من الإجمالي</button>` : ''}<button class="btn s sm" onclick="dbtWA('${d.id}')">${I('send')} تذكير واتساب</button>` : ''}<button class="btn s sm" onclick="dbtDel('${d.id}')">حذف</button></div></div>`;
 };
 VW.dbt = () => {
-  const tab = V.tab || 'o', O = S.debt.filter(d => !d.paid).sort((a, b) => b.at - a.at), P = S.debt.filter(d => d.paid).sort((a, b) => b.paid - a.paid).slice(0, 30);
+  const tab = V.tab || 'o', q = nz(V.q || '');
+  const O0 = S.debt.filter(d => !d.paid).sort((a, b) => b.at - a.at);
+  const P0 = S.debt.filter(d => d.paid).sort((a, b) => b.paid - a.paid).slice(0, 40);
+  const totOpen = O0.reduce((s, d) => s + dRem(d), 0);
+  const flt = L => q ? L.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(q)) : L;
   return {
     t: 'الديون',
-    h: `<button class="btn" onclick="dbtAdd()">+ دين جديد</button>`
-      + `<div><button class="tag ${tab == 'o' ? 'on' : ''}" onclick="V.tab='o';render()">مفتوحة (${O.length})</button><button class="tag ${tab == 'p' ? 'on' : ''}" onclick="V.tab='p';render()">المسدَّدة</button></div>`
-      + ((tab == 'o' ? O : P).map(dbtCard).join('') || '<p class="m">لا توجد ديون</p>')
+    h: `<div class="qbar rsum" style="grid-template-columns:1fr 1fr"><div class="qpill wn"><div class="qn">${O0.length}</div><div class="ql">ديون مفتوحة</div></div><div class="qpill al"><div class="qn">${totOpen}</div><div class="ql">مجموع المتبقي (درهم)</div></div></div>`
+      + `<button class="btn" onclick="dbtAdd()">+ دين جديد</button>`
+      + `<input placeholder="ابحث باسم الزبون أو الهاتف أو السبب" value="${esc(V.q || '')}" oninput="V.q=this.value;dbtF()">`
+      + `<div><button class="tag ${tab == 'o' ? 'on' : ''}" onclick="V.tab='o';render()">مفتوحة (${O0.length})</button><button class="tag ${tab == 'p' ? 'on' : ''}" onclick="V.tab='p';render()">المسدَّدة</button></div>`
+      + `<div id="dbtl">${(tab == 'o' ? flt(O0) : flt(P0)).map(dbtCard).join('') || '<p class="m">لا توجد ديون</p>'}</div>`
   };
 };
+function dbtF() {
+  const tab = V.tab || 'o', q = nz(V.q || '');
+  const L = tab == 'o' ? S.debt.filter(d => !d.paid).sort((a, b) => b.at - a.at) : S.debt.filter(d => d.paid).sort((a, b) => b.paid - a.paid).slice(0, 40);
+  const F = q ? L.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(q)) : L;
+  if ($('dbtl')) $('dbtl').innerHTML = F.map(dbtCard).join('') || '<p class="m">لا توجد ديون</p>';
+}
 
 /* ---------- الإحصائيات (بدون أي حسابات مالية) ---------- */
 const stCnt = (arr, f) => { const m = {}; arr.forEach(x => { const k = f(x); if (k) m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
@@ -154,7 +334,7 @@ VW.stat = () => {
 HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1;margin:0" onclick="go('usd')">${I('cused')} شراء مستعمل</button><button class="btn s" style="flex:1;margin:0" onclick="go('dbt')">${I('cdebt')} الديون${S.debt.filter(d => !d.paid).length ? ' (' + S.debt.filter(d => !d.paid).length + ')' : ''}</button></div>`);
 MORE.push({ g: 'rep', o: 60, l: 'إحصائيات: الأعطال وطلبات الزبائن', fn: "go('stat')" });
 SRCH.push(
-  { k: 'used', l: 'مستعمل', run: n => S.used.filter(u => nz([u.dev, u.name, u.tel, u.imei, u.note].join(' ')).includes(n)).slice(0, 20).map(usedCard) },
+  { k: 'used', l: 'مستعمل', run: n => S.used.filter(u => usMatch(u, n)).slice(0, 20).map(usedCard) },
   { k: 'debt', l: 'ديون', run: n => S.debt.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(n)).slice(0, 20).map(dbtCard) }
 );
 BCM.push(c => { const n = nz(c); return S.used.filter(u => u.imei && nz(u.imei).includes(n)).map(usedCard).join(''); });

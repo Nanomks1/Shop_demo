@@ -1,6 +1,6 @@
 /* ============================================================
-   sync.js — المزامنة بين الأجهزة (Supabase) + تشفير انتقائي لبيانات الزبائن فقط (rp, req, ومحجوزات المخزون)
-   صور الصيانة تُزامَن كصفوف منفصلة مشفّرة (coll=meta, id=img:رقم الصيانة) وتُحذف من الخادم بحذفها محلياً بعد مدة الاحتفاظ؛ الأجهزة القديمة تتجاهل صفوف meta. يُحمَّل بعد report.js وقبل app.js.
+   sync.js — المزامنة بين الأجهزة (Supabase) + تشفير انتقائي لبيانات الزبائن فقط (rp, req, used, debt ومحجوزات المخزون)
+   صور الصيانة والمستعمل تُزامَن كصفوف منفصلة مشفّرة (coll=meta, id=img:معرف السجل) وتُحذف من الخادم بحذفها محلياً بعد مدة الاحتفاظ؛ الأجهزة القديمة تتجاهل صفوف meta. يُحمَّل بعد report.js وقبل app.js.
    ============================================================ */
 const SY_URL='https://jvubqqvwuonvgowqwvqa.supabase.co';
 const SY_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2dWJxcXZ3dW9udmdvd3F3dnFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NjU1MjksImV4cCI6MjEwODQ0MTUyOX0.wKnUu_HFa0eByC9ypH7kGyEeIJSUPH87hp56ZhROApw';
@@ -38,15 +38,31 @@ if((!r||!r.ok)&&(pass||c.pass))r=await syF(SY_URL+'/auth/v1/token?grant_type=pas
 if(!r||!r.ok){const e=new Error('auth');e.code='auth';throw e}const j=await r.json();localStorage.setItem('shopSyncTok',JSON.stringify({at:j.access_token,rt:j.refresh_token,exp:Date.now()+j.expires_in*1000}));return j.access_token}
 async function syReq(path,opt={}){const at=await syTok(),r=await syF(SY_URL+'/rest/v1/'+path,{...opt,headers:{apikey:SY_KEY,Authorization:'Bearer '+at,'Content-Type':'application/json',...(opt.headers||{})}});if(!r.ok){const e=new Error('http '+r.status);e.code=(r.status==401||r.status==403)?'auth':r.status;throw e}return r.status==204?null:r.json()}
 
-/* قراءة وكتابة السجلات المحلية */
-function syCollect(){const m={};SY_ARR.forEach(c=>(S[c]||[]).forEach(r=>{if(r&&r.id!=null)m[c+'/'+r.id]=(c=='rp'&&r.img)?{...r,img:'idb:'+r.id}:r}));SY_ONE.forEach(k=>{let v=S[k];if(k=='cfg'){v={...S.cfg};SY_LOC.forEach(x=>delete v[x])}m['one/'+k]=v});(S.rp||[]).forEach(r=>{if(r&&r.id!=null&&IMG[r.id])m['meta/img:'+r.id]=syImgStub(r.id)});return m}
+/* قراءة وكتابة السجلات المحلية (شاملة صور الصيانة وصور المستعمل) */
+function syCollect(){const m={};SY_ARR.forEach(c=>(S[c]||[]).forEach(r=>{if(r&&r.id!=null)m[c+'/'+r.id]=((c=='rp'||c=='used')&&r.img)?{...r,img:'idb:'+r.id}:r}));SY_ONE.forEach(k=>{let v=S[k];if(k=='cfg'){v={...S.cfg};SY_LOC.forEach(x=>delete v[x])}m['one/'+k]=v});['rp','used'].forEach(c=>(S[c]||[]).forEach(r=>{if(r&&r.id!=null&&IMG[r.id])m['meta/img:'+r.id]=syImgStub(r.id)}));return m}
 const syImgStub=id=>({l:IMG[id].length,t:IMG[id].slice(-24)});
-function syApplyImg(r,k,val,st,cm){const pid=String(r.id).slice(4),rr=S.rp.find(x=>x.id==pid);
+function syApplyImg(r,k,val,st,cm){const pid=String(r.id).slice(4),rr=S.rp.find(x=>x.id==pid)||(S.used||[]).find(x=>x.id==pid);
 if(val===null){if(IMG[pid]){delete IMG[pid];MEDIA.del(pid).catch(()=>{})}delete cm[k];st.base[k]={h:'',ts:r.ts,d:1};return 1}
 IMG[pid]=val;MEDIA.put(pid,val).catch(e=>errLog('حفظ صورة: '+(e&&e.message||e)));if(rr)rr.img=val;
 const sb=syImgStub(pid);cm[k]=sb;st.base[k]={h:syH(JSON.stringify(sb)),ts:r.ts};return 1}
 function syPut(c,id,val){if(c=='one'){if(id=='cfg'){const l={};SY_LOC.forEach(x=>{if(S.cfg&&x in S.cfg)l[x]=S.cfg[x]});S.cfg={...val,...l}}else if(val!==null)S[id]=val;return}
 const a=S[c]=S[c]||[],i=a.findIndex(x=>x.id==id);if(val===null){if(i>=0)a.splice(i,1)}else if(i>=0)a[i]=val;else a.push(val)}
+
+/* منع تكرار أرقام تذاكر الصيانة القصيرة (Offline-Safe) وتحديث العداد بعد المزامنة */
+function syFixTickets(){
+  if(!Array.isArray(S.rp))return;
+  const seen=new Set();let maxSeq=+(S.cfg&&S.cfg.tkSeq)||0;
+  const parseSeq=tk=>{const m=String(tk||'').match(/^([A-Z])(\d{3})/);return m?(m[1].charCodeAt(0)-65)*899+(+m[2]-100):0};
+  S.rp.slice().sort((a,b)=>(a.t0||0)-(b.t0||0)).forEach(r=>{
+    if(!r||!r.tk)return;
+    const sq=parseSeq(r.tk);if(sq>maxSeq)maxSeq=sq;
+    if(!seen.has(r.tk)){seen.add(r.tk);return}
+    const base=r.tk.replace(/-\d+$/,'');let n=2;
+    while(seen.has(base+'-'+n))n++;
+    r.tk=base+'-'+n;seen.add(r.tk);
+  });
+  if(S.cfg&&maxSeq>(S.cfg.tkSeq||0))S.cfg.tkSeq=maxSeq;
+}
 
 /* اكتشاف التغييرات المحلية (لا يُستدعى إلا عند وجود تعديل فعلي) */
 function syMark(){const c=syCfg();if(!c.on)return;const st=syStt(),cur=syCollect(),n=Date.now();let ch=0;
@@ -79,7 +95,7 @@ for(const b of BT){const res=await syReq('records?on_conflict=coll,id&select=col
 for(const r of b){st.base[r._k]=r._d?{h:'',ts:r.ts,d:1}:{h:r._h,ts:r.ts};delete st.dt[r._k];if(!ok.has(r._k))lost.push(r)}syPut2(st)}
 const cm=syCollect();for(const r of lost){const g=await syReq('records?coll=eq.'+encodeURIComponent(r.coll)+'&id=eq.'+encodeURIComponent(r.id));if(g[0])chg+=await syApply(g[0],st,cm,true)}
 chg+=await syPull(st,false);for(const k in st.base){if(k.startsWith('meta/img:')&&st.base[k].d&&n-st.base[k].ts>90*864e5)delete st.base[k]}syPut2(st);
-if(chg){if(typeof cleanOldRpMedia=='function')cleanOldRpMedia();save();window._syDirty=0;syRender()}
+if(chg){syFixTickets();if(typeof cleanOldRpMedia=='function')cleanOldRpMedia();save();window._syDirty=0;syRender()}
 SYS.okDel=0;SYS.last=Date.now();syStat('ok')}catch(e){syStat(e.code=='auth'?'err':((e instanceof TypeError||e.name=='AbortError')?'offline':'err'),e.code=='auth'?'انتهت الجلسة أو بيانات الدخول خاطئة (أعد إدخال كلمة السر)':e.code=='enc'?'رمز التشفير لا يطابق رمز المحل':(e instanceof TypeError||e.name=='AbortError')?'':'تعذّرت المزامنة ('+(e.code||e.message)+')')}
 SYS.busy=false;if(SYS.again){SYS.again=0;syKick()}}
 function syKick(now){clearTimeout(SYS.t);SYS.t=setTimeout(syNow,now===true?0:1500)}
@@ -115,7 +131,7 @@ try{
   toast(e==='cancel'?'أُلغي الإعداد':e&&e.code=='auth'?'بيانات الدخول خاطئة':e&&e.code=='enc'||e===0?'رمز التشفير لا يطابق رمز المحل':'تعذّر الاتصال');
 }}
 function syOff(){if(!isAdmin())return toast('للمدير فقط');sure('إيقاف المزامنة على هذا الجهاز؟ تبقى البيانات المحلية كما هي.','إيقاف').then(y=>{if(y){const c=syCfg();c.on=0;localStorage.setItem('shopSyncCfg',JSON.stringify(c));syStat('off');render()}})}
-VW.st_sync=()=>{const c=syCfg();return{t:'المزامنة',h:c.on?`<div class="card"><b>${SYM[SYS.st]||''}</b><div class="m">${esc(SYS.msg)}${SYS.last?' · آخر مزامنة '+new Date(SYS.last).toLocaleTimeString('ar-MA'):''}</div></div>${SYS.big?`<button class="btn d" onclick="syOkBig()">اعتماد حذف ${SYS.big} سجلاً من كل الأجهزة</button>`:''}<button class="btn" onclick="syKick(true)">مزامنة الآن</button><button class="btn s" onclick="syOpen()">تغيير الإعداد</button><button class="btn s" onclick="syOff()">إيقاف المزامنة</button><p class="m">تشفير انتقائي: بيانات الزبائن (الصيانة، الطلبات، الحجوزات) مشفّرة على الجهاز قبل الرفع، بينما يبقى المخزون العام خفيفاً وسريعاً.</p>`:`<p class="m">بيانات المحل تصير واحدة على كل الأجهزة. بيانات الزبائن الحساسة تُشفَّر على الجهاز قبل الرفع.</p><button class="btn" onclick="syOpen()">إعداد المزامنة</button>`}};
+VW.st_sync=()=>{const c=syCfg();return{t:'المزامنة',h:c.on?`<div class="card"><b>${SYM[SYS.st]||''}</b><div class="m">${esc(SYS.msg)}${SYS.last?' · آخر مزامنة '+new Date(SYS.last).toLocaleTimeString('ar-MA'):''}</div></div>${SYS.big?`<button class="btn d" onclick="syOkBig()">اعتماد حذف ${SYS.big} سجلاً من كل الأجهزة</button>`:''}<button class="btn" onclick="syKick(true)">مزامنة الآن</button><button class="btn s" onclick="syOpen()">تغيير الإعداد</button><button class="btn s" onclick="syOff()">إيقاف المزامنة</button><p class="m">تشفير انتقائي: بيانات الزبائن (الصيانة، المستعمل، الديون، الطلبات، الحجوزات) مشفّرة على الجهاز قبل الرفع، بينما يبقى المخزون العام خفيفاً وسريعاً.</p>`:`<p class="m">بيانات المحل تصير واحدة على كل الأجهزة. بيانات الزبائن الحساسة تُشفَّر على الجهاز قبل الرفع.</p><button class="btn" onclick="syOpen()">إعداد المزامنة</button>`}};
 MORE.push({g:'data',o:10,l:'المزامنة بين الأجهزة',fn:"go('st_sync')",n:()=>syCfg().on?SYM[SYS.st]:'متوقفة'});
 HK.saved.push(()=>{window._syDirty=1});
 

@@ -117,12 +117,12 @@ function kvStore(db, store) {
 }
 const MEDIA = kvStore('AzizShopMedia', 'imgs'), AUTOBK = kvStore('AzizShopAutoBackup', 'bk');
 
-/* خزنة الصور: الصورة تعيش في IndexedDB، والسجل في localStorage يحمل الوسم 'idb:المعرّف' فقط */
+/* خزنة الصور: الصورة تعيش في IndexedDB، والسجل في localStorage يحمل الوسم 'idb:المعرّف' فقط (للصيانة وشراء المستعمل) */
 const IMG = {};
 const putImg = (id, d) => { if (!id || !d) return; IMG[id] = d; MEDIA.put(id, d).catch(e => errLog('حفظ صورة: ' + (e && e.message || e))); };
 const delImg = id => { if (!id || !(id in IMG)) return; delete IMG[id]; MEDIA.del(id).catch(e => errLog('حذف صورة: ' + (e && e.message || e))); };
 function imgReplacer(k, v) {              // يُستعمل مع JSON.stringify عند الحفظ فقط
-  if (k === 'img' && this && this.id && typeof this.st === 'string') {   // سجل صيانة
+  if (k === 'img' && this && this.id && (typeof this.st === 'string' || typeof this.dev === 'string')) {   // سجل صيانة أو شراء مستعمل
     if (typeof v === 'string' && v.startsWith('data:image')) { putImg(this.id, v); return 'idb:' + this.id; }
     if (!v && IMG[this.id]) delImg(this.id);
   }
@@ -130,11 +130,11 @@ function imgReplacer(k, v) {              // يُستعمل مع JSON.stringify 
 }
 function imgInit() {
   let moved = 0;
-  S.rp.forEach(r => { if (r.img && r.img.startsWith('data:image')) { putImg(r.id, r.img); moved = 1; } });
+  [...(S.rp || []), ...(S.used || [])].forEach(r => { if (r.img && r.img.startsWith('data:image')) { putImg(r.id, r.img); moved = 1; } });
   MEDIA.all().then(all => {
     Object.assign(IMG, all);
     let ch = 0;
-    S.rp.forEach(r => { if (r.img && r.img.startsWith('idb:') && IMG[r.id]) { r.img = IMG[r.id]; ch = 1; } });
+    [...(S.rp || []), ...(S.used || [])].forEach(r => { if (r.img && r.img.startsWith('idb:') && IMG[r.id]) { r.img = IMG[r.id]; ch = 1; } });
     if (moved) save();
     if (ch) render();
   }).catch(e => errLog('قراءة الصور: ' + (e && e.message || e)));
@@ -272,13 +272,14 @@ function sure(msg, ok = 'نعم', danger = true) {
 
 /* ---------- التعديل مع التراجع والحذف والاسترجاع ---------- */
 function upd(fn) { fn(); save(); render(); }
-const snap = () => JSON.stringify({ items: S.items, req: S.req, tags: S.tags, gg: S.gg, guide: S.guide, ag: S.ag, rp: S.rp.map(r => ({ ...r, img: r.img ? 1 : 0 })) });
+const snap = () => JSON.stringify({ items: S.items, req: S.req, tags: S.tags, gg: S.gg, guide: S.guide, ag: S.ag, debt: S.debt, used: (S.used || []).map(u => ({ ...u, img: u.img ? 1 : 0 })), rp: S.rp.map(r => ({ ...r, img: r.img ? 1 : 0 })) });
 function commit(label, fn) {
-  const b = snap(), im = Object.fromEntries(S.rp.map(r => [r.id, r.img]));
+  const b = snap(), im = Object.fromEntries([...S.rp, ...(S.used || [])].map(r => [r.id, r.img]));
   fn(); save(); render();
   toast(label, () => {
     const o = JSON.parse(b);
-    S.items = o.items; S.req = o.req; S.tags = o.tags; S.gg = o.gg; S.guide = o.guide; S.ag = o.ag;
+    S.items = o.items; S.req = o.req; S.tags = o.tags; S.gg = o.gg; S.guide = o.guide; S.ag = o.ag; S.debt = o.debt || S.debt;
+    S.used = (o.used || []).map(u => ({ ...u, img: im[u.id] || '' }));
     S.rp = o.rp.map(r => ({ ...r, img: im[r.id] || '' }));
   });
 }
