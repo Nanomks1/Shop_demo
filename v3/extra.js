@@ -62,28 +62,34 @@ function usCamSnap() {
   c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
   UI = c.toDataURL('image/jpeg', .6); usCamStop(); usShowIm();
 }
+function syncUsBrand() {
+  const cur = (($('u_dev') || {}).value || '').trim().toLowerCase();
+  const active = S.tags.brand.find(x => x && cur.startsWith(String(x).toLowerCase())) || '';
+  document.querySelectorAll('.us-br').forEach((b, idx) => b.classList.toggle('on', S.tags.brand[idx] === active));
+}
 function pickUsBrand(j) {
   const b = S.tags.brand[j], el = $('u_dev'); if (!el) return;
   let cur = el.value.trim();
   const o = S.tags.brand.find(x => x && cur.toLowerCase().startsWith(String(x).toLowerCase()));
   if (o) cur = cur.slice(o.length).trim();
-  el.value = b + ' ' + cur; el.focus();
+  el.value = o === b ? cur : (b + (cur ? ' ' + cur : ' '));
+  syncUsBrand(); el.focus();
 }
 function usOpen(rec) {
   UR = rec || {}; UI = UR.img || '';
   const shownImg = UI.startsWith('data:') ? UI : (UR.id && IMG[UR.id]) || '';
   $('sh').innerHTML = `<div class="bar"></div><h3>${UR.id ? 'تعديل شراء مستعمل' : (UR.repOf ? 'روپريز: استلام هاتف الزبون' : 'شراء هاتف مستعمل')}</h3>`
     + (UR.repTxt ? `<div class="card" style="padding:8px 12px;margin:6px 0;border-inline-start:4px solid var(--p)"><b>مقابل بيع:</b> ${esc(UR.repTxt)}</div>` : '')
-    + `<label>الجهاز / الموديل</label><div style="margin-bottom:6px">${S.tags.brand.map((b, j) => `<button type="button" class="tag" onclick="pickUsBrand(${j})">${esc(b)}</button>`).join('')}</div>`
-    + `<input id="u_dev" value="${esc(UR.dev || '')}" placeholder="مثال: Samsung A54">`
-    + `<label>اسم البائع<input id="u_name" value="${esc(UR.name || '')}"></label>`
-    + `<label>رقم البطاقة الوطنية (CIN — للتوثيق القانوني)<input id="u_cin" value="${esc(UR.cin || '')}" placeholder="مثال: D123456"></label>`
+    + `<label>الجهاز / الموديل<input id="u_dev" value="${esc(UR.dev || '')}" placeholder="اختر ماركة من الأسفل أو اكتب الموديل (مثال: Samsung A54)" oninput="syncUsBrand()"></label>`
+    + `<div style="margin:4px 0 8px">${S.tags.brand.map((b, j) => `<button type="button" class="tag us-br" onclick="pickUsBrand(${j})">${esc(b)}</button>`).join('')}</div>`
+    + `<div class="row2" style="gap:8px"><label style="flex:1">سعر شراء المستعمل<input id="u_price" type="tel" value="${esc(UR.price || '')}" oninput="usCalcDiff()"></label>${UR.repOf ? `<label style="flex:1">الفرق المقبوض (الصولد)<input id="u_diff" type="tel" value="${esc(UR.diff || '')}"></label>` : ''}</div>`
+    + `<div class="row2" style="gap:8px"><label style="flex:1">اسم البائع<input id="u_name" value="${esc(UR.name || '')}"></label><label style="flex:1">رقم البطاقة (CIN)<input id="u_cin" value="${esc(UR.cin || '')}" placeholder="مثال: D123456"></label></div>`
     + `<label>هاتف البائع<input id="u_tel" type="tel" value="${esc(UR.tel || '')}"></label>`
     + `<label>IMEI / الرقم التسلسلي<div class="row2" style="margin-top:4px"><input id="u_imei" value="${esc(UR.imei || '')}" placeholder="امسح الباركود أو *#06#" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('u_imei')">${I('scan')} مسح</button></div></label>`
-    + `<div class="row2" style="gap:8px"><label style="flex:1">سعر شراء المستعمل<input id="u_price" type="tel" value="${esc(UR.price || '')}" oninput="usCalcDiff()"></label>${UR.repOf ? `<label style="flex:1">الفرق المقبوض (الصولد)<input id="u_diff" type="tel" value="${esc(UR.diff || '')}"></label>` : ''}</div>`
     + `<div><label>صورة البطاقة الوطنية / الهاتف (محمية)</label><div class="row2"><button type="button" class="btn s sm" onclick="usCam()">التقاط صورة</button><button type="button" class="btn s sm" onclick="$('u_i').click()">من المعرض</button><button type="button" id="u_imx" class="btn s sm" onclick="usImDel()" ${shownImg ? '' : 'hidden'}>حذف الصورة</button></div><img id="u_im" ${shownImg ? `src="${shownImg}"` : 'hidden'} style="width:100%;border-radius:10px;margin-top:8px"><input id="u_i" type="file" accept="image/*" hidden onchange="usIM(this.files[0])"></div>`
     + `<label>ملاحظة (الحالة، الملحقات...)<textarea id="u_note">${esc(UR.note || '')}</textarea></label>`
     + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="usSub()">حفظ</button></div>`;
+  syncUsBrand();
   sheetOpen(v => { if (v) usCommit(UR, v); });
 }
 function usCalcDiff() {

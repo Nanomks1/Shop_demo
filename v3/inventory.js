@@ -31,8 +31,8 @@ S.fields = S.fields || []; S.gg = S.gg || []; S.ag = S.ag || [];
 Object.assign(DL0, { gA: 30, gB: 20, gC: 10, gY: 5, acl: 3, agl: 10 });
 LM.push(
   ['gA', 'أنتي كاس: مستوى «غامق» يُحسب كـ (قطعة)'], ['gB', 'أنتي كاس: مستوى «أخضر» يُحسب كـ (قطعة)'], ['gC', 'أنتي كاس: مستوى «فاتح» يُحسب كـ (قطعة)'],
-  ['gY', 'أنتي كاس: مستوى «قليل» يُحسب كـ (قطعة)'], ['acl', 'إكسسوار بعدد: «قليل» عند عدد ≤'],
-  ['agl', 'مجموعة إكسسوار (كابل/شاحن): «قارب النفاد» عند مجموع ≤']
+  ['gY', 'أنتي كاس: مستوى «قليل» يُحسب كـ (قطعة)'], ['acl', 'إكسسوار بعدد: «قليل» عند عدد فأقل'],
+  ['agl', 'مجموعة إكسسوار (كابل/شاحن): «قارب النفاد» عند مجموع فأقل']
 );
 
 /* ---------- طيّ القوائم الطويلة + وضع العرض المضغوط ---------- */
@@ -105,7 +105,8 @@ const sortBar = s => {
   const canCmp = s != 'glass', cm = isCmp(s);
   return `<div class="stk-bar"><div class="row2" style="flex-wrap:wrap;gap:4px"><span class="m" style="font-size:.82rem;margin-inline-end:4px">ترتيب:</span>`
     + SOL[s].map(([k, l]) => `<button class="tag ${SO(s) == k ? 'on' : ''}" style="margin:0;padding:5px 11px;font-size:.84rem" onclick="soSet('${s}','${k}')">${l}</button>`).join('')
-    + (canCmp ? `<button class="tag ${cm ? 'on' : ''}" style="margin:0;margin-inline-start:auto;padding:5px 11px;font-size:.84rem" onclick="cmpTog('${s}')">${I(cm ? 'cards' : 'rows')} ${cm ? 'مفصل' : 'مضغوط'}</button>` : '')
+    + `<button class="tag" style="margin:0;margin-inline-start:auto;padding:5px 10px;font-size:.82rem" onclick="go('jl',{jk:'${s}',jm:'all'})">${I('check')} جرد</button>`
+    + (canCmp ? `<button class="tag ${cm ? 'on' : ''}" style="margin:0;padding:5px 11px;font-size:.84rem" onclick="cmpTog('${s}')">${I(cm ? 'cards' : 'rows')} ${cm ? 'مفصل' : 'مضغوط'}</button>` : '')
     + `</div></div>`;
 };
 function soSet(s, k) { upd(() => { S.cfg.so = S.cfg.so || {}; S.cfg.so[s] = k; }); }
@@ -130,17 +131,28 @@ const fxVal = (i, f) => [].concat((i.x || {})[f.id] || []).filter(Boolean);
 const fxTxt = i => S.fields.map(f => fxVal(i, f).length ? f.name + ' ' + fxVal(i, f).join(' ') : '').join(' ');
 const fxShow = i => { const p = S.fields.map(f => fxVal(i, f).length ? f.name + ': ' + fxVal(i, f).join('، ') : '').filter(Boolean); return p.length ? `<div class="m">${I('tag')} ${esc(p.join(' · '))}</div>` : ''; };
 
-/* ---------- حالة النموذج المفتوح + أزرار الوسوم (مشتركة بين كل النماذج) ---------- */
+/* ---------- حالة النموذج المفتوح + أزرار الوسوم (مع فصل الوسوم العلوية عن السفلية لسهولة الإدخال) ---------- */
 let FS = { v: {}, add: '', defs: [], fx: {}, fxA: '', fxSec: '', cond: 0 }, PR = null;
 function fsInit(defs, v, sec, rec, cond) { FS = { v: { ...v }, add: '', defs, fx: { ...((rec && rec.x) || {}) }, fxA: '', fxSec: sec || '', cond: cond ? 1 : 0 }; }
+function chipGroupHtml([g, l], canTg) {
+  return `<label>${l}</label><div>${S.tags[g].map((t, j) => `<button type="button" class="tag ${FS.v[g] == t ? 'on' : ''}" onclick="chPick('${g}',${j})">${esc(t)}</button>`).join('')}${!canTg ? '' : FS.add == g ? `<span class="row2"><input id="chn" placeholder="الاسم الجديد"><button type="button" class="btn sm" onclick="chOk('${g}')">إضافة</button></span>` : `<button type="button" class="tag" onclick="FS.add='${g}';chipsR()">+ جديد</button>`}</div>`;
+}
 function chipsR() {
-  const b = $('cc'); if (!b) return;
-  const canTg = can('tags');
-  b.innerHTML = FS.defs.filter(d => !d[2] || d[2]()).map(([g, l]) => `<label>${l}</label><div>${S.tags[g].map((t, j) => `<button type="button" class="tag ${FS.v[g] == t ? 'on' : ''}" onclick="chPick('${g}',${j})">${esc(t)}</button>`).join('')}${!canTg ? '' : FS.add == g ? `<span class="row2"><input id="chn" placeholder="الاسم الجديد"><button type="button" class="btn sm" onclick="chOk('${g}')">إضافة</button></span>` : `<button type="button" class="tag" onclick="FS.add='${g}';chipsR()">+ جديد</button>`}</div>`).join('')
-    + (FS.cond ? `<label>الحالة</label><div>${['جديد', 'مستعمل'].map(c => `<button type="button" class="tag ${FS.v.cond == c ? 'on' : ''}" onclick="FS.v.cond='${c}';chipsR()">${c}</button>`).join('')}</div>` : '');
+  const b = $('cc'), b2 = $('cc2'); if (!b) return;
+  const canTg = can('tags'), vis = FS.defs.filter(d => !d[2] || d[2]());
+  const topDefs = b2 ? vis.slice(0, 1) : vis;
+  const botDefs = b2 ? vis.slice(1) : [];
+  const condHtml = FS.cond ? `<label>الحالة</label><div>${['جديد', 'مستعمل'].map(c => `<button type="button" class="tag ${FS.v.cond == c ? 'on' : ''}" onclick="FS.v.cond='${c}';chipsR()">${c}</button>`).join('')}</div>` : '';
+  b.innerHTML = topDefs.map(d => chipGroupHtml(d, canTg)).join('') + (b2 ? '' : condHtml);
+  if (b2) b2.innerHTML = botDefs.map(d => chipGroupHtml(d, canTg)).join('') + condHtml;
   fxR();
 }
-function chPick(g, j) { const v = S.tags[g][j]; FS.v[g] = FS.v[g] == v ? '' : v; chipsR(); }
+function chPick(g, j) {
+  const v = S.tags[g][j];
+  FS.v[g] = FS.v[g] == v ? '' : v;
+  if (g == 'tier' && FS.v.tier && $('ap') && !$('ap').value.trim()) $('ap').placeholder = 'الفئة ' + FS.v.tier + ' (تُعتمد تلقائياً إن تُرك فارغاً)';
+  chipsR();
+}
 function chOk(g) {
   if (!can('tags')) return toast('للمدير فقط');
   const t = ($('chn').value || '').trim();
@@ -187,12 +199,18 @@ function phCard(i) {
     return cardH(`<div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phEd('${i.id}')"><b>${esc(i.brand + ' ' + i.name)}</b>${t ? `<div class="m">${t}${rsQ(i) ? ' · محجوز ' + rsQ(i) : ''}</div>` : ''}</div>${i.price ? `<span class="cmp-pr">${esc(i.price)}</span>` : ''}<button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button></div>`, colOf(i), 'cmp');
   }
   return cardH(`<div class="row2"><b>${esc(i.brand + ' ' + i.name)}</b><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]}</span></div>${t ? `<div class="m">${t}</div>` : ''}${i.imei ? `<div class="m">IMEI: <bdi>${esc(i.imei)}</bdi></div>` : ''}${rsHtml(i)}${fxShow(i)}${i.note ? `<div class="m">${esc(i.note)}</div>` : ''}`
-    + `<div class="row2" style="margin-top:8px"><b>${esc(i.price)}</b><button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button></div>`
+    + `<div class="row2" style="margin-top:8px"><b class="cmp-pr" style="flex:1;margin:0">${esc(i.price ? i.price + (String(i.price).match(/^\d+$/) ? ' درهم' : '') : '')}</b><button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button></div>`
     + `<div class="sub"><button class="btn s sm" onclick="phEd('${i.id}')">تعديل</button>${shown('phones', 'res') ? `<button class="btn s sm" onclick="phRs('${i.id}')">حجز${rsQ(i) ? ' (' + rsQ(i) + ')' : ''}</button>` : ''}${accBtn}${phMore ? `<button class="btn s sm" aria-label="المزيد" onclick="const n=this.parentNode.nextElementSibling;n.hidden=!n.hidden">⋯</button>` : ''}</div>${phMore ? `<div class="sub" hidden>${phMore}</div>` : ''}`, colOf(i));
 }
 function phView() {
-  let a = srt(ph(), 'phones', i => i.brand + ' ' + i.name, i => i.cnt, i => i.at); if (V.f) a = a.filter(i => phSt(i) != 'g');
-  return { t: 'الهواتف', h: `<button class="btn" onclick="phAdd()">+ إضافة هاتف</button><div><button class="tag ${V.f ? '' : 'on'}" onclick="V.f=0;render()">الكل (${ph().length})</button><button class="tag ${V.f ? 'on' : ''}" onclick="V.f=1;render()">يحتاج شراء</button></div>` + sortBar('phones') + (a.map(phCard).join('') || '<p class="m">لا شيء بعد</p>') };
+  const allPh = ph(), totPcs = allPh.reduce((s, i) => s + (+i.cnt || 0), 0), lowCnt = allPh.filter(i => phSt(i) != 'g').length;
+  let a = srt(allPh, 'phones', i => i.brand + ' ' + i.name, i => i.cnt, i => i.at); if (V.f) a = a.filter(i => phSt(i) != 'g');
+  return {
+    t: 'الهواتف',
+    h: `<button class="btn" onclick="phAdd()">+ إضافة هاتف</button>`
+      + `<div><button class="tag ${V.f ? '' : 'on'}" onclick="V.f=0;render()">الكل (${allPh.length} صنف · ${totPcs} قطعة)</button><button class="tag ${V.f ? 'on' : ''}" onclick="V.f=1;render()">يحتاج شراء (${lowCnt})</button></div>`
+      + sortBar('phones') + (a.map(phCard).join('') || '<p class="m">لا شيء بعد</p>')
+  };
 }
 
 /* اقتراح الأنتي كاس والبوشيط تلقائياً لحظة بيع هاتف */
@@ -215,15 +233,15 @@ function phUpR(id) {
     h += `<div class="card"><b>${I('shield')} أنتي كاس مطابق: ${esc(g.models.join(' / '))}</b>`
       + S.tags.glass.map((ty, j) => {
         const it = gitem(g.id, ty) || { stock: {} }, lv = (it.lv || {})[mName], ex = lv === undefined && (it.stock || {})[mName] !== undefined;
-        return `<div class="gm"><div class="row2"><b style="flex:1">${esc(ty)}</b>`
+        return `<div class="gm"><div class="row2"><b style="flex:1">${esc(ty)}${it.price ? ` <span class="cmp-pr">(${esc(it.price)})</span>` : ''}</b>`
           + (ex ? `<button class="btn s sm" onclick="glC('${g.id}',${j},${mk},-1);phUpR('${id}')">−1</button><span class="cn">${it.stock[mName]}</span>`
-            : [['a', T.a + '+'], ['b', T.b + '+'], ['c', T.c + '+'], ['y', 'قليل'], ['r', 'نفد']].map(([l, lb]) => `<button class="tag ${lv == l ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:.75rem" onclick="glLv('${g.id}',${j},${mk},'${l}');phUpR('${id}')">${lb}</button>`).join(''))
+            : [['a', `<bdi>${T.a}+</bdi>`], ['b', `<bdi>${T.b}+</bdi>`], ['c', `<bdi>${T.c}+</bdi>`], ['y', 'قليل'], ['r', 'نفد']].map(([l, lb]) => `<button class="tag ${lv == l ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:.75rem" onclick="glLv('${g.id}',${j},${mk},'${l}');phUpR('${id}')">${lb}</button>`).join(''))
           + `</div></div>`;
       }).join('') + `</div>`;
   }
   if (cs.length) {
     cs.forEach(c => {
-      h += `<div class="card"><b>${I('box')} بوشيط: ${esc(c.name)} (المتوفر ${csTot(c)})</b><div class="cs-chips">`
+      h += `<div class="card"><b>${I('box')} بوشيط: ${esc(c.name)} (المتوفر ${csTot(c)}${c.price ? ' · ' + esc(c.price) : ''})</b><div class="cs-chips">`
         + (c.v || []).map(x => `<div class="cs-chip ${x.n <= 0 ? 'low' : ''}"><span>${esc([x.g, x.c].filter(Boolean).join('·') || 'عام')}</span><button onclick="csC('${c.id}','${x.id}',-1);phUpR('${id}')">−</button><b>${x.n}</b><button onclick="csC('${c.id}','${x.id}',1);phUpR('${id}')">+</button></div>`).join('')
         + `</div></div>`;
     });
@@ -259,8 +277,11 @@ function phForm(rec) {
   PR = rec; const ed = !!rec.id;
   fsInit([['brand', 'الماركة'], ['color', 'اللون', () => shown('phones', 'color')], ['ram', 'RAM', () => shown('phones', 'ram')], ['cap', 'السعة', () => shown('phones', 'cap')]],
     { brand: rec.brand || '', color: rec.color || '', ram: rec.ram || '', cap: rec.cap || '', cond: rec.cond || 'جديد' }, 'phones', rec, shown('phones', 'cond'));
-  $('sh').innerHTML = `<div class="bar"></div><h3>${ed ? 'تعديل هاتف' : 'هاتف جديد'}</h3><div id="cc"></div><label>الموديل<input id="pm" value="${esc(rec.name || '')}" placeholder="مثال: A07"></label>`
-    + `<label${hh('phones', 'price')}>السعر<input id="pp" type="tel" value="${esc(rec.price || '')}" ${ed && !can('price') ? 'disabled' : ''}></label><label>العدد<input id="pcnt" type="number" value="${rec.cnt ?? 1}"></label>`
+  $('sh').innerHTML = `<div class="bar"></div><h3>${ed ? 'تعديل هاتف' : 'هاتف جديد'}</h3>`
+    + `<div id="cc"></div>`
+    + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:2;margin-top:8px">الموديل<input id="pm" value="${esc(rec.name || '')}" placeholder="مثال: A07"></label><label style="flex:1;margin-top:8px">العدد<input id="pcnt" type="number" value="${rec.cnt ?? 1}"></label></div>`
+    + `<label${hh('phones', 'price')}>السعر (درهم)<input id="pp" type="tel" value="${esc(rec.price || '')}" placeholder="مثال: 1350" ${ed && !can('price') ? 'disabled' : ''}></label>`
+    + `<div id="cc2"></div>`
     + `<label${hh('phones', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="pimei" value="${esc(rec.imei || '')}" placeholder="امسح الباركود أو اكتب الرقم" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('pimei')">${I('scan')} مسح</button></div></label>`
     + `<div id="fx"></div><label${hh('phones', 'note')}>ملاحظة<textarea id="pt">${esc(rec.note || '')}</textarea></label>`
     + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="phSave()">حفظ</button></div>`
@@ -357,7 +378,7 @@ const lvN = l => l == 'r' ? 0 : (GT()[l] || 0);
 const mval = (i, m) => { const l = (i.lv || {})[m]; return l !== undefined ? lvN(l) : ((i.stock || {})[m] || 0); };
 const gTot = (i, g) => g.models.reduce((a, m) => a + mval(i || {}, m), 0);
 const gEst = (i, g) => !!i && g.models.some(m => (i.lv || {})[m] !== undefined);
-const gTyLim = ty => (S.cfg.gtl || {})[ty] ?? lim('gmin');   // مخزَّن بصيغة (أقل من) ويُعرض ناقص 1 ليصبح (≤)
+const gTyLim = ty => (S.cfg.gtl || {})[ty] ?? lim('gmin');   // مخزَّن بصيغة (أقل من) ويُعرض ناقص 1 ليصبح (فأقل)
 const gLim = (i, ty) => (i && i.min) ?? gTyLim(ty || (i && i.ty));
 const gSt = (i, g, ty) => { const t = gTot(i, g), m = gLim(i, ty); return t <= 0 ? 'r' : t < m ? 'y' : 'g'; };
 function glGet(gid, ty) { let i = gitem(gid, ty); if (!i) { const now = Date.now(); i = { id: uid(), sec: 'glass', gid, ty, stock: {}, lv: {}, by: S.me, at: now, cf: now }; S.items.push(i); } i.stock = i.stock || {}; return i; }
@@ -368,20 +389,23 @@ function glView() {
 }
 function glRow(g, i, j, k, m) {
   const lv = (i.lv || {})[m], ex = lv === undefined && (i.stock || {})[m] !== undefined, T = GT(), br = (g.br || {})[m];
-  const dots = [['a', T.a + '+'], ['b', T.b + '+'], ['c', T.c + '+'], ['y', 'قليل'], ['r', 'نفد']].map(([l, t]) => `<button class="lvb ${lv == l ? 'on' : ''}" style="--lc:${LC[l]};--lt:${l == 'c' ? '#14532d' : '#fff'}" onclick="glLv('${g.id}',${j},${k},'${l}')">${t}</button>`).join('');
-  const hd2 = ex ? `<button class="btn s sm" onclick="glC('${g.id}',${j},${k},-1)">−</button><span class="cn">${i.stock[m]}</span><button class="btn sm" onclick="glC('${g.id}',${j},${k},1)">+</button>` : `<span class="m">${lv !== undefined ? '≈' + lvN(lv) : ''}</span><button class="btn s sm" onclick="glEx('${g.id}',${j},${k})">عدد دقيق</button>`;
+  const dots = [['a', `<bdi>${T.a}+</bdi>`], ['b', `<bdi>${T.b}+</bdi>`], ['c', `<bdi>${T.c}+</bdi>`], ['y', 'قليل'], ['r', 'نفد']].map(([l, t]) => `<button class="lvb ${lv == l ? 'on' : ''}" style="--lc:${LC[l]};--lt:${l == 'c' ? '#14532d' : '#fff'}" onclick="glLv('${g.id}',${j},${k},'${l}')">${t}</button>`).join('');
+  const hd2 = ex ? `<button class="btn s sm" onclick="glC('${g.id}',${j},${k},-1)">−</button><span class="cn">${i.stock[m]}</span><button class="btn sm" onclick="glC('${g.id}',${j},${k},1)">+</button>` : `<span class="m"><bdi>${lv !== undefined ? '≈' + lvN(lv) : ''}</bdi></span><button class="btn s sm" onclick="glEx('${g.id}',${j},${k})">عدد دقيق</button>`;
   return `<div class="gm"><div class="row2"><span style="flex:1">${esc(m)}${br ? ` <span class="m">· ${esc(br)}</span>` : ''}</span>${hd2}</div><div class="lvs">${dots}</div></div>`;
 }
 function glCard(g, j) {
   const ty = S.tags.glass[j], i = gitem(g.id, ty) || { stock: {} }, s = gSt(i, g, ty), min = gLim(i, ty);
   const ex = EXP['g_' + g.id], limM = !ex && g.models.length > 4 ? g.models.slice(0, 3) : g.models;
   const more = g.models.length > 4 ? `<button class="tag" style="width:100%;justify-content:center;margin-top:6px" onclick="toggleExp('g_${g.id}')">${ex ? 'طيّ القائمة ▴' : 'عرض باقي الموديلات (+' + (g.models.length - 3) + ') ▾'}</button>` : '';
-  return cardH(`<b>${esc(g.models.join(' / '))}</b><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]} · المجموع ${gEst(i, g) ? '≈' : ''}${gTot(i, g)} · «قارب» عند ≤ ${min - 1}${i.min != null ? ' (حد خاص)' : ''}${i.price ? ' · ' + esc(i.price) : ''}</span></div>`
+  return cardH(`<div class="row2"><b>${esc(g.models.join(' / '))}</b>${i.price ? `<span class="cmp-pr">${esc(i.price)}${/^\d+$/.test(i.price) ? ' درهم' : ''}</span>` : ''}</div><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]} · المجموع <bdi>${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · «قارب» عند ${min - 1} فأقل${i.min != null ? ' (حد خاص)' : ''}</span></div>`
     + limM.map((m, k) => glRow(g, i, j, k, m)).join('') + more
     + `<div class="sub"><button class="btn s sm" onclick="glM('${g.id}')">+ موديل مطابق</button><button class="btn s sm" onclick="glMin('${g.id}',${j})">الحد والسعر</button><button class="btn s sm" onclick="glRm('${g.id}')">حذف موديل</button></div>`, colG(g));
 }
-function glB(g) {   // بطاقة نتيجة البحث: كل أنواع الزجاج للمجموعة
-  return cardH(`<b>زجاج يطابق: ${esc(g.models.join(' / '))}</b>` + S.tags.glass.map(t => { const i = gitem(g.id, t), s = i ? gSt(i, g, t) : 'r'; return `<div class="row2"><span class="dotl" style="background:${DT[s]}"></span><span style="flex:1">${esc(t)}</span><span class="m">${i ? (gEst(i, g) ? '≈' : '') + gTot(i, g) : 0}</span></div>`; }).join(''), colG(g));
+function glB(g) {   // بطاقة نتيجة البحث: كل أنواع الزجاج للمجموعة مع السعر الواضح
+  return cardH(`<b>زجاج يطابق: ${esc(g.models.join(' / '))}</b>` + S.tags.glass.map(t => {
+    const i = gitem(g.id, t), s = i ? gSt(i, g, t) : 'r', pr = i && i.price ? `<span class="cmp-pr">${esc(i.price)}${/^\d+$/.test(i.price) ? ' درهم' : ''}</span>` : '';
+    return `<div class="row2" style="margin-top:4px"><span class="dotl" style="background:${DT[s]}"></span><span style="flex:1">${esc(t)}</span>${pr}<span class="m"><bdi>${i ? (gEst(i, g) ? '≈' : '') + gTot(i, g) : 0}</bdi></span></div>`;
+  }).join(''), colG(g));
 }
 function glC(gid, j, k, d) { const m = S.gg.find(x => x.id == gid).models[k], i = glGet(gid, S.tags.glass[j]); upd(() => { i.stock[m] = Math.max(0, (i.stock[m] || 0) + d); touch(i); }); if (d > 0) reqChk('أنتي كاس ' + m); }
 function glLv(gid, j, k, l) { const m = S.gg.find(x => x.id == gid).models[k], i = glGet(gid, S.tags.glass[j]); upd(() => { i.lv = i.lv || {}; i.lv[m] = l; delete i.stock[m]; touch(i, 1); }); if (l != 'r') reqChk('أنتي كاس ' + m); }
@@ -391,16 +415,16 @@ function glEx(gid, j, k) {
 }
 function glMin(gid, j) {
   const ty = S.tags.glass[j], i = gitem(gid, ty) || {};
-  ask('الحد والسعر — ' + ty, [{ k: 'm', l: `حد خاص بهذه المجموعة: «قارب النفاد» عند مجموع ≤ (فارغ = حد ${ty}: ${gTyLim(ty) - 1}). اكتب 0 إن كانت نادرة ولا تريد تنبيهاً إلا عند نفادها`, t: 'tel', v: i.min != null ? i.min - 1 : '' }, { k: 'p', l: 'السعر', t: 'tel', v: i.price || '' }]).then(v => {
+  ask('الحد والسعر — ' + ty, [{ k: 'p', l: 'سعر البيع (درهم)', t: 'tel', v: i.price || '' }, { k: 'm', l: `حد خاص بهذه المجموعة: «قارب النفاد» عند مجموع فأقل (فارغ = حد ${ty}: ${gTyLim(ty) - 1}). اكتب 0 إن كانت نادرة`, t: 'tel', v: i.min != null ? i.min - 1 : '' }]).then(v => {
     if (!v) return; const r = glGet(gid, ty), m = v.m.trim();
-    upd(() => { if (m === '') delete r.min; else r.min = ci(m) + 1; if (can('price')) r.price = v.p; r.by = S.me; });
+    upd(() => { if (m === '') delete r.min; else r.min = ci(m) + 1; if (can('price')) r.price = v.p.trim(); r.by = S.me; });
   });
 }
 const clrM = n => S.items.forEach(i => { if (i.sec == 'glass' && i.lv) delete i.lv[n]; });
 let GS = {};
 function glAdd() {
   GS = {}; fsInit([['brand', 'الماركة']], {});
-  $('sh').innerHTML = `<div class="bar"></div><h3>موديل جديد</h3><label>اسم الموديل<input id="gn"></label><div id="cc"></div><button class="btn" onclick="glNext()">التالي</button>`;
+  $('sh').innerHTML = `<div class="bar"></div><h3>موديل جديد</h3><div id="cc"></div><label>اسم الموديل<input id="gn" placeholder="مثال: A15"></label><button class="btn" onclick="glNext()">التالي</button>`;
   sheetOpen(() => { }); chipsR();
 }
 function glNext() {
@@ -426,7 +450,7 @@ function glNew() {
 }
 function glM(gid) {
   const g = S.gg.find(x => x.id == gid); fsInit([['brand', 'الماركة (اختياري)']], {});
-  $('sh').innerHTML = `<div class="bar"></div><h3>موديل مطابق</h3><label>الاسم<input id="gmn"></label><div id="cc"></div><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({n:$('gmn').value.trim(),b:FS.v.brand||''})">حفظ</button></div>`;
+  $('sh').innerHTML = `<div class="bar"></div><h3>موديل مطابق</h3><div id="cc"></div><label>الاسم<input id="gmn"></label><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({n:$('gmn').value.trim(),b:FS.v.brand||''})">حفظ</button></div>`;
   sheetOpen(v => {
     if (!v || !v.n) return; const n = v.n, o = gOf(n); if (o && o.id == gid) return toast('موجود في المجموعة');
     const add = () => { clrM(n); g.models.push(n); if (v.b) { g.br = g.br || {}; g.br[n] = v.b; } };
@@ -467,7 +491,7 @@ function glRm(gid) {
     });
   });
 }
-const gl2 = i => { const g = S.gg.find(x => x.id == i.gid); return g ? `<div class="card"><b>زجاج ${esc(i.ty)}: ${esc(g.models.join(' / '))}</b><div class="m">المجموع ${gEst(i, g) ? '≈' : ''}${gTot(i, g)} · آخر تأكيد قبل ${Math.floor((Date.now() - cfTime(i)) / 864e5)} يوم</div></div>` : ''; };
+const gl2 = i => { const g = S.gg.find(x => x.id == i.gid); return g ? `<div class="card"><b>زجاج ${esc(i.ty)}: ${esc(g.models.join(' / '))}</b><div class="m">المجموع <bdi>${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · آخر تأكيد قبل ${Math.floor((Date.now() - cfTime(i)) / 864e5)} يوم</div></div>` : ''; };
 function buyG(id) {
   const i = find(id), g = i && S.gg.find(x => x.id == i.gid); if (!i || !g) return;
   commit('تم الشراء', () => { i.lv = i.lv || {}; i.stock = i.stock || {}; for (const l of ['c', 'b', 'a']) { g.models.forEach(m => { if (mval(i, m) < lvN(l)) { i.lv[m] = l; delete i.stock[m]; } }); if (gSt(i, g, i.ty) == 'g') break; } touch(i, 1); });
@@ -482,17 +506,22 @@ const csSt = i => { const t = csTot(i); return t <= 0 ? 'r' : (t <= csLim(i) || 
 function csCard(i) {
   const s = csSt(i), V0 = i.v || [], ex = EXP['c_' + i.id], cmp = isCmp('case') && V.v == 'sec';
   const limV = !ex && V0.length > (cmp ? 3 : 4) ? V0.slice(0, cmp ? 2 : 4) : V0;
+  const prHtml = i.price ? `<span class="cmp-pr">${esc(i.price)}${/^\d+$/.test(i.price) ? ' درهم' : ''}</span>` : '';
   const chips = `<div class="cs-chips">` + limV.map(x => `<div class="cs-chip ${x.n <= 0 ? 'low' : ''}"><span>${esc([x.g, x.c].filter(Boolean).join('·') || 'عام')}</span><button onclick="csC('${i.id}','${x.id}',-1)">−</button><b>${x.n}</b><button onclick="csC('${i.id}','${x.id}',1)">+</button>${x.n <= 0 && can('del') ? `<button onclick="csX('${i.id}','${x.id}')" style="color:#dc2626">×</button>` : ''}</div>`).join('')
     + (V0.length > limV.length || ex ? `<button class="tag" style="margin:0;padding:4px 10px;font-size:.8rem" onclick="toggleExp('c_${i.id}')">${ex ? 'طيّ ▴' : '+' + (V0.length - limV.length) + ' أخرى ▾'}</button>` : '') + `</div>`;
   if (cmp) {
-    return cardH(`<div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csQuickNote('${i.id}')"><b>${esc(i.name)}</b></div><span class="m">المجموع ${csTot(i)}${i.lim != null ? ' · ≤' + i.lim : ''}</span><button class="btn s sm" onclick="csLimEd('${i.id}')">الحد</button><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button></div>` + chips, colOf(i), 'cmp');
+    return cardH(`<div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csQuickNote('${i.id}')"><b>${esc(i.name)}</b></div>${prHtml}<span class="m">المجموع ${csTot(i)}${i.lim != null ? ' · حد ' + i.lim : ''}</span><button class="btn s sm" onclick="csLimEd('${i.id}')">الحد والسعر</button><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button></div>` + chips, colOf(i), 'cmp');
   }
-  return cardH(`<div class="row2"><b>${esc(i.name)}</b><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]} · ${csTot(i)}${i.lim != null ? ' · حد خاص ≤' + i.lim : ''}</span></div>`
+  return cardH(`<div class="row2"><b>${esc(i.name)}</b>${prHtml}<span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]} · ${csTot(i)}${i.lim != null ? ' · حد خاص ' + i.lim + ' فأقل' : ''}</span></div>`
     + chips
     + fxShow(i) + (i.rem ? `<div class="m" style="margin-top:6px"><span class="dotl" style="background:${DT.g}"></span> باقي: ${esc(i.rem)}</div>` : '') + (i.need ? `<div class="rs" style="margin-top:4px"><span class="dotl" style="background:${DT.r}"></span> خاصنا: ${esc(i.need)}</div>` : '')
-    + `<div class="sub"><button class="btn s sm" onclick="csQuickNote('${i.id}')">باقي / خاصنا</button><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button><button class="btn s sm" onclick="csLimEd('${i.id}')">الحد</button>${S.fields.some(f => f.sec == 'case') ? `<button class="btn s sm" onclick="csFx('${i.id}')">خانات</button>` : ''}<button class="btn s sm" onclick="csDel('${i.id}')">حذف</button></div>`, colOf(i));
+    + `<div class="sub"><button class="btn s sm" onclick="csQuickNote('${i.id}')">باقي / خاصنا</button><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button><button class="btn s sm" onclick="csLimEd('${i.id}')">الحد والسعر</button>${S.fields.some(f => f.sec == 'case') ? `<button class="btn s sm" onclick="csFx('${i.id}')">خانات</button>` : ''}<button class="btn s sm" onclick="csDel('${i.id}')">حذف</button></div>`, colOf(i));
 }
-function csView() { const a = srt(S.items.filter(i => i.sec == 'case'), 'case', i => i.name, csTot, i => i.at); return { t: 'البوشيط', h: `<button class="btn" onclick="csAdd()">+ إضافة موديل</button>` + sortBar('case') + (a.map(csCard).join('') || '<p class="m">لا شيء بعد</p>') }; }
+function csView() {
+  const allCs = S.items.filter(i => i.sec == 'case'), totPcs = allCs.reduce((s, i) => s + csTot(i), 0);
+  const a = srt(allCs, 'case', i => i.name, csTot, i => i.at);
+  return { t: 'البوشيط', h: `<button class="btn" onclick="csAdd()">+ إضافة موديل (${allCs.length} صنف · ${totPcs} قطعة)</button>` + sortBar('case') + (a.map(csCard).join('') || '<p class="m">لا شيء بعد</p>') };
+}
 function csC(id, vid, d) { const it = find(id), x = it.v.find(y => y.id == vid); upd(() => { x.n = Math.max(0, x.n + d); touch(it); }); if (d > 0) reqChk('بوشيط ' + it.name); }
 function csX(id, vid) { if (!can('del')) return toast('الحذف للمدير فقط'); const r = find(id); sure('حذف هذا النوع؟').then(y => { if (y) commit('تم الحذف', () => { r.v = r.v.filter(x => x.id != vid); }); }); }
 function csDel(id) { del('items', id, find(id).name); }
@@ -514,11 +543,12 @@ function csNew() {
 function csVar(id) { PR = find(id); $('sh').innerHTML = ''; sheetOpen(v => csDone(v, PR)); csVarForm(); }
 function csVarForm() {
   fsInit([['gender', 'الجنس'], ['color', 'اللون']], {});
-  $('sh').innerHTML = `<div class="bar"></div><h3>${esc(PR.name)} — نوع جديد</h3><div id="cc"></div><label>العدد<input id="cq" type="number" value="1"></label><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({g:FS.v.gender||'',c:FS.v.color||'',n:ci($('cq').value)})">حفظ</button></div>`; chipsR();
+  $('sh').innerHTML = `<div class="bar"></div><h3>${esc(PR.name)} — نوع جديد</h3><div class="row2" style="gap:8px"><label style="flex:1">العدد<input id="cq" type="number" value="1"></label>${!S.items.includes(PR) ? `<label style="flex:1">السعر (اختياري)<input id="cpr" type="tel" value="${esc(PR.price || '')}" placeholder="مثال: 30"></label>` : ''}</div><div id="cc"></div><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({g:FS.v.gender||'',c:FS.v.color||'',n:ci($('cq').value),pr:$('cpr')?$('cpr').value.trim():''})">حفظ</button></div>`; chipsR();
 }
 function csDone(v, r) {
   if (!v || !r) return;
-  commit('تمت الإضافة', () => { if (!S.items.includes(r)) S.items.push(r); const x = r.v.find(y => y.g == v.g && y.c == v.c); if (x) x.n += v.n; else r.v.push({ id: uid(), ...v }); touch(r, 1); });
+  const pr = v.pr; delete v.pr;
+  commit('تمت الإضافة', () => { if (pr && can('price')) r.price = pr; if (!S.items.includes(r)) S.items.push(r); const x = r.v.find(y => y.g == v.g && y.c == v.c); if (x) x.n += v.n; else r.v.push({ id: uid(), ...v }); touch(r, 1); });
   if (v.n > 0) reqChk('بوشيط ' + r.name, 1);
 }
 function csFx(id) {
@@ -528,9 +558,12 @@ function csFx(id) {
 }
 function csLimEd(id) {
   const i = find(id);
-  ask('حد خاص — ' + i.name, [{ k: 'n', l: `«قارب النفاد» عند مجموع ≤ (فارغ = الحد العام ${lim('cl')}). اكتب 0 إن كان نادراً ولا تريد تنبيهاً إلا عند نفاده`, t: 'tel', v: i.lim ?? '' }]).then(v => {
+  ask('الحد والسعر — بوشيط ' + i.name, [
+    { k: 'p', l: 'سعر البيع (درهم — اختياري)', t: 'tel', v: i.price || '' },
+    { k: 'n', l: `«قارب النفاد» عند مجموع فأقل (فارغ = الحد العام ${lim('cl')}). اكتب 0 إن كان نادراً`, t: 'tel', v: i.lim ?? '' }
+  ]).then(v => {
     if (!v) return; const n = v.n.trim();
-    upd(() => { if (n === '') delete i.lim; else i.lim = ci(n); i.by = S.me; });
+    upd(() => { if (n === '') delete i.lim; else i.lim = ci(n); if (can('price')) i.price = (v.p || '').trim(); i.by = S.me; });
   });
 }
 function csQuickNote(id) {
@@ -589,8 +622,9 @@ function acForm(rec) {
   fsInit([['kind', 'النوع'], ['conn', 'الموصل', () => kc(FS.v.kind).conn && shown('acc', 'conn')], ['tier', 'الفئة (السعر)', () => kc(FS.v.kind).tier && shown('acc', 'tier')], ['pw', 'القدرة (واط)', () => gkc(FS.v.kind).w]],
     { kind: rec.kind || '', conn: rec.conn || '', tier: rec.tier || '', pw: rec.pw || '' }, 'acc', rec);
   $('sh').innerHTML = `<div class="bar"></div><h3>${ed ? 'تعديل' : 'إكسسوار جديد'}</h3><div id="cc"></div>`
-    + `<label${hh('acc', 'brand')}>الماركة (اختياري)<input id="ab" value="${esc(rec.brand || '')}"></label><label${hh('acc', 'price')}>السعر<input id="ap" type="tel" value="${esc(rec.price || '')}" ${ed && !can('price') ? 'disabled' : ''}></label>`
-    + `<label${hh('acc', 'cnt')}>العدد (اختياري — فارغ = متوفر/قليل/نفد)<input id="acn" type="tel" value="${esc(rec.cnt ?? '')}"></label><label${hh('acc', 'lim')}>الحد: «قليل» عند عدد ≤ (اختياري)<input id="acl" type="tel" value="${esc(rec.lim ?? '')}"></label>`
+    + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:1;margin-top:8px"${hh('acc', 'price')}>السعر<input id="ap" type="tel" value="${esc(rec.price || '')}" placeholder="أو من الفئة" ${ed && !can('price') ? 'disabled' : ''}></label><label style="flex:1;margin-top:8px"${hh('acc', 'cnt')}>العدد (اختياري)<input id="acn" type="tel" value="${esc(rec.cnt ?? '')}" placeholder="فارغ = متوفر/قليل"></label></div>`
+    + `<div id="cc2"></div>`
+    + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:1;margin-top:8px"${hh('acc', 'brand')}>الماركة (اختياري)<input id="ab" value="${esc(rec.brand || '')}"></label><label style="flex:1;margin-top:8px"${hh('acc', 'lim')}>الحد: «قليل» عند (اختياري)<input id="acl" type="tel" value="${esc(rec.lim ?? '')}"></label></div>`
     + `<div id="fx"></div><label${hh('acc', 'note')}>ملاحظة<textarea id="an">${esc(rec.note || '')}</textarea></label><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="acSave()">حفظ</button></div>` + (ed ? '' : moreBtn('acSave'));
   chipsR();
 }
@@ -669,7 +703,7 @@ const agBuy = e => { const d = agD(e); if (d) { agSet(d, g => { g.lv = 'g'; dele
 function agCnt(e) { const d = agD(e); if (d) ask('المجموع التقريبي — ' + d.title, [{ k: 'n', l: 'العدد تقريباً', t: 'tel', v: d.tot ?? '' }]).then(v => { if (v && v.n.trim() !== '') { agSet(d, g => { g.cnt = ci(v.n); delete g.lv; }, true, true); if (+v.n > 0) reqChk(d.title, 1); } }); }
 function agLimEd(e) {
   const d = agD(e); if (!d) return; if (!isAdmin()) return toast('للمدير فقط');
-  ask('الحد — ' + d.title, [{ k: 'n', l: '«قارب النفاد» عند مجموع ≤ (فارغ = الحد العام)', t: 'tel', v: d.g && d.g.lim != null ? d.g.lim : '' }]).then(v => { if (v) agSet(d, g => { if (v.n.trim() === '') delete g.lim; else g.lim = ci(v.n); }, false); });
+  ask('الحد — ' + d.title, [{ k: 'n', l: '«قارب النفاد» عند مجموع فأقل (فارغ = الحد العام)', t: 'tel', v: d.g && d.g.lim != null ? d.g.lim : '' }]).then(v => { if (v) agSet(d, g => { if (v.n.trim() === '') delete g.lim; else g.lim = ci(v.n); }, false); });
 }
 function agAddB(e) { const d = agD(e); if (!d) return; $('sh').innerHTML = ''; sheetOpen(v => acDone(v, PR)); acForm({ kind: d.kind, conn: d.conn, tier: d.tier, pw: d.pw }); }
 function agDel(e) {

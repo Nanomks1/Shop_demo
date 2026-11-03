@@ -1,18 +1,24 @@
 /* ============================================================
-   app.js — الهيكل: الرئيسية، البحث، المزيد، المستخدمون، القفل،
-   النسخ الاحتياطي، الإعدادات العامة، الأيقونة العائمة، والإقلاع.
+   app.js — الهيكل: الرئيسية، البحث وكاشف الأثمنة، المزيد، المستخدمون،
+   القفل، النسخ الاحتياطي، الإعدادات العامة، الأيقونة العائمة، والإقلاع.
    يُحمَّل آخر ملف (بعد ملفات الأقسام).
    ============================================================ */
 
-/* ---------- الأقسام ---------- */
+/* ---------- الأقسام (مع إجمالي القطع الفعلية للجرد بالعين) ---------- */
 const SECS = [['phones', 'الهواتف', 'cphone'], ['glass', 'الأنتي كاس', 'cglass'], ['case', 'البوشيط', 'ccase'], ['acc', 'الإكسسوارات', 'cacc']];
-const secCount = k => k == 'glass' ? S.gg.length : S.items.filter(i => i.sec == k).length;
+function secSub(k) {
+  if (k == 'glass') return S.gg.length + ' مجموعة';
+  const L = S.items.filter(i => i.sec == k);
+  if (k == 'phones') { const pcs = L.reduce((a, i) => a + (+i.cnt || 0), 0); return L.length + ' صنف · ' + pcs + ' قطعة'; }
+  if (k == 'case') { const pcs = L.reduce((a, i) => a + (typeof csTot == 'function' ? csTot(i) : 0), 0); return L.length + ' موديل · ' + pcs + ' قطعة'; }
+  return L.length + ' صنف';
+}
 const soon = t => ({ t, h: '<div class="card"><b>يُبنى في مرحلة قادمة</b><p class="m">هذا القسم لم يُنقل إلى النسخة الجديدة بعد، والنسخة القديمة (v2) ما زالت تعمل.</p></div>' });
 VW.sec = VW.sec || (() => soon('قسم'));
 VW.rp = VW.rp || (() => soon('الصيانة'));
 VW.rep = VW.rep || (() => soon('التقرير'));
 
-/* ---------- البحث الموحّد ---------- */
+/* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري ---------- */
 let SC = '';   // نطاق البحث الحالي
 const scopeChips = () => [['', 'الكل'], ...SRCH.map(p => [p.k, p.l])].map(([k, l]) => `<button class="tag ${SC == k ? 'on' : ''}" onclick="scSet('${k}')">${l}</button>`).join('');
 /* مصادر بحث إضافية: الصيانة، طلبات الزبائن، دليل أسعار الإصلاح */
@@ -22,9 +28,46 @@ SRCH.push(
   { k: 'gd', l: 'أسعار الإصلاح', run: n => S.guide.filter(g => nz(g.m + ' ' + g.f + ' ' + (g.n || '')).includes(n)).slice(0, 20).map(gdCard) }
 );
 function scSet(k) { SC = k; const b = $('sc'); if (b) b.innerHTML = scopeChips(); sq(Q); }
+
+/* بطاقة ملخص الأثمنة والتوفر للموديل المبحوث عنه */
+function priceLookupCard(n) {
+  if (SC || n.length < 2) return '';
+  const phs = S.items.filter(i => i.sec == 'phones' && nzOf(i, nzText).includes(n)).slice(0, 4);
+  const gls = S.gg.filter(g => g.models.some(m => nz(((g.br || {})[m] || '') + m).includes(n))).slice(0, 2);
+  const css = S.items.filter(i => i.sec == 'case' && nz(i.name).includes(n)).slice(0, 3);
+  const gds = S.guide.filter(g => nz(g.m + ' ' + g.f).includes(n)).slice(0, 5);
+  const hits = (phs.length ? 1 : 0) + (gls.length ? 1 : 0) + (css.length ? 1 : 0) + (gds.length ? 1 : 0);
+  if (hits < 2 && !gds.length) return '';
+  const rowP = (icName, lbl, right, stCol) => `<div class="rrow" style="padding:6px 0">${stCol ? `<span class="dotl" style="background:${stCol}"></span>` : I(icName)}<span class="rt" style="font-size:.88rem">${lbl}</span><b style="color:var(--p);white-space:nowrap;font-size:.92rem">${right}</b></div>`;
+  let rows = '';
+  phs.forEach(i => {
+    const st = typeof phSt == 'function' ? DT[phSt(i)] : '';
+    rows += rowP('mobile', `<b>${esc(i.brand + ' ' + i.name)}</b> <span class="m">${esc([i.color, i.cap].filter(Boolean).join('·'))} (${av(i)} متاح)</span>`, esc(i.price ? i.price + (/(درهم|د)/.test(i.price) ? '' : ' د') : 'بدون سعر'), st);
+  });
+  gls.forEach(g => {
+    const parts = S.tags.glass.map(t => {
+      const it = gitem(g.id, t), tot = it ? gTot(it, g) : 0;
+      if (!tot && !(it && it.price)) return '';
+      return `${esc(t)}: <b>${it && it.price ? esc(it.price) + ' د' : '—'}</b> <span class="m">(${it && gEst(it, g) ? '≈' : ''}${tot})</span>`;
+    }).filter(Boolean);
+    if (parts.length) rows += `<div class="rrow" style="padding:6px 0">${I('shield')}<span class="rt" style="font-size:.86rem"><b>زجاج ${esc(g.models.slice(0, 3).join(' / '))}:</b> ${parts.join(' · ')}</span></div>`;
+  });
+  css.forEach(c => {
+    const st = typeof csSt == 'function' ? DT[csSt(c)] : '';
+    rows += rowP('box', `<b>بوشيط ${esc(c.name)}</b> <span class="m">(المتوفر ${csTot(c)})</span>`, esc(c.price ? c.price + ' د' : csTot(c) + ' قطعة'), st);
+  });
+  gds.forEach(g => {
+    rows += rowP('tool', `إصلاح ${esc(g.m)} — <b>${esc(g.f)}</b>${g.n ? ` <span class="m">(${esc(g.n)})</span>` : ''}`, esc(g.p) + (/^\d+$/.test(String(g.p).trim()) ? ' د' : ''));
+  });
+  return rows ? `<div class="card" style="border-color:var(--p);background:color-mix(in srgb,var(--ab) 35%,var(--c));padding:10px 12px"><div class="row2" style="margin-bottom:4px"><b style="color:var(--p);font-size:.9rem">${I('tag')} ملخص الأثمنة والتوفر</b></div>${rows}</div>` : '';
+}
+
 function srch(q) {
   const n = nz(q); if (!n) return '';
-  const o = []; SRCH.forEach(p => { if (SC && SC != p.k) return; const r = p.run(n); if (r.length) o.push((SC ? '' : `<h3>${p.l} <span class="m">(${r.length})</span></h3>`) + r.join('')); });
+  const o = [];
+  const topCard = priceLookupCard(n);
+  if (topCard) o.push(topCard);
+  SRCH.forEach(p => { if (SC && SC != p.k) return; const r = p.run(n); if (r.length) o.push((SC ? '' : `<h3>${p.l} <span class="m">(${r.length})</span></h3>`) + r.join('')); });
   return o.join('') || '<p class="m">لا نتائج</p>';
 }
 function sq(q) {
@@ -75,17 +118,17 @@ VW.home = () => {
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
-      + `<input id="q_inp" placeholder="ابحث: هاتف، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)">`
+      + `<input id="q_inp" placeholder="ابحث عن ثمن أو سلعة: هاتف، زجاج، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)">`
       + `<div id="sc">${scopeChips()}</div><div id="res"></div>`
       + homeQuickBar() + scan + topup
       + '<h3>الأقسام</h3>'
-      + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="go('sec',{k:'${k}'})">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secCount(k)} صنف</span></span></button>`).join('')}</div>`
+      + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="go('sec',{k:'${k}'})">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`
       + more,
     a: () => sq(Q)
   };
 };
 
-/* ---------- المزيد (منظم بأقسام مستقلة) ---------- */
+/* ---------- المزيد (منظم بأقسام مستقلة وبطاقات مدمجة الوصف) ---------- */
 const MG = [
   ['shop', 'المحل', 'كل ما يخص الأقسام: الهواتف والأنتي كاس والبوشيط والإكسسوارات والصيانة والتعبئة والتقرير. لكل قسم صفحة واحدة تجمع وسومه وحدوده.', 'grid'],
   ['dev', 'المظهر والقفل', 'الثيم وحجم الخط والزر العائم، ورمز القفل السريع والقفل التلقائي.', 'palette'],
@@ -129,7 +172,11 @@ VW.st = () => ({
 VW.st_grp = () => {
   const g = V.g || 'shop', info = MG.find(x => x[0] == g) || MG[0];
   const L = MORE.filter(x => x.g == g).sort((a, b) => (a.o || 50) - (b.o || 50));
-  const R = x => row(x.l, x.fn, x.n ? x.n() : '') + (x.d ? `<p class="m" style="margin:2px 8px 12px;font-size:.8rem">${x.d}</p>` : '');
+  /* دمج الوصف داخل البطاقة نفسها ليكون المظهر متناسقاً وواضحاً */
+  const R = x => {
+    const sub = x.n ? x.n() : '';
+    return `<button class="card st-card" onclick="${x.fn}"><div class="st-txt"><b>${esc(x.l)}</b>${x.d ? `<div class="m">${esc(x.d)}</div>` : ''}</div>${sub ? `<span class="m" style="white-space:nowrap">${esc(sub)}</span>` : ''}<span class="st-arr">${ic('back')}</span></button>`;
+  };
   const A = L.filter(x => x.adv), B = L.filter(x => !x.adv);
   return {
     t: info[1],
@@ -159,7 +206,7 @@ MORE.push(
   };
   const D = {
     'الهواتف': 'الماركات والألوان والسعات وألوان الماركات وحدود النفاد', 'الأنتي كاس': 'أنواع الزجاج والمستويات والحدود',
-    'البوشيط': 'الجنس والألوان', 'الإكسسوارات': 'الأنواع والموصلات والفئات وحدود كل نوع',
+    'البوشيط': 'الجنس والألوان وحدود النفاد', 'الإكسسوارات': 'الأنواع والموصلات والفئات وحدود كل نوع',
     'الصيانة': 'أعطال الصيانة، دليل الأسعار، مدة حفظ الصور، والأرشفة', 'تلوين البطاقات': 'ألوان خفيفة للتمييز بين الماركات والأقسام',
     'الحقول في النماذج': 'اختر الحقول التي تظهر عند إضافة هاتف أو غيره', 'الخانات المخصصة': 'أضف خانة خاصة بك (مثل: الضمان) لأي قسم',
     'المزامنة بين الأجهزة': 'ربط هاتفين أو أكثر ليتطابقوا في البيانات',
@@ -193,12 +240,14 @@ function fabAct() {
     + `<button class="btn s" onclick="finish(2)">${I('tool')} + استلام صيانة</button>`
     + `<button class="btn s" onclick="finish(3)">${I('scan')} مسح باركود أو IMEI</button>`
     + `<button class="btn s" onclick="finish(4)">${I('chat')} تسجيل طلب زبون</button>`
+    + `<button class="btn s" onclick="finish(5)">${I('check')} الجرد والجولة اليومية</button>`
     + `<button class="btn s" onclick="finish(null)">إلغاء</button>`;
   sheetOpen(w => {
     if (w == 1) phAdd();
     else if (w == 2) rEd(null);
     else if (w == 3) bcHome();
     else if (w == 4) rq();
+    else if (w == 5) go('jl');
   });
 }
 function fabUpd() {
@@ -229,7 +278,7 @@ function limEd(k) {
   });
 }
 
-/* ---------- الوسوم (القائمة العامة وإضافة وسم؛ التعديل والحذف الذكي موحدان في المخزون) ---------- */
+/* ---------- الوسوم (القائمة العامة وإضافة وسم؛ التعديل والحذف الذكي موحدان في invtools.js) ---------- */
 VW.st_tags = () => ({ t: 'الوسوم', h: Object.keys(TG).map(g => row(TG[g], `go('st_tg',{g:'${g}'})`, S.tags[g].length)).join('') });
 function tgAdd(g) {
   if (!can('tags')) return toast('للمدير فقط');

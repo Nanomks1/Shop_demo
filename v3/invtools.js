@@ -1,31 +1,119 @@
 /* ============================================================
-   invtools.js — أدوات المخزون: الجولة اليومية، الباركود والبيع السريع،
-   إعدادات الأقسام والألوان والخانات، وإدارة الوسوم الموحدة.
+   invtools.js — أدوات المخزون: الجرد والجولة اليومية، كاشف الأثمنة،
+   الباركود والبيع السريع، إعدادات الأقسام والألوان والخانات، وإدارة الوسوم الموحدة.
    يُحمَّل مباشرة بعد inventory.js وقبل repair.js.
    ============================================================ */
 
-/* ============================ الجولة اليومية (تعتمد cfTime و cf من inventory.js) ============================ */
-function rnd() {
-  const ms = lim('stale') * 864e5, now = Date.now(), out = [];
+/* ============================ الجرد والجولة اليومية (مضغوط + مقسم بالرفوف + شامل/قديم) ============================ */
+function rndAll() {
+  const out = [];
   S.items.forEach(i => {
     if (i.sec == 'acc' && gkc(i.kind).g) return;
-    const t = cfTime(i);
-    if (t && now - t > ms) out.push(i);
+    if (i.sec == 'glass' && !S.gg.some(g => g.id == i.gid)) return;
+    out.push(i);
   });
   agList().forEach(d => {
-    const t = d.cf || d.at;
-    if (t && now - t > ms) out.push({ _jl: 'ag', id: d.id, d, at: t, cf: t });
+    const t = d.cf || d.at || Date.now();
+    out.push({ _jl: 'ag', sec: 'acc', id: d.id, d, at: t, cf: t });
   });
   (S.tp || []).forEach(r => {
-    const t = cfTime(r);
-    if (r && r.k == 'c' && t && now - t > ms) out.push({ _jl: 'tp', id: r.id, r, at: t, cf: t });
+    if (!r || r.k != 'c') return;
+    const t = cfTime(r) || Date.now();
+    out.push({ _jl: 'tp', sec: 'tp', id: r.id, r, at: t, cf: t });
   });
   return out.sort((a, b) => cfTime(a) - cfTime(b));
 }
+
+/* rnd() بدون معاملات تعيد الأصناف القديمة فقط (لتنبيهات التقرير والرئيسية) */
+function rnd(allMode) {
+  const ms = lim('stale') * 864e5, now = Date.now();
+  const L = rndAll();
+  return allMode ? L : L.filter(i => { const t = cfTime(i); return t && now - t > ms; });
+}
+
+const jlSecOf = i => i._jl == 'ag' ? 'acc' : i._jl == 'tp' ? 'tp' : i.sec;
+const jlTextOf = i => {
+  if (i._jl == 'ag') return i.d.title;
+  if (i._jl == 'tp') return 'تعبئة ' + i.r.op + ' ' + i.r.n;
+  if (i.sec == 'glass') { const g = S.gg.find(x => x.id == i.gid); return (i.ty || '') + ' ' + (g ? g.models.join(' ') : ''); }
+  return nzText(i);
+};
+
+/* إحصائيات سريعة للرف/القسم: عدد الأصناف + مجموع القطع الفعلية */
+function jlSecSummary(sec) {
+  if (sec == 'phones') {
+    const A = ph();
+    return `${A.length} صنف · مجموع القطع: ${A.reduce((s, i) => s + (+i.cnt || 0), 0)}`;
+  }
+  if (sec == 'glass') {
+    const tot = S.gg.reduce((s, g) => s + S.tags.glass.reduce((a, t) => { const i = gitem(g.id, t); return a + (i ? gTot(i, g) : 0); }, 0), 0);
+    return `${S.gg.length} مجموعة · مجموع الزجاج: ≈${tot}`;
+  }
+  if (sec == 'case') {
+    const A = S.items.filter(i => i.sec == 'case');
+    return `${A.length} موديل · مجموع القطع: ${A.reduce((s, i) => s + csTot(i), 0)}`;
+  }
+  if (sec == 'acc') {
+    const A = S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g), G = agList();
+    const cnt = A.reduce((s, i) => s + (typeof i.cnt == 'number' ? i.cnt : 0), 0) + G.reduce((s, d) => s + (d.tot || 0), 0);
+    return `${A.length + G.length} صنف/مجموعة · مجموع القطع المرقمة: ${cnt}`;
+  }
+  if (sec == 'tp') {
+    const C = (S.tp || []).filter(r => r && r.k == 'c');
+    return `${C.length} فئة بطاقات · مجموع البطاقات: ${C.reduce((s, r) => s + (+r.val || 0), 0)}`;
+  }
+  const phCnt = ph().reduce((s, i) => s + (+i.cnt || 0), 0), csCnt = S.items.filter(i => i.sec == 'case').reduce((s, i) => s + csTot(i), 0);
+  return `الهواتف: ${phCnt} قطعة · البوشيط: ${csCnt} قطعة`;
+}
+
 const itemCard = i => i._jl == 'ag' ? agCard(i.d) : i._jl == 'tp' ? jlTpCard(i.r) : i.sec == 'phones' ? phCard(i) : i.sec == 'case' ? csCard(i) : i.sec == 'acc' ? acCard(i) : i.sec == 'glass' ? gl2(i) : '';
 function jlTpCard(r) {
   return `<div class="card"><div class="row2"><b>تعبئة ${esc(r.op)} — بطاقة ${r.n} درهم</b><span class="m">${r.val <= 0 ? 'نفد' : r.est ? '≈' + r.val : 'العدد ' + r.val}</span></div><div class="m">آخر تأكيد قبل ${Math.floor((Date.now() - cfTime(r)) / 864e5)} يوم</div><div class="sub"><button class="btn s sm" onclick="go('tp')">فتح شاشة التعبئة</button></div></div>`;
 }
+
+/* سطر جرد مضغوط وسريع (تعديل فوري + زر تأكيد ✓ في نفس السطر) */
+function jlCompactRow(i) {
+  const days = Math.max(0, Math.floor((Date.now() - cfTime(i)) / 864e5));
+  const dBadge = `<span class="m" style="font-size:.75rem">${days ? 'قبل ' + days + 'ي' : 'مؤكد اليوم'}</span>`;
+  if (i._jl == 'ag') {
+    const d = i.d, e = encodeURIComponent(d.id);
+    const sub = d.tot !== null ? `المجموع ${d.est ? '≈' : ''}${d.tot}` : ALB2[d.st];
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[d.st]}"></span><div class="cmp-main" onclick="agCnt('${e}')"><b>${esc(d.title)}</b><div class="m">${esc(sub)} · ${dBadge}</div></div>`
+      + ['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" style="margin:0;padding:4px 7px;font-size:.74rem" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('')
+      + `<button class="rck" title="تأكيد كما هو" onclick="rCfAg('${e}')">${I('check')}</button></div></div>`;
+  }
+  if (i._jl == 'tp') {
+    const r = i.r;
+    return `<div class="card cmp jl-row"><div class="row2"><div class="cmp-main" onclick="go('tp')"><b>تعبئة ${esc(r.op)} — ${r.n} درهم</b><div class="m">${r.val <= 0 ? 'نفد' : (r.est ? '≈' : 'العدد ') + r.val} · ${dBadge}</div></div>`
+      + `<button class="btn s sm" onclick="go('tp')">تعديل</button><button class="rck" title="تأكيد كما هو" onclick="rCfTp('${r.id}')">${I('check')}</button></div></div>`;
+  }
+  if (i.sec == 'phones') {
+    const s = phSt(i), sub = [i.color, i.ram, i.cap, i.price && i.price + ' درهم'].filter(Boolean).map(esc).join(' · ');
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phEd('${i.id}')"><b>${esc(i.brand + ' ' + i.name)}</b><div class="m">${sub ? sub + ' · ' : ''}${dBadge}</div></div>`
+      + `<button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button>`
+      + `<button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div></div>`;
+  }
+  if (i.sec == 'glass') {
+    const g = S.gg.find(x => x.id == i.gid); if (!g) return '';
+    const s = gSt(i, g, i.ty), j = Math.max(0, S.tags.glass.indexOf(i.ty));
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="go('sec',{k:'glass',ty:${j}})"><b>زجاج ${esc(i.ty)}: ${esc(g.models.join(' / '))}</b><div class="m">المجموع ${gEst(i, g) ? '≈' : ''}${gTot(i, g)}${i.price ? ' · ' + esc(i.price) : ''} · ${dBadge}</div></div>`
+      + `<button class="btn s sm" onclick="go('sec',{k:'glass',ty:${j}})">فتح</button><button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div></div>`;
+  }
+  if (i.sec == 'case') {
+    const s = csSt(i), chips = (i.v || []).map(x => `<div class="cs-chip ${x.n <= 0 ? 'low' : ''}"><span>${esc([x.g, x.c].filter(Boolean).join('·') || 'عام')}</span><button onclick="csC('${i.id}','${x.id}',-1)">−</button><b>${x.n}</b><button onclick="csC('${i.id}','${x.id}',1)">+</button></div>`).join('');
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csQuickNote('${i.id}')"><b>بوشيط ${esc(i.name)}</b><div class="m">المجموع ${csTot(i)}${i.price ? ' · ' + esc(i.price) : ''} · ${dBadge}</div></div>`
+      + `<button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div>${chips ? `<div class="cs-chips">${chips}</div>` : ''}</div>`;
+  }
+  if (i.sec == 'acc') {
+    const s = acSt(i), cn = typeof i.cnt == 'number';
+    const act = cn ? `<button class="btn s sm" onclick="acC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="acC('${i.id}',1)">+</button>`
+      : ['g', 'y', 'r'].map(x => `<button class="tag ${i.st == x ? 'on' : ''}" style="margin:0;padding:4px 7px;font-size:.74rem" onclick="acS('${i.id}','${x}')">${ALB[x]}</button>`).join('');
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="acEd('${i.id}')"><b>${esc(acTitle(i))}</b><div class="m">${i.price ? esc(i.price) + ' · ' : ''}${dBadge}</div></div>`
+      + act + `<button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div></div>`;
+  }
+  return '';
+}
+
 function rCf(id) { const i = find(id); if (i) upd(() => touch(i, 1)); }
 function rCfAg(e) {
   const d = agD(e); if (!d) return;
@@ -40,18 +128,101 @@ function rCfTp(id) {
   const r = (S.tp || []).find(x => x.id == id); if (!r) return;
   upd(() => { r.by = S.me; r.at = r.cf = Date.now(); });
 }
+
+function jlFiltered() {
+  const allMode = V.jm == 'all', sec = V.js || 'all', q = nz(V.jq || '');
+  return rnd(allMode).filter(i => (sec == 'all' || jlSecOf(i) == sec) && (!q || nz(jlTextOf(i)).includes(q)));
+}
+
+function rCfAll() {
+  const L = jlFiltered().slice(0, 40);
+  if (!L.length) return;
+  commit('تم تأكيد ' + L.length + ' صنف في الجرد', () => {
+    const now = Date.now();
+    L.forEach(i => {
+      if (i._jl == 'ag') {
+        let g = S.ag.find(x => x.id == i.id);
+        if (!g) { g = { id: i.d.id, kind: i.d.kind, conn: i.d.conn, tier: i.d.tier, pw: i.d.pw }; S.ag.push(g); }
+        g.by = S.me; g.at = g.cf = now;
+        i.d.mem.forEach(m => touch(m, 1));
+      } else if (i._jl == 'tp') {
+        i.r.by = S.me; i.r.at = i.r.cf = now;
+      } else {
+        touch(i, 1);
+      }
+    });
+  });
+}
+
+const JL_TABS = [['all', 'الكل'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['case', 'البوشيط'], ['acc', 'الإكسسوارات'], ['tp', 'التعبئة']];
+function jlRefreshList() {
+  const L = jlFiltered(), a = L.slice(0, 40), box = $('jl_list'), btn = $('jl_cf_all');
+  if (btn) { btn.hidden = !a.length; btn.innerHTML = `${I('check')} تأكيد كل القائمة الظاهرة (${a.length})`; }
+  if (box) box.innerHTML = a.map(jlCompactRow).join('') || '<p class="m" style="text-align:center;margin:20px 0">كل الأصناف في هذا القسم مؤكدة حديثاً ✓</p>';
+}
 VW.jl = () => {
-  const a = rnd().slice(0, 30);
+  const allMode = V.jm == 'all', sec = V.js || 'all', staleCnt = rnd(false).length;
+  const L = jlFiltered(), a = L.slice(0, 40);
   return {
-    t: 'الجولة اليومية',
-    h: '<p class="m">أكّد ما لم يتغير وعدّل ما تغيّر. الأقدم أولاً.</p>'
-      + (a.map(i => {
-        const cfFn = i._jl == 'ag' ? `rCfAg('${encodeURIComponent(i.id)}')` : i._jl == 'tp' ? `rCfTp('${i.id}')` : `rCf('${i.id}')`;
-        return `<div>${itemCard(i)}<button class="btn s" onclick="${cfFn}">تأكيد: كما هو</button></div>`;
-      }).join('') || '<p class="m">كل شيء مؤكد حديثاً.</p>')
+    t: 'الجرد والجولة اليومية',
+    h: `<div class="card" style="padding:10px 12px;margin:4px 0 8px"><div class="row2"><b style="flex:1">${esc(jlSecSummary(sec))}</b><span class="m">غير مؤكد: ${staleCnt}</span></div></div>`
+      + `<div class="row2" style="gap:6px;margin-bottom:8px">`
+      + `<button class="tag ${!allMode ? 'on' : ''}" style="flex:1;margin:0;justify-content:center" onclick="V.jm='old';render()">يحتاج تأكيداً (${staleCnt})</button>`
+      + `<button class="tag ${allMode ? 'on' : ''}" style="flex:1;margin:0;justify-content:center" onclick="V.jm='all';render()">جرد شامل للقسم</button>`
+      + `</div>`
+      + `<div class="rtabs">${JL_TABS.map(([k, l]) => `<button class="tag ${sec == k ? 'on' : ''}" onclick="V.js='${k}';render()">${l}</button>`).join('')}</div>`
+      + `<input placeholder="ابحث داخل الجرد: موديل أو ماركة..." value="${esc(V.jq || '')}" oninput="V.jq=this.value;jlRefreshList()">`
+      + `<button id="jl_cf_all" class="btn s" ${a.length ? '' : 'hidden'} onclick="rCfAll()">${I('check')} تأكيد كل القائمة الظاهرة (${a.length})</button>`
+      + `<div id="jl_list">${a.map(jlCompactRow).join('') || '<p class="m" style="text-align:center;margin:20px 0">كل الأصناف في هذا القسم مؤكدة حديثاً ✓ — اضغط «جرد شامل للقسم» إن أردت مراجعة كل المخزون.</p>'}</div>`
   };
 };
-HOME.after.push(() => { const n = rnd().length; return n ? `<button class="btn s" onclick="go('jl')">الجولة اليومية (${n})</button>` : ''; });
+HOME.after.push(() => {
+  const n = rnd(false).length;
+  return `<button class="btn s" onclick="go('jl')">${I('check')} الجرد والجولة اليومية${n ? ` (${n} يحتاج تأكيداً)` : ''}</button>`;
+});
+
+/* ============================ كاشف الأثمنة الفوري (ملخص شامل للموديل في البحث) ============================ */
+window.priceLookupHtml = function (q) {
+  const n = nz(q); if (n.length < 2) return '';
+  const phs = ph().filter(i => nzOf(i, nzText).includes(n)).slice(0, 6);
+  const gls = S.gg.filter(g => g.models.some(m => nz(((g.br || {})[m] || '') + m).includes(n))).slice(0, 4);
+  const css = S.items.filter(i => i.sec == 'case' && nzOf(i, nzText).includes(n)).slice(0, 4);
+  const gds = (S.guide || []).filter(g => nz(g.m + ' ' + g.f + ' ' + (g.n || '')).includes(n)).slice(0, 6);
+  const acs = S.items.filter(i => i.sec == 'acc' && nzOf(i, nzText).includes(n)).slice(0, 5);
+  const cats = (phs.length ? 1 : 0) + (gls.length ? 1 : 0) + (css.length ? 1 : 0) + (gds.length ? 1 : 0) + (acs.length ? 1 : 0);
+  if (!cats) return '';
+  let rows = '';
+  phs.forEach(i => {
+    const s = phSt(i), sub = [i.color, i.ram, i.cap, i.cond && i.cond != 'جديد' && i.cond].filter(Boolean).join('·');
+    rows += `<div class="prc-r" onclick="phEd('${i.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="prc-t">📱 <b>${esc(i.brand + ' ' + i.name)}</b> ${sub ? `<small class="m">(${esc(sub)})</small>` : ''} <small class="m">· متاح ${av(i)}</small></span><b class="cmp-pr">${esc(i.price ? i.price + ' درهم' : 'بدون سعر')}</b></div>`;
+  });
+  gls.forEach(g => {
+    S.tags.glass.forEach((ty, j) => {
+      const it = gitem(g.id, ty), tot = it ? gTot(it, g) : 0, s = it ? gSt(it, g, ty) : 'r';
+      if (tot > 0 || (it && it.price)) {
+        rows += `<div class="prc-r" onclick="glMin('${g.id}',${j})"><span class="dotl" style="background:${DT[s]}"></span><span class="prc-t">🛡️ زجاج <b>${esc(ty)}</b> <small class="m">(${esc(g.models.join('/'))}) · ${it && gEst(it, g) ? '≈' : ''}${tot}</small></span><b class="cmp-pr">${esc(it && it.price ? it.price + ' درهم' : 'حدّد السعر')}</b></div>`;
+      }
+    });
+  });
+  css.forEach(c => {
+    const s = csSt(c);
+    rows += `<div class="prc-r" onclick="csLimEd('${c.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="prc-t">🅿️ بوشيط <b>${esc(c.name)}</b> <small class="m">· المتوفر ${csTot(c)}</small></span><b class="cmp-pr">${esc(c.price ? c.price + ' درهم' : 'حدّد السعر')}</b></div>`;
+  });
+  acs.forEach(a => {
+    const s = acSt(a);
+    rows += `<div class="prc-r" onclick="acEd('${a.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="prc-t">🔌 <b>${esc(acName(a))}</b></span><b class="cmp-pr">${esc(a.price ? a.price + ' درهم' : '—')}</b></div>`;
+  });
+  gds.forEach(g => {
+    rows += `<div class="prc-r" onclick="go('gd')"><span class="dotl" style="background:var(--p)"></span><span class="prc-t">🔧 إصلاح <b>${esc(g.m)}</b> — ${esc(g.f)}${g.n ? ` <small class="m">(${esc(g.n)})</small>` : ''}</span><b class="cmp-pr">${esc(g.p)} درهم</b></div>`;
+  });
+  if (!rows) return '';
+  return `<div class="card prc-card"><div class="row2" style="margin-bottom:6px"><b>${I('tag')} ملخص الأثمنة والتوفر</b><span class="m" style="font-size:.78rem">اضغط على أي سطر للتعديل</span></div>${rows}</div>`;
+};
+SRCH.unshift({
+  k: 'prc',
+  l: 'الأثمنة',
+  run: n => { const h = window.priceLookupHtml(n); return h ? [h] : []; }
+});
 
 /* ============================ الباركود و IMEI والبيع السريع المتتالي ============================ */
 let BS = null, BI = 0, BCODE = '', BDP = null, BC_AC = null, BC_LAST = { c: '', t: 0 };
@@ -222,10 +393,10 @@ VW.st_fld = () => ({
 
 const tg = (l, g) => [l, "go('st_tg',{g:'" + g + "'})", () => S.tags[g].length];
 const CATS = {   // ملف الصيانة يضيف CATS.rp
-  ph: ['الهواتف', [tg('الماركات', 'brand'), tg('الألوان', 'color'), tg('السعات', 'cap'), tg('RAM', 'ram'), ['الحد العام: «قارب النفاد» عند عدد ≤', "limEd('low')", () => '≤ ' + lim('low')], ['ألوان الماركات وحدودها', "go('st_br')"]], 'phones'],
-  gl: ['الأنتي كاس', [tg('أنواع الزجاج', 'glass'), ['حد «قارب النفاد» لكل نوع زجاج', "go('st_gl')", () => '≤ ' + (lim('gmin') - 1)], ['كم تُحسب المستويات (غامق / أخضر / فاتح / قليل)', "go('st_gl2')"]], null],
-  cs: ['البوشيط', [tg('الجنس', 'gender'), tg('الألوان', 'color'), ['الحد العام: «قارب النفاد» عند مجموع ≤', "limEd('cl')", () => '≤ ' + lim('cl')]], 'case'],
-  ac: ['الإكسسوارات', [tg('الأنواع', 'kind'), tg('الموصلات', 'conn'), tg('الفئات السعرية', 'tier'), tg('القدرات (واط)', 'pw'), ['الحد العام للقطع بعدد: «قليل» عند ≤', "limEd('acl')", () => '≤ ' + lim('acl')], ['الحد العام للمجموعات (كابل/شاحن) عند ≤', "limEd('agl')", () => '≤ ' + lim('agl')], ['إعداد كل نوع (الخاصيات، العرض، الحد)', "go('st_ak')"]], 'acc']
+  ph: ['الهواتف', [tg('الماركات', 'brand'), tg('الألوان', 'color'), tg('السعات', 'cap'), tg('RAM', 'ram'), ['الحد العام: «قارب النفاد» عند عدد', "limEd('low')", () => lim('low') + ' فأقل'], ['ألوان الماركات وحدودها', "go('st_br')"]], 'phones'],
+  gl: ['الأنتي كاس', [tg('أنواع الزجاج', 'glass'), ['حد «قارب النفاد» لكل نوع زجاج', "go('st_gl')", () => (lim('gmin') - 1) + ' فأقل'], ['كم تُحسب المستويات (غامق / أخضر / فاتح / قليل)', "go('st_gl2')"]], null],
+  cs: ['البوشيط', [tg('الجنس', 'gender'), tg('الألوان', 'color'), ['الحد العام: «قارب النفاد» عند مجموع', "limEd('cl')", () => lim('cl') + ' فأقل']], 'case'],
+  ac: ['الإكسسوارات', [tg('الأنواع', 'kind'), tg('الموصلات', 'conn'), tg('الفئات السعرية', 'tier'), tg('القدرات (واط)', 'pw'), ['الحد العام للقطع بعدد: «قليل» عند', "limEd('acl')", () => lim('acl') + ' فأقل'], ['الحد العام للمجموعات (كابل/شاحن) عند', "limEd('agl')", () => lim('agl') + ' فأقل'], ['إعداد كل نوع (الخاصيات، العرض، الحد)', "go('st_ak')"]], 'acc']
 };
 VW.st_c = () => { const c = CATS[V.c] || CATS.ph; return { t: c[0], h: c[1].map(([l, fn, n]) => row(l, fn, n ? n() : '')).join('') + (c[2] ? row('خانات مخصصة لهذا القسم', "go('st_fx',{fs:'" + c[2] + "'})", S.fields.filter(f => f.sec == c[2]).length || '') : '') }; };
 MORE.push(
@@ -238,14 +409,14 @@ MORE.push(
 /* حدود الأنتي كاس */
 function glTyEd(j) {
   if (!isAdmin()) return toast('للمدير فقط'); const t = S.tags.glass[j], c = (S.cfg.gtl || {})[t];
-  ask('حد زجاج ' + t, [{ k: 'n', l: `«قارب النفاد» عند مجموع المجموعة ≤ (فارغ = الحد العام ${lim('gmin') - 1}). اكتب 0 للنوع النادر`, t: 'tel', v: c != null ? c - 1 : '' }]).then(v => {
+  ask('حد زجاج ' + t, [{ k: 'n', l: `«قارب النفاد» عند مجموع المجموعة (فارغ = الحد العام ${lim('gmin') - 1} فأقل). اكتب 0 للنوع النادر`, t: 'tel', v: c != null ? c - 1 : '' }]).then(v => {
     if (!v) return; const n = v.n.trim();
     upd(() => { S.cfg.gtl = S.cfg.gtl || {}; if (n === '') delete S.cfg.gtl[t]; else S.cfg.gtl[t] = ci(n) + 1; });
   });
 }
-VW.st_gl = () => ({ t: 'حدود الأنتي كاس', h: '<p class="m">يُحكم على كل مجموعة موديلات بمجموعها: «قارب النفاد» عند ≤ الحد. الترتيب: حد المجموعة الخاص (زر «الحد والسعر» داخل بطاقتها) ثم حد نوع الزجاج ثم الحد العام.</p>'
-  + row('الحد العام لكل الأنواع', "limEd('gmin')", '≤ ' + (lim('gmin') - 1)) + '<h3>حد خاص بنوع زجاج</h3>'
-  + S.tags.glass.map((t, j) => { const c = (S.cfg.gtl || {})[t]; return row(t, 'glTyEd(' + j + ')', c != null ? '≤ ' + (c - 1) : 'العام'); }).join('') });
+VW.st_gl = () => ({ t: 'حدود الأنتي كاس', h: '<p class="m">يُحكم على كل مجموعة موديلات بمجموعها: «قارب النفاد» عند العدد المحدد فأقل. الترتيب: حد المجموعة الخاص (زر «الحد والسعر» داخل بطاقتها) ثم حد نوع الزجاج ثم الحد العام.</p>'
+  + row('الحد العام لكل الأنواع', "limEd('gmin')", (lim('gmin') - 1) + ' فأقل') + '<h3>حد خاص بنوع زجاج</h3>'
+  + S.tags.glass.map((t, j) => { const c = (S.cfg.gtl || {})[t]; return row(t, 'glTyEd(' + j + ')', c != null ? (c - 1) + ' فأقل' : 'العام'); }).join('') });
 VW.st_gl2 = () => ({ t: 'مستويات الأنتي كاس', h: '<p class="m">عندما تختار مستوى تقريبياً (غامق / أخضر / فاتح / قليل) بدل عدد دقيق، يحسب التطبيق كل مستوى كعدد القطع الظاهر هنا ليحكم على مجموع المجموعة. غيّرها فقط إن اختلفت تقديراتك.</p>'
   + ['gA', 'gB', 'gC', 'gY'].map(k => row((LM.find(x => x[0] == k) || [, k])[1].replace('أنتي كاس: ', ''), "limEd('" + k + "')", lim(k))).join('') });
 
@@ -265,7 +436,7 @@ function ceOpen(o, cb) { if (!can('tags')) return toast('للمدير فقط'); 
 function brEd(j) { const b = S.tags.brand[j]; ceOpen({ t: 'b', n: b, c: BC(b), l: (S.cfg.bl || {})[b] ?? '' }, v => { if (!v) return; upd(() => { S.cfg.bcol = S.cfg.bcol || {}; S.cfg.bcol[b] = v.c; S.cfg.bl = S.cfg.bl || {}; const l = String(v.l).trim(); if (l === '') delete S.cfg.bl[b]; else S.cfg.bl[b] = Math.max(1, +l || 1); }); }); }
 function cmEd(s) { ceOpen({ t: 's', n: SN3[s], m: CM(s), c: SCOL(s), mo: s == 'acc' ? [['s', 'لون واحد للقسم'], ['o', 'بدون']] : [['b', 'حسب الماركة'], ['s', 'لون واحد للقسم'], ['o', 'بدون']] }, v => { if (!v) return; upd(() => { S.cfg.cm = S.cfg.cm || {}; S.cfg.cm[s] = v.m; S.cfg.scol = S.cfg.scol || {}; S.cfg.scol[s] = v.c; }); }); }
 VW.st_col = () => ({ t: 'الألوان', h: '<p class="m">ألوان خفيفة على خلفية البطاقات للتمييز بسرعة.</p>' + ['phones', 'glass', 'case', 'acc'].map(s => { const m = CM(s), c = m == 's' ? SCOL(s) : ''; return `<button class="card row2" onclick="cmEd('${s}')"><b>${SN3[s]}</b><span class="m">${MN[m]}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') + row('ألوان الماركات وحدودها', "go('st_br')") });
-VW.st_br = () => ({ t: 'ألوان الماركات', h: '<p class="m">اللون + حد «قارب على النفاد» لكل ماركة (اختياري).</p>' + S.tags.brand.map((b, j) => { const c = BC(b), l = (S.cfg.bl || {})[b]; return `<button class="card row2" onclick="brEd(${j})"><b>${esc(b)}</b><span class="m">${l != null ? 'حد ≤' + l : ''}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') });
+VW.st_br = () => ({ t: 'ألوان الماركات', h: '<p class="m">اللون + حد «قارب على النفاد» لكل ماركة (اختياري).</p>' + S.tags.brand.map((b, j) => { const c = BC(b), l = (S.cfg.bl || {})[b]; return `<button class="card row2" onclick="brEd(${j})"><b>${esc(b)}</b><span class="m">${l != null ? 'حد ' + l + ' فأقل' : ''}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') });
 
 /* إعداد كل نوع إكسسوار: صفحة مستقلة (ما يظهر + خاصيات + العرض + الحد) */
 const akProps = k => S.fields.filter(f => f.sec == 'acc' && (f.kinds || []).includes(k));
@@ -282,7 +453,7 @@ function akTog(j, key) {
 function akLim(j, w) {
   if (!isAdmin()) return toast('للمدير فقط');
   const k = S.tags.kind[j], grp = w == 'g', cur = grp ? gkc(k).lim : kc(k).lim, gen = lim(grp ? 'agl' : 'acl');
-  ask('الحد — ' + k, [{ k: 'n', l: (grp ? '«قارب النفاد» عند مجموع المجموعة ≤' : '«قليل» لكل قطعة من هذا النوع عند ≤') + ' (فارغ = الحد العام ' + gen + ')', t: 'tel', v: cur ?? '' }]).then(v => {
+  ask('الحد — ' + k, [{ k: 'n', l: (grp ? '«قارب النفاد» عند مجموع المجموعة' : '«قليل» لكل قطعة من هذا النوع عند') + ' (فارغ = الحد العام ' + gen + ' فأقل)', t: 'tel', v: cur ?? '' }]).then(v => {
     if (!v) return; const n = v.n.trim();
     upd(() => {
       const o = grp ? (S.cfg.gkc = S.cfg.gkc || {}) : (S.cfg.kc = S.cfg.kc || {}), c = kc(k), g = gkc(k);
@@ -301,7 +472,7 @@ VW.st_akk = () => {
       + P.map(f => row(f.name, `feEd('${f.id}')`, (f.unit ? f.unit + ' · ' : '') + f.opts.length + ' خيار')).join('')
       + `<button class="btn s" onclick="feEd(null,${j})">+ خاصية جديدة</button>`
       + '<h3>طريقة العرض</h3><div>' + t('g', 'مجموعات حسب الفئة', g.g) + '</div><p class="m">للكابلات والشواحن: يُحكم على المجموع بدل كل قطعة.</p>'
-      + '<h3>الحد</h3>' + (g.g ? row('«قارب النفاد» عند مجموع المجموعة ≤', `akLim(${j},'g')`, g.lim ?? lim('agl')) : row('«قليل» لكل قطعة من هذا النوع عند ≤', `akLim(${j},'p')`, c.lim ?? lim('acl')))
+      + '<h3>الحد</h3>' + (g.g ? row('«قارب النفاد» عند مجموع المجموعة', `akLim(${j},'g')`, (g.lim ?? lim('agl')) + ' فأقل') : row('«قليل» لكل قطعة من هذا النوع عند', `akLim(${j},'p')`, (c.lim ?? lim('acl')) + ' فأقل'))
   };
 };
 VW.st_ak = () => ({

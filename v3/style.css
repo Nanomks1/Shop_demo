@@ -1,17 +1,17 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-:root{--bg:#f4f6fa;--c:#fff;--t:#0f172a;--m:#64748b;--b:#e2e8f0;--p:#2563eb;--ab:#e0e9ff;--onp:#fff;--fs:17px;--r:16px;color-scheme:light}
-[data-th=d]{--bg:#0b1220;--c:#131c2e;--t:#e6edf7;--m:#8a97ad;--b:#22304a;--p:#4f8cff;--ab:#1b2a4a;--onp:#06122b;color-scheme:dark}
-[data-th=g]{--bg:#f2f7f4;--c:#fff;--t:#10231a;--m:#5a7066;--b:#dbe7e0;--p:#059669;--ab:#d1fae5}
-[data-th=v]{--bg:#130f1f;--c:#1c1630;--t:#ece8f8;--m:#9b92b8;--b:#2d2548;--p:#8b5cf6;--ab:#2a2150;color-scheme:dark}
-[data-th=w]{--bg:#f8f3ea;--c:#fffdf8;--t:#2b2118;--m:#7a6a58;--b:#e8dcc8;--p:#d9480f;--ab:#fdeadf}
-@media(prefers-color-scheme:dark){[data-th=a]{--bg:#0b1220;--c:#131c2e;--t:#e6edf7;--m:#8a97ad;--b:#22304a;--p:#4f8cff;--ab:#1b2a4a;--onp:#06122b;color-scheme:dark}}
+:root{--bg:#f4f6fa;--c:#fff;--t:#0f172a;--m:#64748b;--b:#cbd5e1;--p:#2563eb;--ab:#e0e9ff;--onp:#fff;--fs:17px;--r:16px;color-scheme:light}
+[data-th=d]{--bg:#0b1220;--c:#131c2e;--t:#e6edf7;--m:#8a97ad;--b:#263552;--p:#4f8cff;--ab:#1b2a4a;--onp:#06122b;color-scheme:dark}
+[data-th=g]{--bg:#f2f7f4;--c:#fff;--t:#10231a;--m:#5a7066;--b:#c5d8ce;--p:#059669;--ab:#d1fae5}
+[data-th=v]{--bg:#130f1f;--c:#1c1630;--t:#ece8f8;--m:#9b92b8;--b:#352b54;--p:#8b5cf6;--ab:#2a2150;color-scheme:dark}
+[data-th=w]{--bg:#f8f3ea;--c:#fffdf8;--t:#2b2118;--m:#7a6a58;--b:#dfd0b8;--p:#d9480f;--ab:#fdeadf}
+@media(prefers-color-scheme:dark){[data-th=a]{--bg:#0b1220;--c:#131c2e;--t:#e6edf7;--m:#8a97ad;--b:#263552;--p:#4f8cff;--ab:#1b2a4a;--onp:#06122b;color-scheme:dark}}
 html{font-size:var(--fs);overflow-x:hidden}
 body{margin:0;overflow-x:hidden;max-width:100%;background:var(--bg);color:var(--t);font-family:system-ui,"Segoe UI",Tahoma,sans-serif;line-height:1.6}
 header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:4px;padding:8px 8px;padding-top:calc(10px + env(safe-area-inset-top));background:var(--c);border-bottom:1px solid var(--b)}
 h1{flex:1;min-width:0;margin:0;font-size:1rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-h3{margin:20px 4px 8px;font-size:.95rem;font-weight:600;color:var(--m)}
-main{padding:14px 14px 110px;max-width:640px;margin:auto}
+h3{margin:18px 4px 8px;font-size:.95rem;font-weight:600;color:var(--m)}
+main{padding:14px 14px 130px;max-width:640px;margin:auto}
 .ic{width:1.4rem;height:1.4rem;flex:none}
 .ic.s{width:1.05em;height:1.05em;vertical-align:-.15em;margin-inline-end:.25em}
 .ib,.chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--b);background:var(--c);color:var(--t);border-radius:12px;min-height:44px;padding:0 14px;font:inherit;cursor:pointer}
@@ -35,25 +35,34 @@ button,input,select,textarea{touch-action:manipulation}
 .sc .ic{width:2.7rem;height:2.7rem;padding:.65rem;border-radius:14px;background:var(--ab);color:var(--p);margin-bottom:8px}
 .sc b{font-weight:600}
 .sw3{display:inline-flex}.sw3 i{width:16px;height:30px;display:block;border:1px solid var(--b)}.sw3 i:first-child{border-radius:0 8px 8px 0}.sw3 i:last-child{border-radius:8px 0 0 8px}
-input,select,textarea{width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--b);border-radius:12px;background:var(--c);color:var(--t);font:inherit}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--p);outline-offset:-1px;border-color:transparent}
+
+/* حقول الإدخال: تباين واضح وإطار بارز داخل النوافذ والبطاقات */
+input,select,textarea{width:100%;min-height:48px;padding:10px 12px;border:1.5px solid color-mix(in srgb,var(--t) 16%,var(--b));border-radius:12px;background:var(--c);color:var(--t);font:inherit}
+#sh input,#sh select,#sh textarea,.card input,.card select,.card textarea{background:var(--bg);border-color:color-mix(in srgb,var(--t) 22%,var(--b))}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--p);outline-offset:-1px;border-color:transparent!important}
 ::placeholder{color:var(--m);opacity:.8}
-label{display:block;margin:12px 0 4px;color:var(--m);font-size:.92rem}
+label{display:block;margin:10px 0 4px;color:var(--m);font-size:.9rem;font-weight:500}
+
 nav{position:fixed;bottom:0;inset-inline:0;z-index:10;display:flex;background:var(--c);border-top:1px solid var(--b);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
 nav button{flex:1;border:0;background:none;color:var(--m);padding:4px 0;font:inherit;font-size:.78rem;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
 nav button .ic{width:3rem;height:1.9rem;padding:.25rem .8rem;border-radius:999px}
 nav button.on{color:var(--p);font-weight:600}
 nav button.on .ic{background:var(--ab)}
-#ov{position:fixed;inset:0;background:rgba(2,6,23,.55);z-index:20;display:flex;align-items:flex-end}
-#sh{width:100%;max-width:640px;margin:auto;background:var(--c);border-radius:24px 24px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+
+/* النافذة السفلية ملتصقة بالأسفل وتغطي شريط التنقل مع تثبيت أزرار الحفظ */
+#ov{position:fixed;inset:0;background:rgba(2,6,23,.65);z-index:25;display:flex;align-items:flex-end}
+#sh{width:100%;max-width:640px;margin:0 auto;background:var(--c);border-radius:24px 24px 0 0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.35)}
 .bar{width:44px;height:5px;border-radius:3px;background:var(--b);margin:0 auto 10px}
-.acts{display:flex;gap:10px}
-.acts .btn{margin:14px 0 0}
+.acts{display:flex;gap:10px;position:sticky;bottom:calc(-14px - env(safe-area-inset-bottom));background:var(--c);padding:10px 0 4px;margin-top:12px;border-top:1px solid var(--b);z-index:3}
+.acts .btn{margin:0}
+
 .toast{position:fixed;bottom:84px;inset-inline:14px;max-width:612px;margin:auto;background:#1e293b;color:#fff;padding:12px 16px;border-radius:14px;display:flex;justify-content:space-between;align-items:center;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .toast button{background:none;border:0;color:#93c5fd;font:inherit;font-weight:600;cursor:pointer}
-.tag{display:inline-flex;gap:8px;align-items:center;margin:4px;padding:8px 14px;border-radius:999px;background:var(--c);border:1px solid var(--b);color:var(--t);font:inherit;cursor:pointer}
+.tag{display:inline-flex;gap:8px;align-items:center;margin:3px;padding:7px 13px;border-radius:999px;background:var(--c);border:1px solid var(--b);color:var(--t);font:inherit;font-size:.9rem;cursor:pointer}
+#sh .tag{background:var(--bg)}
 .tag b{color:#dc2626}
-.tag.on{background:var(--p);color:var(--onp);border-color:var(--p)}
+.tag.on,#sh .tag.on{background:var(--p);color:var(--onp);border-color:var(--p);font-weight:600}
+
 /* لوحة الأرقام التفاعلية مع دعم التبديل للحروف */
 .pin-wrap{margin:10px 0 4px;user-select:none}
 .pin-dots{display:flex;justify-content:center;align-items:center;gap:12px;min-height:46px;padding:8px 14px;margin-bottom:10px;border-radius:14px;background:var(--bg);border:1px solid var(--b);direction:ltr}
@@ -64,33 +73,36 @@ nav button.on .ic{background:var(--ab)}
 .pkb.fn{font-size:.95rem;font-weight:600;color:var(--m);background:var(--bg)}
 .pin-sw{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:10px auto 0;background:none;border:0;color:var(--p);font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:8px}
 
-.rtabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px}
-.rtabs .tag{flex:none;white-space:nowrap;margin:0;padding:6px 14px;font-size:.88rem}
+/* أشرطة الفلاتر الأفقية بدون شريط تمرير رمادي */
+.rtabs,#sc{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.rtabs::-webkit-scrollbar,#sc::-webkit-scrollbar{display:none}
+.rtabs{margin-bottom:10px;padding-bottom:2px}
+.rtabs .tag,#sc .tag{flex:none;white-space:nowrap;margin:0;padding:6px 14px;font-size:.88rem}
+#sc{padding:4px 0 2px;margin-top:4px}
+
 .card .sub{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.card .sub .btn.sm{flex:1 1 auto;min-height:38px;padding:0 6px;white-space:nowrap;font-size:.82rem}
+.card .sub .btn.sm{flex:1 1 auto;min-height:38px;padding:0 8px;white-space:nowrap;font-size:.82rem}
 .row2 .btn.sm{min-height:36px;padding:0 10px;font-size:.85rem;white-space:nowrap}
 
 .bkb{display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:10px;border:1px solid var(--b);border-radius:12px;background:var(--c);font-size:.85rem}
 .bkb span{flex:1;color:var(--m)}
 .bkb .btn.sm{min-height:32px;padding:0 12px;font-size:.85rem}
 .bkx{background:none;border:0;color:var(--m);font-size:1rem;padding:4px 8px;cursor:pointer}
-#sc{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:2px;margin-top:4px;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 26px);mask-image:linear-gradient(to right,transparent 0,#000 26px)}
-#sc .tag{flex:none;white-space:nowrap;margin:0}
 
 /* ---- شارة رقم التذكرة القصير في الصيانة ---- */
-.tk,.tk-b,.rp-tk{display:inline-flex;align-items:center;justify-content:center;padding:2px 9px;border-radius:8px;background:var(--ab);color:var(--p);font-weight:800;font-size:.88rem;letter-spacing:.5px;direction:ltr;margin-inline-end:6px;flex:none}
+.tk,.tk-b,.rp-tk{display:inline-flex;align-items:center;justify-content:center;padding:2px 9px;border-radius:8px;background:var(--ab);color:var(--p);font-weight:800;font-size:.88rem;letter-spacing:.5px;direction:ltr;margin-inline-end:6px;flex:none;border:1px solid color-mix(in srgb,var(--p) 28%,transparent)}
 
 /* ---- شريط النظرة السريعة (Dashboard Pills) ---- */
-.qbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px}
-.qpill{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--c);border:1px solid var(--b);border-radius:14px;font:inherit;color:var(--t);text-align:start;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.03)}
-.qpill .qic{width:2.35rem;height:2.35rem;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+.qbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}
+.qpill{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:3px;padding:12px 6px;background:var(--c);border:1px solid var(--b);border-radius:14px;font:inherit;color:var(--t);cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+.qpill .qic{width:2rem;height:2rem;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
 .qpill .qic .ic{width:1.25rem;height:1.25rem}
 .qpill.rp .qic{background:var(--ab);color:var(--p)}
 .qpill.al .qic{background:color-mix(in srgb,#dc2626 14%,var(--c));color:#dc2626}
 .qpill.ok .qic{background:color-mix(in srgb,#16a34a 14%,var(--c));color:#16a34a}
-.qpill .qtxt{min-width:0;flex:1}
-.qpill b{display:block;font-size:.88rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qpill span{display:block;font-size:.76rem;color:var(--m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qpill .qn{font-size:1.7rem;font-weight:800;line-height:1.1}
+.qpill .ql{font-size:.78rem;font-weight:600;line-height:1.2}
+.qpill .qs{font-size:.72rem;color:var(--m)}
 
 /* ---- بطاقات أقسام الإعدادات (المزيد) ---- */
 .st-card{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer}
@@ -98,7 +110,7 @@ nav button.on .ic{background:var(--ab)}
 .st-ic .ic{width:1.35rem;height:1.35rem}
 .st-txt{flex:1;min-width:0}
 .st-txt b{display:block;font-weight:600;font-size:.96rem}
-.st-txt .m{font-size:.82rem;line-height:1.35;margin-top:2px}
+.st-txt .m{font-size:.8rem;line-height:1.35;margin-top:2px}
 .st-arr{color:var(--m);opacity:.6;transform:scaleX(-1);flex:none}
 
 /* ---- تثبيت شريط الفلاتر والترتيب أثناء التمرير (Sticky Sub-header) ---- */
@@ -109,12 +121,21 @@ nav button.on .ic{background:var(--ab)}
 .cmp-main{flex:1;min-width:0;cursor:pointer}
 .cmp-main b{display:block;font-size:.94rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cmp-main .m{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cmp-pr{font-weight:700;font-size:.9rem;color:var(--p);white-space:nowrap;margin-inline:4px}
+.cmp-pr{font-weight:800;font-size:1.02rem;color:var(--p);white-space:nowrap;margin-inline:4px}
 .cs-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .cs-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:10px;background:var(--bg);border:1px solid var(--b);font-size:.83rem}
 .cs-chip.low{border-color:#fca5a5;background:color-mix(in srgb,#dc2626 8%,var(--bg))}
 .cs-chip button{width:26px;height:26px;border-radius:7px;border:1px solid var(--b);background:var(--c);color:var(--t);font:inherit;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
 .cs-chip b{min-width:1.2rem;text-align:center}
+
+/* ---- الجرد السريع المضغوط وكاشف الأثمنة ---- */
+.jl-row{display:flex;align-items:center;gap:6px;padding:10px 12px;margin:6px 0;border-radius:14px}
+.jl-info{flex:1;min-width:0;cursor:pointer}
+.jl-info b{display:block;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jl-info .m{font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plk-card{border:1.5px solid var(--p);background:color-mix(in srgb,var(--ab) 25%,var(--c))}
+.plk-sec{border-top:1px solid var(--b);padding-top:7px;margin-top:7px}
+.plk-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;font-size:.88rem}
 
 /* ---- الحواف الجانبية الملونة لبطاقات الصيانة ---- */
 .card.rp-in{border-inline-start:4px solid var(--p)}
@@ -123,13 +144,13 @@ nav button.on .ic{background:var(--ab)}
 .card.rp-late{border-inline-start:4px solid #dc2626}
 
 /* ---- الأيقونة العائمة السريعة (FAB) ---- */
-#fab{position:fixed;bottom:calc(74px + env(safe-area-inset-bottom));inset-inline-end:16px;z-index:12;display:flex;flex-direction:column;align-items:center;gap:10px}
-.fab-b{width:52px;height:52px;border-radius:16px;border:0;background:var(--p);color:var(--onp);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(37,99,235,.32);cursor:pointer;font:inherit}
-.fab-b .ic{width:1.45rem;height:1.45rem}
+#fab{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;z-index:12;display:flex;flex-direction:column;align-items:center;gap:10px}
+.fab-b{width:50px;height:50px;border-radius:16px;border:0;background:var(--p);color:var(--onp);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(37,99,235,.32);cursor:pointer;font:inherit}
+.fab-b .ic{width:1.4rem;height:1.4rem}
 
-/* ---- من الأنماط التي كانت تُحقن من ملفات JS ---- */
+/* ---- عناصر عامة ---- */
 .dotl{display:inline-block;width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 3px rgba(128,128,128,.18);flex:none}
-.cn{min-width:2.2rem;text-align:center;font-weight:700}
+.cn{min-width:2.1rem;text-align:center;font-weight:700}
 .rs{color:#b45309;font-weight:700}
 .sub{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.sub .btn{margin:0}
 .sw{width:42px;height:42px;border-radius:50%;border:3px solid transparent;margin:4px;padding:0;cursor:pointer}.sw.on{border-color:var(--t)}
@@ -140,22 +161,13 @@ nav button.on .ic{background:var(--ab)}
 .kvs{display:flex;gap:8px;margin:8px 0}
 .kv{flex:1;background:var(--bg);border-radius:10px;padding:6px 10px;text-align:center}
 .kv small{display:block;color:var(--m);font-size:.75rem}.kv b{font-size:1.1rem}
-/* ---- شاشات القفل (تحت النوافذ السفلية حتى تظهر فوقها نافذة الرمز) ---- */
+
+/* ---- شاشات القفل ---- */
 .lockscr{position:fixed;inset:0;z-index:15;background:var(--bg);overflow:auto;display:flex}
 .lockbox{margin:auto;width:100%;max-width:420px;padding:24px;display:flex;flex-direction:column;gap:10px}
 .lockbox h2{text-align:center;margin:0}
 .m.c{text-align:center;margin:0}
 .meter{height:8px;border-radius:4px;background:var(--b);margin-top:8px;overflow:hidden}.meter div{height:8px;border-radius:4px}
-
-/* الشريط السريع: ثلاث بطاقات بأرقام كبيرة */
-.qbar{grid-template-columns:repeat(3,1fr);gap:8px}
-.qpill{flex-direction:column;justify-content:center;text-align:center;gap:3px;padding:12px 6px}
-.qpill .qic{width:2rem;height:2rem}
-.qpill .qn{font-size:1.7rem;font-weight:800;line-height:1.1}
-.qpill .ql{font-size:.78rem;font-weight:600;line-height:1.2}
-.qpill .qs{font-size:.72rem;color:var(--m)}
-/* الأسعار أوضح */
-.cmp-pr{font-size:1.05rem;font-weight:800}
 
 /* الإحصائيات: أعمدة بسيطة */
 .brow{display:flex;align-items:center;gap:8px;margin:7px 0}
