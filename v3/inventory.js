@@ -156,13 +156,14 @@ const stkL = () => ph().filter(i => i.cnt > 0).sort((a, b) => (a.brand + a.name)
 const stkN = i => [i.brand, i.name, i.color, i.ram, i.cap].filter(Boolean).join(' ');
 function phCard(i) {
   const s = phSt(i), t = [i.color, i.ram, i.cap, i.cond && i.cond != 'جديد' && i.cond].filter(Boolean).map(esc).join(' · ');
+  const accBtn = `<button class="btn s sm" onclick="phAcc('${i.id}')">ملحقات</button>`;
   const repBtn = typeof usFromRep == 'function' && av(i) > 0 ? `<button class="btn s sm" onclick="usFromRep('${i.id}')">${I('swap')} روپريز</button>` : '';
   if (isCmp('phones') && V.v == 'sec') {
     return cardH(`<div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phEd('${i.id}')"><b>${esc(i.brand + ' ' + i.name)}</b>${t ? `<div class="m">${t}${rsQ(i) ? ' · محجوز ' + rsQ(i) : ''}</div>` : ''}</div>${i.price ? `<span class="cmp-pr">${esc(i.price)}</span>` : ''}<button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button></div>`, colOf(i), 'cmp');
   }
   return cardH(`<div class="row2"><b>${esc(i.brand + ' ' + i.name)}</b><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]}</span></div>${t ? `<div class="m">${t}</div>` : ''}${i.imei ? `<div class="m">IMEI: <bdi>${esc(i.imei)}</bdi></div>` : ''}${rsHtml(i)}${fxShow(i)}${i.note ? `<div class="m">${esc(i.note)}</div>` : ''}`
     + `<div class="row2" style="margin-top:8px"><b>${esc(i.price)}</b><button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button></div>`
-    + `<div class="sub"><button class="btn s sm" onclick="phEd('${i.id}')">تعديل</button>${shown('phones', 'res') ? `<button class="btn s sm" onclick="phRs('${i.id}')">حجز${rsQ(i) ? ' (' + rsQ(i) + ')' : ''}</button>` : ''}${repBtn}${(i.log || []).length ? `<button class="btn s sm" onclick="lgOpen('${i.id}')">السجل</button>` : ''}</div>`, colOf(i));
+    + `<div class="sub"><button class="btn s sm" onclick="phEd('${i.id}')">تعديل</button>${shown('phones', 'res') ? `<button class="btn s sm" onclick="phRs('${i.id}')">حجز${rsQ(i) ? ' (' + rsQ(i) + ')' : ''}</button>` : ''}${accBtn}${repBtn}${(i.log || []).length ? `<button class="btn s sm" onclick="lgOpen('${i.id}')">السجل</button>` : ''}</div>`, colOf(i));
 }
 function phView() {
   let a = srt(ph(), 'phones', i => i.brand + ' ' + i.name, i => i.cnt, i => i.at); if (V.f) a = a.filter(i => phSt(i) != 'g');
@@ -178,10 +179,11 @@ function phMatchCase(i) {
   const nm = nz(i.name), full = nz(i.brand + ' ' + i.name);
   return S.items.filter(c => c.sec == 'case' && (nz(c.name) == nm || nz(c.name) == full || (nz(c.name).length >= 2 && full.endsWith(nz(c.name)))));
 }
+function phAcc(id) { phUpR(id); sheetOpen(() => { }); }
 function phUpR(id) {
   const i = find(id); if (!i) return;
   const g = phMatchGlass(i), cs = phMatchCase(i), T = GT();
-  let h = `<div class="bar"></div><h3>${I('check')} بيع ${esc(i.brand + ' ' + i.name)}</h3><p class="m">هل أخذ الزبون معه أنتي كاس أو بوشيط لهذا الهاتف؟</p>`;
+  let h = `<div class="bar"></div><h3>${I('shield')} ملحقات ${esc(i.brand + ' ' + i.name)}</h3><p class="m">اخصم ما أخذه الزبون مع هذا الهاتف:</p>`;
   if (g) {
     const mName = g.models.find(m => nz(i.brand + ' ' + i.name).includes(nz(m))) || g.models[0];
     const mk = Math.max(0, g.models.indexOf(mName));
@@ -201,6 +203,7 @@ function phUpR(id) {
         + `</div></div>`;
     });
   }
+  if (!g && !cs.length) h += '<p class="m">لا يوجد أنتي كاس أو بوشيط مطابق لهذا الموديل في المخزون.</p>';
   h += `<div class="acts"><button class="btn" onclick="finish(null)">تم / إغلاق</button></div>`;
   $('sh').innerHTML = h;
 }
@@ -210,7 +213,6 @@ function phC(id, d) {
   if (d < 0 && i.cnt <= 0) return;
   commit(d < 0 ? 'بيع ' + i.brand + ' ' + i.name + ' (−1)' : 'إضافة ' + i.brand + ' ' + i.name + ' (+1)', () => { i.cnt = Math.max(0, i.cnt + d); touch(i); });
   if (d > 0) return reqChk(i.brand + ' ' + i.name);
-  if (d < 0 && (phMatchGlass(i) || phMatchCase(i).length)) { phUpR(id); sheetOpen(() => { }); }
 }
 /* الإضافة: ابحث أولاً، فإن وُجد الهاتف أضف الكمية بدل إعادة الكتابة */
 let PQ = '';

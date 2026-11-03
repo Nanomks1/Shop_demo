@@ -268,7 +268,7 @@ function dbtWA(id) {
     const details = all.length > 1
       ? `إجمالي المبلغ المتبقي هو ${tot} درهم (${all.map(x => dRem(x) + ' درهم: ' + (x.why || 'دين')).join(' + ')})`
       : `المبلغ المتبقي هو ${rem} درهم${d.why ? ' (' + d.why + ')' : ''}`;
-    const msg = `السلام عليكم ${d.name}، نتمنى أن تكونوا بخير.\nتذكير ودي من محل عزيز بخصوص الحساب: ${details}.\nشكراً جزيلاً لتعاملكم وثقتكم.`;
+    const msg = `السلام عليكم ${d.name}، نتمنى أن تكونوا بخير.\nتذكير ودي بخصوص الحساب: ${details}.\n— محل عزيز`;
     location.href = 'https://wa.me/' + ph + '?text=' + encodeURIComponent(msg);
   };
   if (xNum(d.tel).length >= 8) return send(d.tel);
