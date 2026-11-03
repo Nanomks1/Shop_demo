@@ -173,6 +173,7 @@
         + '<h3>أسطر إضافية في التقرير</h3>' + tog('سطر الصيانة (قيد الإصلاح / جاهز / منسي)', 'rr') + tog('سطر الديون المفتوحة', 'rd')
         + '<h3>تذكير الإرسال</h3>' + tog('تذكير في الرئيسية إن لم يُرسل التقرير اليوم', 'rm') + row('ساعة بدء التذكير', 'rcRh()', c.rh + ':00')
         + '<p class="m">أيام بلا تذكير:</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((n, i) => `<button class="tag ${c.nd.includes(i) ? 'on' : ''}" onclick="rcNd(${i})">${n}</button>`).join('') + '</div>'
+        + '<h3>الجولة اليومية</h3>' + row('يُعتبر الصنف غير مؤكد بعد (أيام)', "limEd('stale')", lim('stale') + ' يوم')
         + '<h3>المستوى الافتراضي</h3><div style="display:flex;gap:6px;margin-bottom:10px"><button class="tag ' + (c.lv == 'a' ? 'on' : '') + '" onclick="rcSet({lv:\'a\'})">النافد وقارب النفاد</button><button class="tag ' + (c.lv == 'r' ? 'on' : '') + '" onclick="rcSet({lv:\'r\'})">النافد فقط</button></div>'
         + '<h3>الأقسام الظاهرة في التقرير</h3>' + RTABS.filter(([k]) => k != 'all').map(([k, l]) => row(l, "rcHide('" + k + "')", yn(!c.hs.includes(k)))).join('')
         + `<div style="margin-top:14px"><button class="btn s" onclick="rcSet({lv:'a',tt:'تقرير محل عزيز',dt:1,st:1,pr:0,rq:1,pn:1,em:0,ft:'',hs:[],rr:0,rd:0,rm:1,nd:[],rh:16,qb:0})">إرجاع الإعدادات الافتراضية</button></div>`

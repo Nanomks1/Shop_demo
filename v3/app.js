@@ -103,13 +103,13 @@ const STX = [
   ['الزر العائم (+)', "go('st_look')", 'المظهر والقفل', 'أيقونة إضافة'],
   ['حد «متوفر» و«قارب» لبطاقات التعبئة', "go('st_tp')", 'التعبئة', '5 10 20 50 درهم'],
   ['حدود رصيد هاتف التعبئة', "go('st_tp')", 'التعبئة', 'منخفض نافد'],
-  ['ساعة تذكير التعبئة', "go('st_tp')", 'التعبئة', 'صباح']
+  ['ساعة تذكير التعبئة', "go('st_tp')", 'التعبئة', 'صباح'],
+  ['الجولة: يُعتبر الصنف غير مؤكد بعد (أيام)', "go('st_rep')", 'التقرير اليومي', 'جولة تأكيد مخزون']
 ];
 const stItems = () => {
   const o = [];
   MG.forEach(([k, t]) => MORE.filter(x => x.g == k).forEach(x => o.push({ l: x.l, fn: x.fn, p: t, kw: x.d || '' })));
   Object.values(CATS).forEach(c => c[1].forEach(([l, fn]) => o.push({ l, fn, p: c[0], kw: '' })));
-  LM.forEach(([k, l]) => o.push({ l, fn: `limEd('${k}')`, p: 'الحدود', kw: '' }));
   STX.forEach(([l, fn, p, kw]) => o.push({ l, fn, p, kw }));
   return o;
 };
@@ -139,7 +139,6 @@ VW.st_grp = () => {
 };
 MORE.push(
   { g: 'look', o: 10, l: 'الثيم وحجم الخط والأيقونة العائمة', d: 'ألوان التطبيق وحجم الخط والزر العائم (لهذا الجهاز)', fn: "go('st_look')" },
-  { g: 'lim', o: 10, l: 'حدود النفاد', d: 'الهواتف والأنتي كاس والبوشيط، وبعد كم يوماً تصبح الجولة غير مؤكدة', fn: "go('st_lim')" },
   { g: 'usr', o: 10, l: 'المستخدمون والصلاحيات', d: 'إضافة موظفين وتحديد ما يستطيعون فعله', fn: "go('st_users')" },
   { g: 'usr', o: 20, l: 'رمز القفل السريع', d: 'رمز قصير لفتح التطبيق بسرعة', fn: 'lkSet()', n: () => S.cfg.lk ? 'مُعيَّن' : 'غير مُعيَّن' },
   { g: 'usr', o: 30, l: 'القفل التلقائي', d: 'يقفل التطبيق والمدير بعد مدة بلا استعمال', fn: "limEd('alk')", n: () => (S.cfg.alk ?? DL0.alk) + ' دقيقة' },
@@ -225,14 +224,18 @@ function fabUpd() {
 HK.render.push(fabUpd);
 
 /* ---------- الحدود ---------- */
-VW.st_lim = () => ({
-  t: 'الحدود والتنبيهات',
-  h: LM.filter(([k]) => k != 'alk').map(([k, l]) => `<button class="card row2" onclick="limEd('${k}')"><b style="flex:1">${l}</b><span>${S.cfg[k] ?? DL0[k]}</span></button>`).join('')
-    + '<p class="m">حد مجموعة أنتي كاس بعينها يُحدَّد من «الحد والسعر» داخلها.</p>'
-});
+VW.st_lim = () => VW.st();   // احتياط فقط: لم تعد هناك شاشة حدود مجمّعة، كل حد في صفحة قسمه
+const LMIN1 = ['alk', 'stale'];
+const limShow = k => k == 'gmin' ? lim(k) - 1 : lim(k);   // حد الأنتي كاس يُخزَّن (أقل من) ويُعرض (≤) بدون تغيير بياناتك
 function limEd(k) {
   if (!isAdmin()) return toast('للمدير فقط');
-  ask('تعديل القيمة', [{ k: 'v', l: 'القيمة', t: 'tel', v: S.cfg[k] ?? DL0[k] }]).then(v => { if (v && v.v.trim() !== '') upd(() => S.cfg[k] = +v.v); });
+  const L = (LM.find(x => x[0] == k) || [])[1] || 'تعديل القيمة';
+  ask(L, [{ k: 'v', l: 'القيمة', t: 'tel', v: limShow(k) }]).then(v => {
+    if (!v || v.v.trim() === '') return;
+    const n = parseInt(v.v, 10);
+    if (isNaN(n) || n < (LMIN1.includes(k) ? 1 : 0)) return toast('اكتب رقماً صحيحاً');
+    upd(() => S.cfg[k] = k == 'gmin' ? n + 1 : n);
+  });
 }
 
 /* ---------- الوسوم ---------- */
@@ -246,7 +249,7 @@ VW.st_tg = () => {
       + (ed ? `<button class="btn" onclick="tgAdd('${g}')">+ إضافة</button>` : '')
   };
 };
-function tgAdd(g) { ask('وسم جديد: ' + TG[g], [{ k: 't', l: 'الاسم' }]).then(v => { const t = v && v.t.trim(); if (t && !S.tags[g].includes(t)) upd(() => S.tags[g].push(t)); }); }
+function tgAdd(g) { ask('وسم جديد: ' + TG[g], [{ k: 't', l: 'الاسم' }]).then(v => { const t = v && v.t.trim(); if (t && !S.tags[g].includes(t)) upd(() => { S.tags[g].push(t); if (g == 'brand' && typeof autoBc == 'function') autoBc(t); }); }); }
 function tgDel(g, i) {
   sure('حذف الوسم «' + S.tags[g][i] + '» ؟').then(y => {
     if (!y) return;

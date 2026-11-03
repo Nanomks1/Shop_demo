@@ -24,8 +24,8 @@ const sumv = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
 S.fields = S.fields || []; S.gg = S.gg || []; S.ag = S.ag || [];
 Object.assign(DL0, { gA: 30, gB: 20, gC: 10, gY: 5, acl: 3, agl: 10 });
 LM.push(
-  ['gA', 'أنتي كاس: أخضر غامق = أكثر من'], ['gB', 'أنتي كاس: أخضر = أكثر من'], ['gC', 'أنتي كاس: أخضر فاتح = أكثر من'],
-  ['gY', 'أنتي كاس: «قليل» يُحسب كـ'], ['acl', 'إكسسوار بعدد: «قليل» عند عدد ≤'],
+  ['gA', 'أنتي كاس: مستوى «غامق» يُحسب كـ (قطعة)'], ['gB', 'أنتي كاس: مستوى «أخضر» يُحسب كـ (قطعة)'], ['gC', 'أنتي كاس: مستوى «فاتح» يُحسب كـ (قطعة)'],
+  ['gY', 'أنتي كاس: مستوى «قليل» يُحسب كـ (قطعة)'], ['acl', 'إكسسوار بعدد: «قليل» عند عدد ≤'],
   ['agl', 'مجموعة إكسسوار (كابل/شاحن): «قارب النفاد» عند مجموع ≤']
 );
 
@@ -72,10 +72,18 @@ const rsHtml = i => {
 };
 
 /* ---------- الألوان والترتيب ---------- */
-const PAL = ['#3b82f6', '#f97316', '#22c55e', '#a855f7', '#ec4899', '#eab308', '#06b6d4', '#ef4444', '#64748b', '#84cc16'];
+const PAL = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1',
+  '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78716c', '#b91c1c', '#c2410c', '#a16207', '#15803d', '#0f766e', '#1d4ed8',
+  '#6d28d9', '#a21caf', '#be185d', '#92400e', '#64748b', '#1e293b'];
 const DBC = { Samsung: '#3b82f6', Redmi: '#f97316', Xiaomi: '#eab308', Realme: '#facc15', Oppo: '#22c55e', Vivo: '#a855f7', Tecno: '#06b6d4', Infinix: '#84cc16', iPhone: '#64748b', Itel: '#ef4444' };
 const DSC = { glass: '#06b6d4', case: '#a855f7', acc: '#84cc16' }, DCM = { phones: 'b', glass: 's', case: 's', acc: 's' };
 const SN3 = { phones: 'الهواتف', glass: 'الأنتي كاس', case: 'البوشيط', acc: 'الإكسسوارات' }, MN = { b: 'حسب الماركة', s: 'لون واحد للقسم', o: 'بدون' };
+const autoBc = t => {
+  S.cfg.bcol = S.cfg.bcol || {};
+  if (S.cfg.bcol[t] !== undefined || DBC[t]) return;
+  const used = Object.values(S.cfg.bcol).concat(Object.values(DBC)), free = PAL.filter(c => !used.includes(c)), pool = free.length ? free : PAL;
+  S.cfg.bcol[t] = pool[Math.floor(Math.random() * pool.length)];
+};
 const BC = b => b ? ((S.cfg.bcol || {})[b] ?? DBC[b] ?? '') : '';
 const SCOL = s => (S.cfg.scol || {})[s] ?? DSC[s] ?? '';
 const CM = s => (S.cfg.cm || {})[s] ?? DCM[s];
@@ -115,6 +123,7 @@ VW.st_fld = () => ({
 
 /* ---------- الخانات المخصصة (حقول إضافية بخيارات لكل قسم) ---------- */
 const SECN = { phones: 'الهواتف', acc: 'الإكسسوارات', case: 'البوشيط', rp: 'الصيانة' };
+const fxNorm = (v, u) => { v = String(v || '').trim(); return u && /^\d+(\.\d+)?$/.test(v) ? v + u : v; };   // 32 + GB => 32GB
 const fxList = (sec, key) => S.fields.filter(f => f.sec == sec && (!f.kinds || !f.kinds.length || f.kinds.includes(key)));
 const fxVal = (i, f) => [].concat((i.x || {})[f.id] || []).filter(Boolean);
 const fxTxt = i => S.fields.map(f => fxVal(i, f).length ? f.name + ' ' + fxVal(i, f).join(' ') : '').join(' ');
@@ -130,14 +139,14 @@ function chipsR() {
   fxR();
 }
 function chPick(g, j) { const v = S.tags[g][j]; FS.v[g] = FS.v[g] == v ? '' : v; chipsR(); }
-function chOk(g) { const t = ($('chn').value || '').trim(); if (t) { if (!S.tags[g].includes(t)) S.tags[g].push(t); FS.v[g] = t; save(); } FS.add = ''; chipsR(); }
+function chOk(g) { const t = ($('chn').value || '').trim(); if (t) { if (!S.tags[g].includes(t)) { S.tags[g].push(t); if (g == 'brand') autoBc(t); } FS.v[g] = t; save(); } FS.add = ''; chipsR(); }
 const fxKey = () => FS.fxSec == 'acc' ? FS.v.kind : FS.fxSec == 'phones' ? FS.v.brand : '';
 function fxR() {
   const b = $('fx'); if (!b) return;
   b.innerHTML = fxList(FS.fxSec, fxKey()).map(f => { const v = [].concat(FS.fx[f.id] || []); return `<label>${esc(f.name)}</label><div>${f.opts.map((o, j) => `<button type="button" class="tag ${v.includes(o) ? 'on' : ''}" onclick="fxT('${f.id}',${j})">${esc(o)}</button>`).join('')}${FS.fxA == f.id ? `<span class="row2"><input id="fxn" placeholder="خيار جديد"><button type="button" class="btn sm" onclick="fxN('${f.id}')">إضافة</button></span>` : `<button type="button" class="tag" onclick="FS.fxA='${f.id}';fxR()">+ جديد</button>`}</div>`; }).join('');
 }
 function fxT(id, j) { const f = S.fields.find(x => x.id == id), o = f.opts[j], a = [].concat(FS.fx[id] || []); FS.fx[id] = f.multi ? (a.includes(o) ? a.filter(x => x != o) : [...a, o]) : (a[0] == o ? '' : o); fxR(); }
-function fxN(id) { const f = S.fields.find(x => x.id == id), v = ($('fxn').value || '').trim(); FS.fxA = ''; if (v && !f.opts.includes(v)) { f.opts.push(v); save(); } if (v) { const a = [].concat(FS.fx[id] || []); FS.fx[id] = f.multi ? [...a, v] : v; } fxR(); }
+function fxN(id) { const f = S.fields.find(x => x.id == id), v = fxNorm($('fxn').value, f.unit); FS.fxA = ''; if (v && !f.opts.includes(v)) { f.opts.push(v); save(); } if (v) { const a = [].concat(FS.fx[id] || []); FS.fx[id] = f.multi ? [...a, v] : v; } fxR(); }
 function fxOpen(sec, rec) {   // يُستعمل أيضاً من نموذج الصيانة
   const a = $('sh').querySelector('.acts'); if (!a || !S.fields.some(f => f.sec == sec)) return;
   FS.fxSec = sec; FS.fx = { ...((rec && rec.x) || {}) }; FS.fxA = '';
@@ -327,7 +336,9 @@ const lvN = l => l == 'r' ? 0 : (GT()[l] || 0);
 const mval = (i, m) => { const l = (i.lv || {})[m]; return l !== undefined ? lvN(l) : ((i.stock || {})[m] || 0); };
 const gTot = (i, g) => g.models.reduce((a, m) => a + mval(i || {}, m), 0);
 const gEst = (i, g) => !!i && g.models.some(m => (i.lv || {})[m] !== undefined);
-const gSt = (i, g) => { const t = gTot(i, g), m = (i && i.min) ?? lim('gmin'); return t <= 0 ? 'r' : t < m ? 'y' : 'g'; };
+const gTyLim = ty => (S.cfg.gtl || {})[ty] ?? lim('gmin');   // مخزَّن بصيغة (أقل من) ويُعرض ناقص 1 ليصبح (≤)
+const gLim = (i, ty) => (i && i.min) ?? gTyLim(ty || (i && i.ty));
+const gSt = (i, g) => { const t = gTot(i, g), m = gLim(i); return t <= 0 ? 'r' : t < m ? 'y' : 'g'; };
 function glGet(gid, ty) { let i = gitem(gid, ty); if (!i) { i = { id: uid(), sec: 'glass', gid, ty, stock: {}, lv: {}, by: S.me, at: Date.now() }; S.items.push(i); } i.stock = i.stock || {}; return i; }
 function glView() {
   const j = V.ty || 0, ty = S.tags.glass[j], it = g => gitem(g.id, ty);
@@ -341,10 +352,10 @@ function glRow(g, i, j, k, m) {
   return `<div class="gm"><div class="row2"><span style="flex:1">${esc(m)}${br ? ` <span class="m">· ${esc(br)}</span>` : ''}</span>${hd2}</div><div class="lvs">${dots}</div></div>`;
 }
 function glCard(g, j) {
-  const ty = S.tags.glass[j], i = gitem(g.id, ty) || { stock: {} }, s = gSt(i, g), min = i.min ?? lim('gmin');
+  const ty = S.tags.glass[j], i = gitem(g.id, ty) || { stock: {} }, s = gSt(i, g), min = gLim(i, ty);
   const ex = EXP['g_' + g.id], limM = !ex && g.models.length > 4 ? g.models.slice(0, 3) : g.models;
   const more = g.models.length > 4 ? `<button class="tag" style="width:100%;justify-content:center;margin-top:6px" onclick="toggleExp('g_${g.id}')">${ex ? 'طيّ القائمة ▴' : 'عرض باقي الموديلات (+' + (g.models.length - 3) + ') ▾'}</button>` : '';
-  return cardH(`<b>${esc(g.models.join(' / '))}</b><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]} · المجموع ${gEst(i, g) ? '≈' : ''}${gTot(i, g)} · الحد ${min}${i.price ? ' · ' + esc(i.price) : ''}</span></div>`
+  return cardH(`<b>${esc(g.models.join(' / '))}</b><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]} · المجموع ${gEst(i, g) ? '≈' : ''}${gTot(i, g)} · «قارب» عند ≤ ${min - 1}${i.min != null ? ' (حد خاص)' : ''}${i.price ? ' · ' + esc(i.price) : ''}</span></div>`
     + limM.map((m, k) => glRow(g, i, j, k, m)).join('') + more
     + `<div class="sub"><button class="btn s sm" onclick="glM('${g.id}')">+ موديل مطابق</button><button class="btn s sm" onclick="glMin('${g.id}',${j})">الحد والسعر</button><button class="btn s sm" onclick="glRm('${g.id}')">حذف موديل</button></div>`, colG(g));
 }
@@ -359,7 +370,10 @@ function glEx(gid, j, k) {
 }
 function glMin(gid, j) {
   const ty = S.tags.glass[j], i = gitem(gid, ty) || {};
-  ask('الحد والسعر — ' + ty, [{ k: 'm', l: 'الحد الأدنى للمجموعة', t: 'tel', v: i.min ?? lim('gmin') }, { k: 'p', l: 'السعر', t: 'tel', v: i.price || '' }]).then(v => { if (!v) return; const r = glGet(gid, ty); upd(() => { r.min = ci(v.m); if (can('price')) r.price = v.p; }); });
+  ask('الحد والسعر — ' + ty, [{ k: 'm', l: `حد خاص بهذه المجموعة: «قارب النفاد» عند مجموع ≤ (فارغ = حد ${ty}: ${gTyLim(ty) - 1}). اكتب 0 إن كانت نادرة ولا تريد تنبيهاً إلا عند نفادها`, t: 'tel', v: i.min != null ? i.min - 1 : '' }, { k: 'p', l: 'السعر', t: 'tel', v: i.price || '' }]).then(v => {
+    if (!v) return; const r = glGet(gid, ty), m = v.m.trim();
+    upd(() => { if (m === '') delete r.min; else r.min = ci(m) + 1; if (can('price')) r.price = v.p; });
+  });
 }
 const clrM = n => S.items.forEach(i => { if (i.sec == 'glass' && i.lv) delete i.lv[n]; });
 let GS = {};
@@ -424,7 +438,9 @@ function buyG(id) {
 
 /* ============================ البوشيط ============================ */
 const csTot = i => (i.v || []).reduce((a, x) => a + x.n, 0);
-const csSt = i => { const t = csTot(i); return t <= 0 ? 'r' : ((i.v || []).some(x => x.n <= 0) || t <= lim('cl')) ? 'y' : 'g'; };
+const csLim = i => i.lim ?? lim('cl');
+/* حد خاص للموديل: يُحكم على المجموع فقط (نفاد نوع واحد لا ينبّه) */
+const csSt = i => { const t = csTot(i); return t <= 0 ? 'r' : (t <= csLim(i) || (i.lim == null && (i.v || []).some(x => x.n <= 0))) ? 'y' : 'g'; };
 function csCard(i) {
   const s = csSt(i), V0 = i.v || [], ex = EXP['c_' + i.id], cmp = isCmp('case') && V.v == 'sec';
   const limV = !ex && V0.length > (cmp ? 3 : 4) ? V0.slice(0, cmp ? 2 : 4) : V0;
@@ -433,10 +449,10 @@ function csCard(i) {
   if (cmp) {
     return cardH(`<div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csQuickNote('${i.id}')"><b>${esc(i.name)}</b></div><span class="m">المجموع ${csTot(i)}</span><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button></div>` + chips, colOf(i), 'cmp');
   }
-  return cardH(`<div class="row2"><b>${esc(i.name)}</b><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]} · ${csTot(i)}</span></div>`
+  return cardH(`<div class="row2"><b>${esc(i.name)}</b><span class="dotl" style="background:${DT[s]}"></span><span class="m">${TX[s]} · ${csTot(i)}${i.lim != null ? ' · حد خاص ≤' + i.lim : ''}</span></div>`
     + chips
     + fxShow(i) + (i.rem ? `<div class="m" style="margin-top:6px"><span class="dotl" style="background:${DT.g}"></span> باقي: ${esc(i.rem)}</div>` : '') + (i.need ? `<div class="rs" style="margin-top:4px"><span class="dotl" style="background:${DT.r}"></span> خاصنا: ${esc(i.need)}</div>` : '')
-    + `<div class="sub"><button class="btn s sm" onclick="csQuickNote('${i.id}')">باقي / خاصنا</button><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button>${S.fields.some(f => f.sec == 'case') ? `<button class="btn s sm" onclick="csFx('${i.id}')">خانات</button>` : ''}<button class="btn s sm" onclick="csDel('${i.id}')">حذف</button></div>`, colOf(i));
+    + `<div class="sub"><button class="btn s sm" onclick="csQuickNote('${i.id}')">باقي / خاصنا</button><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button><button class="btn s sm" onclick="csLimEd('${i.id}')">الحد</button>${S.fields.some(f => f.sec == 'case') ? `<button class="btn s sm" onclick="csFx('${i.id}')">خانات</button>` : ''}<button class="btn s sm" onclick="csDel('${i.id}')">حذف</button></div>`, colOf(i));
 }
 function csView() { const a = srt(S.items.filter(i => i.sec == 'case'), 'case', i => i.name, csTot, i => i.at); return { t: 'البوشيط', h: `<button class="btn" onclick="csAdd()">+ إضافة موديل</button>` + sortBar('case') + (a.map(csCard).join('') || '<p class="m">لا شيء بعد</p>') }; }
 function csC(id, vid, d) { const it = find(id), x = it.v.find(y => y.id == vid); upd(() => { x.n = Math.max(0, x.n + d); touch(it); }); if (d > 0) reqChk('بوشيط ' + it.name); }
@@ -471,6 +487,13 @@ function csFx(id) {
   $('sh').innerHTML = '<div class="bar"></div><h3>خانات: ' + esc(i.name) + '</h3><div id="fx"></div><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({})">حفظ</button></div>';
   sheetOpen(v => { if (v) upd(() => { i.x = { ...FS.fx }; }); }); fxR();
 }
+function csLimEd(id) {
+  const i = find(id);
+  ask('حد خاص — ' + i.name, [{ k: 'n', l: `«قارب النفاد» عند مجموع ≤ (فارغ = الحد العام ${lim('cl')}). اكتب 0 إن كان نادراً ولا تريد تنبيهاً إلا عند نفاده`, t: 'tel', v: i.lim ?? '' }]).then(v => {
+    if (!v) return; const n = v.n.trim();
+    upd(() => { if (n === '') delete i.lim; else i.lim = ci(n); touch(i); });
+  });
+}
 function csQuickNote(id) {
   const i = find(id);
   ask('بوشيط ' + i.name, [{ k: 'rem', l: 'شنو باقي عندنا فالمحل؟ (مثال: غير النسائي)', v: i.rem || '' }, { k: 'need', l: 'شنو خاص يجيب المعلم؟ (مثال: ألوان رجالية / كحل)', v: i.need || '' }]).then(v => { if (v) commit('تم التحديث', () => { i.rem = v.rem.trim(); i.need = v.need.trim(); touch(i); }); });
@@ -480,8 +503,10 @@ function buyC(id) { const i = find(id); qty(i.name + ' — لكل نوع', 3, n 
 const DKC = { 'كابل': { conn: 1 }, 'شاحن': { conn: 1 } }, DK = { 'كابل': { g: 1, w: 0 }, 'شاحن': { g: 1, w: 1 }, 'رأس شاحن': { g: 1, w: 1 } };
 const kc = k => ({ conn: 0, tier: 1, ...(DKC[k] || {}), ...((S.cfg.kc || {})[k] || {}) });
 const gkc = k => ({ g: 0, w: 0, ...(DK[k] || {}), ...((S.cfg.gkc || {})[k] || {}) });
-const acName = i => [i.kind, i.conn, i.tier && 'فئة ' + i.tier, i.brand].filter(Boolean).join(' ');
-const acTitle = i => [i.kind, i.conn, i.brand].filter(Boolean).join(' ');
+const fxIn = i => S.fields.filter(f => f.sec == 'acc').map(f => fxVal(i, f).join(' ')).filter(Boolean).join(' ');   // قيم الخاصيات (32GB...) في اسم القطعة
+const xSig = o => S.fields.filter(f => f.sec == 'acc').map(f => fxVal(o, f).slice().sort().join('+')).join('|');
+const acName = i => [i.kind, i.conn, fxIn(i), i.tier && 'فئة ' + i.tier, i.brand].filter(Boolean).join(' ');
+const acTitle = i => [i.kind, i.conn, fxIn(i), i.brand].filter(Boolean).join(' ');
 const acLim = i => i.lim ?? kc(i.kind).lim ?? lim('acl');
 const acSt = i => typeof i.cnt == 'number' ? (i.cnt <= 0 ? 'r' : i.cnt <= acLim(i) ? 'y' : 'g') : i.st;
 const ALB = { g: 'متوفر', y: 'قليل', r: 'نفد' };
@@ -537,7 +562,7 @@ function acSave(more) {
 function acDone(v, r) {
   if (!v) return; const more = v._more; delete v._more;
   if (r && r.id && S.items.includes(r)) return commit('تم التعديل', () => { Object.assign(r, v); touch(r); });
-  const d = S.items.find(i => i.sec == 'acc' && i.kind == v.kind && (i.conn || '') == v.conn && (i.tier || '') == v.tier && (i.brand || '') == v.brand && (i.pw || '') == v.pw);
+  const d = S.items.find(i => i.sec == 'acc' && i.kind == v.kind && (i.conn || '') == v.conn && (i.tier || '') == v.tier && (i.brand || '') == v.brand && (i.pw || '') == v.pw && xSig(i) == xSig(v));
   if (d) return toast('موجود مسبقاً: ' + acName(d));
   const o = { id: uid(), sec: 'acc', ...v, st: 'g' }; if (r && r.code) o.code = r.code; touch(o);
   commit('تمت الإضافة', () => S.items.push(o));
@@ -755,10 +780,10 @@ VW.sec = () => ({ phones: phView, glass: glView, case: csView, acc: acView }[V.k
 /* ============================ الإعدادات الخاصة بالمخزون ============================ */
 const tg = (l, g) => [l, "go('st_tg',{g:'" + g + "'})", () => S.tags[g].length];
 const CATS = {   // ملف الصيانة يضيف CATS.rp
-  ph: ['الهواتف', [tg('الماركات', 'brand'), tg('الألوان', 'color'), tg('السعات', 'cap'), tg('RAM', 'ram'), ['حدود النفاد', "go('st_lim')"], ['ألوان وحدود الماركات', "go('st_br')"]], 'phones'],
-  gl: ['الأنتي كاس', [tg('أنواع الزجاج', 'glass'), ['المستويات والحدود', "go('st_lim')"]], null],
-  cs: ['البوشيط', [tg('الجنس', 'gender'), tg('الألوان', 'color')], 'case'],
-  ac: ['الإكسسوارات', [tg('الأنواع', 'kind'), tg('الموصلات', 'conn'), tg('الفئات السعرية', 'tier'), tg('القدرات (واط)', 'pw'), ['إعداد كل نوع (الموصل، الفئة، المجموعات، الحد)', "go('st_ak')"]], 'acc']
+  ph: ['الهواتف', [tg('الماركات', 'brand'), tg('الألوان', 'color'), tg('السعات', 'cap'), tg('RAM', 'ram'), ['الحد العام: «قارب النفاد» عند عدد ≤', "limEd('low')", () => '≤ ' + lim('low')], ['ألوان الماركات وحدودها', "go('st_br')"]], 'phones'],
+  gl: ['الأنتي كاس', [tg('أنواع الزجاج', 'glass'), ['حد «قارب النفاد» لكل نوع زجاج', "go('st_gl')", () => '≤ ' + (lim('gmin') - 1)], ['كم تُحسب المستويات (غامق / أخضر / فاتح / قليل)', "go('st_gl2')"]], null],
+  cs: ['البوشيط', [tg('الجنس', 'gender'), tg('الألوان', 'color'), ['الحد العام: «قارب النفاد» عند مجموع ≤', "limEd('cl')", () => '≤ ' + lim('cl')]], 'case'],
+  ac: ['الإكسسوارات', [tg('الأنواع', 'kind'), tg('الموصلات', 'conn'), tg('الفئات السعرية', 'tier'), tg('القدرات (واط)', 'pw'), ['الحد العام للقطع بعدد: «قليل» عند ≤', "limEd('acl')", () => '≤ ' + lim('acl')], ['الحد العام للمجموعات (كابل/شاحن) عند ≤', "limEd('agl')", () => '≤ ' + lim('agl')], ['إعداد كل نوع (الخاصيات، العرض، الحد)', "go('st_ak')"]], 'acc']
 };
 VW.st_c = () => { const c = CATS[V.c] || CATS.ph; return { t: c[0], h: c[1].map(([l, fn, n]) => row(l, fn, n ? n() : '')).join('') + (c[2] ? row('خانات مخصصة لهذا القسم', "go('st_fx',{fs:'" + c[2] + "'})", S.fields.filter(f => f.sec == c[2]).length || '') : '') }; };
 MORE.push(
@@ -767,13 +792,29 @@ MORE.push(
   { g: 'look', o: 20, l: 'تلوين البطاقات', fn: "go('st_col')" }, { g: 'look', o: 30, l: 'الحقول في النماذج', fn: "go('st_fld')" },
   { g: 'look', o: 40, l: 'الخانات المخصصة', fn: "go('st_fx')", n: () => S.fields.length || '' }
 );
+/* حدود الأنتي كاس */
+function glTyEd(j) {
+  if (!isAdmin()) return toast('للمدير فقط'); const t = S.tags.glass[j], c = (S.cfg.gtl || {})[t];
+  ask('حد زجاج ' + t, [{ k: 'n', l: `«قارب النفاد» عند مجموع المجموعة ≤ (فارغ = الحد العام ${lim('gmin') - 1}). اكتب 0 للنوع النادر`, t: 'tel', v: c != null ? c - 1 : '' }]).then(v => {
+    if (!v) return; const n = v.n.trim();
+    upd(() => { S.cfg.gtl = S.cfg.gtl || {}; if (n === '') delete S.cfg.gtl[t]; else S.cfg.gtl[t] = ci(n) + 1; });
+  });
+}
+VW.st_gl = () => ({ t: 'حدود الأنتي كاس', h: '<p class="m">يُحكم على كل مجموعة موديلات بمجموعها: «قارب النفاد» عند ≤ الحد. الترتيب: حد المجموعة الخاص (زر «الحد والسعر» داخل بطاقتها) ثم حد نوع الزجاج ثم الحد العام.</p>'
+  + row('الحد العام لكل الأنواع', "limEd('gmin')", '≤ ' + (lim('gmin') - 1)) + '<h3>حد خاص بنوع زجاج</h3>'
+  + S.tags.glass.map((t, j) => { const c = (S.cfg.gtl || {})[t]; return row(t, 'glTyEd(' + j + ')', c != null ? '≤ ' + (c - 1) : 'العام'); }).join('') });
+VW.st_gl2 = () => ({ t: 'مستويات الأنتي كاس', h: '<p class="m">عندما تختار مستوى تقريبياً (غامق / أخضر / فاتح / قليل) بدل عدد دقيق، يحسب التطبيق كل مستوى كعدد القطع الظاهر هنا ليحكم على مجموع المجموعة. غيّرها فقط إن اختلفت تقديراتك.</p>'
+  + ['gA', 'gB', 'gC', 'gY'].map(k => row((LM.find(x => x[0] == k) || [, k])[1].replace('أنتي كاس: ', ''), "limEd('" + k + "')", lim(k))).join('') });
 /* الألوان */
 let CE = {};
+window.cePv = () => { const p = $('cpv'); if (p) p.style.borderInlineStartColor = CE.c || 'transparent'; };
 function ceR() {
   if ($('blim')) CE.l = $('blim').value;
-  const sw = `<div>${PAL.map(c => `<button class="sw ${CE.c == c ? 'on' : ''}" style="background:${c}" onclick="CE.c='${c}';ceR()"></button>`).join('')}<button class="tag ${CE.c ? '' : 'on'}" onclick="CE.c='';ceR()">بدون</button></div>`;
+  const cur = CE.c || '', inP = PAL.includes(cur), hex = /^#[0-9a-f]{6}$/i.test(cur);
+  const sw = `<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center">${PAL.map(c => `<button class="sw ${cur == c ? 'on' : ''}" style="background:${c};margin:2px" onclick="CE.c='${c}';ceR()"></button>`).join('')}</div>`
+    + `<div class="row2" style="margin-top:8px"><label class="sw ${cur && !inP ? 'on' : ''}" style="display:inline-block;position:relative;overflow:hidden;background:${cur && !inP ? cur : 'conic-gradient(#ef4444,#eab308,#22c55e,#06b6d4,#3b82f6,#d946ef,#ef4444)'}"><input type="color" value="${hex ? cur : '#3b82f6'}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0;border:0;cursor:pointer" oninput="CE.c=this.value;cePv()" onchange="ceR()"></label><span class="m" style="flex:1">لون آخر من اللوحة الكاملة</span><button class="tag ${cur ? '' : 'on'}" onclick="CE.c='';ceR()">بدون</button></div>`;
   $('sh').innerHTML = `<div class="bar"></div><h3>${esc(CE.n)}</h3>` + (CE.t == 's' ? `<label>التلوين</label><div>${CE.mo.map(([k, l]) => `<button class="tag ${CE.m == k ? 'on' : ''}" onclick="CE.m='${k}';ceR()">${l}</button>`).join('')}</div>` : '')
-    + ((CE.t == 'b' || CE.m == 's') ? `<label>اللون</label>${sw}` : '') + (CE.t == 'b' ? `<label>حد «قارب على النفاد» لهواتف هذه الماركة (فارغ = الحد العام)</label><input id="blim" type="tel" value="${esc(CE.l)}">` : '')
+    + ((CE.t == 'b' || CE.m == 's') ? `<label>اللون</label><div id="cpv" class="card" style="border-inline-start:8px solid ${cur || 'transparent'};margin:6px 0 10px"><b>${esc(CE.n)}</b> <span class="m">معاينة البطاقة</span></div>${sw}` : '') + (CE.t == 'b' ? `<label>حد «قارب على النفاد» لهواتف هذه الماركة (فارغ = الحد العام)</label><input id="blim" type="tel" value="${esc(CE.l)}">` : '')
     + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="if($('blim'))CE.l=$('blim').value;finish(CE)">حفظ</button></div>`;
 }
 function ceOpen(o, cb) { if (!can('tags')) return toast('للمدير فقط'); CE = o; ceR(); sheetOpen(cb); }
@@ -781,43 +822,70 @@ function brEd(j) { const b = S.tags.brand[j]; ceOpen({ t: 'b', n: b, c: BC(b), l
 function cmEd(s) { ceOpen({ t: 's', n: SN3[s], m: CM(s), c: SCOL(s), mo: s == 'acc' ? [['s', 'لون واحد للقسم'], ['o', 'بدون']] : [['b', 'حسب الماركة'], ['s', 'لون واحد للقسم'], ['o', 'بدون']] }, v => { if (!v) return; upd(() => { S.cfg.cm = S.cfg.cm || {}; S.cfg.cm[s] = v.m; S.cfg.scol = S.cfg.scol || {}; S.cfg.scol[s] = v.c; }); }); }
 VW.st_col = () => ({ t: 'الألوان', h: '<p class="m">ألوان خفيفة على خلفية البطاقات للتمييز بسرعة.</p>' + ['phones', 'glass', 'case', 'acc'].map(s => { const m = CM(s), c = m == 's' ? SCOL(s) : ''; return `<button class="card row2" onclick="cmEd('${s}')"><b>${SN3[s]}</b><span class="m">${MN[m]}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') + row('ألوان الماركات وحدودها', "go('st_br')") });
 VW.st_br = () => ({ t: 'ألوان الماركات', h: '<p class="m">اللون + حد «قارب على النفاد» لكل ماركة (اختياري).</p>' + S.tags.brand.map((b, j) => { const c = BC(b), l = (S.cfg.bl || {})[b]; return `<button class="card row2" onclick="brEd(${j})"><b>${esc(b)}</b><span class="m">${l != null ? 'حد ≤' + l : ''}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') });
-/* إعداد كل نوع إكسسوار: ما يظهر في النموذج + العرض كمجموعات + الحدود */
-let AK = {};
-function akR() {
-  if ($('akl')) AK.lim = $('akl').value; if ($('agl')) AK.glim = $('agl').value;
-  const t = (k, l) => `<button class="tag ${AK[k] ? 'on' : ''}" onclick="AK.${k}=${AK[k] ? 0 : 1};akR()">${l}</button>`;
-  $('sh').innerHTML = `<div class="bar"></div><h3>${esc(AK.k)}</h3><label>ما يظهر عند إضافة هذا النوع</label><div>${t('conn', 'الموصل')}${t('tier', 'الفئة')}${t('w', 'القدرة (واط)')}</div><label>طريقة العرض</label><div>${t('g', 'مجموعات حسب الفئة')}</div>`
-    + `<label>حد «قليل» لكل قطعة من هذا النوع (فارغ = الحد العام)</label><input id="akl" type="tel" value="${esc(AK.lim)}"><label>حد «قارب النفاد» لمجموع المجموعة (فارغ = الحد العام)</label><input id="agl" type="tel" value="${esc(AK.glim)}"><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="akOk()">حفظ</button></div>`;
+/* إعداد كل نوع إكسسوار: صفحة مستقلة (ما يظهر + خاصيات + العرض + الحد) */
+const akProps = k => S.fields.filter(f => f.sec == 'acc' && (f.kinds || []).includes(k));
+function akTog(j, key) {
+  if (!can('tags')) return toast('للمدير فقط');
+  const k = S.tags.kind[j];
+  upd(() => {
+    S.cfg.kc = S.cfg.kc || {}; S.cfg.gkc = S.cfg.gkc || {};
+    const c = kc(k), g = gkc(k);
+    if (key == 'conn' || key == 'tier') S.cfg.kc[k] = { ...(S.cfg.kc[k] || {}), conn: c.conn, tier: c.tier, [key]: c[key] ? 0 : 1 };
+    else S.cfg.gkc[k] = { ...(S.cfg.gkc[k] || {}), g: g.g, w: g.w, [key]: g[key] ? 0 : 1 };
+  });
 }
-function akOk() { if ($('akl')) AK.lim = $('akl').value; if ($('agl')) AK.glim = $('agl').value; finish(AK); }
-function akEd(j) {
-  if (!can('tags')) return toast('للمدير فقط'); const k = S.tags.kind[j], c = kc(k), g = gkc(k);
-  AK = { k, conn: c.conn ? 1 : 0, tier: c.tier ? 1 : 0, g: g.g ? 1 : 0, w: g.w ? 1 : 0, lim: c.lim ?? '', glim: g.lim ?? '' }; akR();
-  sheetOpen(v => { if (!v) return; upd(() => { const l = String(v.lim).trim(), gl = String(v.glim).trim(); S.cfg.kc = S.cfg.kc || {}; S.cfg.kc[v.k] = { conn: v.conn, tier: v.tier, ...(l === '' ? {} : { lim: ci(l) }) }; S.cfg.gkc = S.cfg.gkc || {}; S.cfg.gkc[v.k] = { g: v.g, w: v.w, ...(gl === '' ? {} : { lim: ci(gl) }) }; }); });
+function akLim(j, w) {
+  if (!can('tags')) return toast('للمدير فقط');
+  const k = S.tags.kind[j], grp = w == 'g', cur = grp ? gkc(k).lim : kc(k).lim, gen = lim(grp ? 'agl' : 'acl');
+  ask('الحد — ' + k, [{ k: 'n', l: (grp ? '«قارب النفاد» عند مجموع المجموعة ≤' : '«قليل» لكل قطعة من هذا النوع عند ≤') + ' (فارغ = الحد العام ' + gen + ')', t: 'tel', v: cur ?? '' }]).then(v => {
+    if (!v) return; const n = v.n.trim();
+    upd(() => {
+      const o = grp ? (S.cfg.gkc = S.cfg.gkc || {}) : (S.cfg.kc = S.cfg.kc || {}), c = kc(k), g = gkc(k);
+      o[k] = { ...(o[k] || {}), ...(grp ? { g: g.g, w: g.w } : { conn: c.conn, tier: c.tier }) };
+      if (n === '') delete o[k].lim; else o[k].lim = ci(n);
+    });
+  });
 }
-VW.st_ak = () => ({ t: 'إعداد أنواع الإكسسوارات', h: '<p class="m">لكل نوع: هل له موصل أو فئة أو قدرة، وهل يُعرض كمجموعات (كابلات وشواحن) يُحكم عليها بمجموعها.</p>' + S.tags.kind.map((k, j) => { const c = kc(k), g = gkc(k); return row(k, 'akEd(' + j + ')', (g.g ? 'مجموعات · ' : '') + (c.conn ? 'موصل · ' : '') + (c.tier ? 'فئة · ' : '') + (g.w ? 'قدرة · ' : '') + 'حد ' + (g.g ? (g.lim ?? lim('agl')) : (c.lim ?? lim('acl')))); }).join('') });
+VW.st_akk = () => {
+  const j = V.kj ?? 0, k = S.tags.kind[j]; if (k == null) return VW.st_ak();
+  const c = kc(k), g = gkc(k), P = akProps(k), t = (key, l, on) => `<button class="tag ${on ? 'on' : ''}" onclick="akTog(${j},'${key}')">${l}</button>`;
+  return {
+    t: k,
+    h: '<h3>ما يظهر عند إضافة هذا النوع</h3><div>' + t('conn', 'الموصل', c.conn) + t('tier', 'الفئة (السعر)', c.tier) + t('w', 'القدرة (واط)', g.w) + '</div>'
+      + '<h3>خاصيات إضافية</h3><p class="m">مثل السعة (GB أو mAh) أو الطول. تظهر عند الإضافة، وتدخل في اسم القطعة والبحث وتمنع اعتبار قطعتين مختلفتين مكررتين.</p>'
+      + P.map(f => row(f.name, `feEd('${f.id}')`, (f.unit ? f.unit + ' · ' : '') + f.opts.length + ' خيار')).join('')
+      + `<button class="btn s" onclick="feEd(null,${j})">+ خاصية جديدة</button>`
+      + '<h3>طريقة العرض</h3><div>' + t('g', 'مجموعات حسب الفئة', g.g) + '</div><p class="m">للكابلات والشواحن: يُحكم على المجموع بدل كل قطعة.</p>'
+      + '<h3>الحد</h3>' + (g.g ? row('«قارب النفاد» عند مجموع المجموعة ≤', `akLim(${j},'g')`, g.lim ?? lim('agl')) : row('«قليل» لكل قطعة من هذا النوع عند ≤', `akLim(${j},'p')`, c.lim ?? lim('acl')))
+  };
+};
+VW.st_ak = () => ({
+  t: 'إعداد أنواع الإكسسوارات',
+  h: '<p class="m">اضغط على نوع لضبط ما يظهر عند إضافته، وخاصياته (كالسعة)، وطريقة عرضه، وحده.</p>' + (can('tags') ? '<button class="btn" onclick="tgAdd(\'kind\')">+ نوع جديد</button>' : '')
+    + S.tags.kind.map((k, j) => { const c = kc(k), g = gkc(k); return row(k, "go('st_akk',{kj:" + j + "})", [g.g && 'مجموعات', c.conn && 'موصل', c.tier && 'فئة', g.w && 'واط', ...akProps(k).map(f => f.name)].filter(Boolean).join(' · ')); }).join('')
+});
 /* إدارة الخانات المخصصة */
 let FE = {};
 VW.st_fx = () => ({ t: 'الخانات المخصصة', h: '<p class="m">خانة إضافية بخيارات تظهر في نموذج القسم وعلى البطاقة وتدخل في البحث.</p>' + (can('tags') ? '<button class="btn" onclick="feEd(null)">+ إضافة خانة</button>' : '') + Object.keys(SECN).filter(s => !V.fs || V.fs == s).map(s => `<h3>${SECN[s]}</h3>` + (S.fields.filter(f => f.sec == s).map(f => `<button class="card row2" onclick="feEd('${f.id}')"><b style="flex:1">${esc(f.name)}</b><span class="m">${f.kinds && f.kinds.length ? esc(f.kinds.join('، ')) : 'الكل'} · ${f.multi ? 'عدة قيم' : 'قيمة'} · ${f.opts.length}</span></button>`).join('') || '<p class="m">لا شيء</p>')).join('') });
 function feR() {
-  if ($('fen')) { FE.name = $('fen').value; FE.opts = $('feo').value; }
+  if ($('fen')) { FE.name = $('fen').value; FE.opts = $('feo').value; FE.unit = $('feu').value; }
   const kl = FE.sec == 'phones' ? S.tags.brand : FE.sec == 'acc' ? S.tags.kind : null;
-  $('sh').innerHTML = `<div class="bar"></div><h3>${FE.id ? 'تعديل خانة' : 'خانة جديدة'}</h3><label>اسم الخانة (مثال: الموصل)</label><input id="fen" value="${esc(FE.name)}"><label>القسم</label><div>${Object.keys(SECN).map(s => `<button class="tag ${FE.sec == s ? 'on' : ''}" onclick="FE.sec='${s}';FE.kinds=[];feR()">${SECN[s]}</button>`).join('')}</div>`
+  $('sh').innerHTML = `<div class="bar"></div><h3>${FE.id ? 'تعديل خانة' : 'خانة جديدة'}</h3><label>اسم الخانة (مثال: الموصل)</label><input id="fen" value="${esc(FE.name)}"><label>الوحدة (اختياري: GB أو mAh — تُلحق تلقائياً بالأرقام التي تكتبها)</label><input id="feu" value="${esc(FE.unit || '')}"><label>القسم</label><div>${Object.keys(SECN).map(s => `<button class="tag ${FE.sec == s ? 'on' : ''}" onclick="FE.sec='${s}';FE.kinds=[];feR()">${SECN[s]}</button>`).join('')}</div>`
     + (kl ? `<label>تظهر لـ ${FE.sec == 'phones' ? 'ماركات' : 'أنواع'} محددة (بدون اختيار = الكل)</label><div>${kl.map((k, j) => `<button class="tag ${FE.kinds.includes(k) ? 'on' : ''}" onclick="feK(${j})">${esc(k)}</button>`).join('')}</div>` : '')
     + `<label>طريقة الاختيار</label><div><button class="tag ${FE.multi ? '' : 'on'}" onclick="FE.multi=false;feR()">قيمة واحدة</button><button class="tag ${FE.multi ? 'on' : ''}" onclick="FE.multi=true;feR()">عدة قيم</button></div><label>الخيارات (واحد في كل سطر)<textarea id="feo">${esc(FE.opts)}</textarea></label>`
     + `<div class="acts">${FE.id ? '<button class="btn d" onclick="finish({del:1})">حذف</button>' : ''}<button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="feOk()">حفظ</button></div>`;
 }
 function feK(j) { const k = (FE.sec == 'phones' ? S.tags.brand : S.tags.kind)[j]; FE.kinds = FE.kinds.includes(k) ? FE.kinds.filter(x => x != k) : [...FE.kinds, k]; feR(); }
-function feOk() { FE.name = $('fen').value.trim(); FE.opts = $('feo').value; if (!FE.name) return toast('اكتب اسم الخانة'); finish({ ok: 1 }); }
-function feEd(id) {
+function feOk() { FE.name = $('fen').value.trim(); FE.opts = $('feo').value; FE.unit = $('feu').value.trim(); if (!FE.name) return toast('اكتب اسم الخانة'); finish({ ok: 1 }); }
+function feEd(id, kj) {
   if (!can('tags')) return toast('للمدير فقط'); const f = id ? S.fields.find(x => x.id == id) : null;
-  FE = f ? { id: f.id, name: f.name, sec: f.sec, kinds: [...(f.kinds || [])], multi: !!f.multi, opts: f.opts.join('\n') } : { id: '', name: '', sec: V.fs || 'acc', kinds: [], multi: false, opts: '' };
+  FE = f ? { id: f.id, name: f.name, sec: f.sec, kinds: [...(f.kinds || [])], multi: !!f.multi, unit: f.unit || '', opts: f.opts.join('\n') } : { id: '', name: '', sec: kj != null ? 'acc' : V.fs || 'acc', kinds: kj != null ? [S.tags.kind[kj]] : [], multi: false, unit: '', opts: '' };
   feR();
   sheetOpen(v => {
     if (!v) return;
     upd(() => {
       if (v.del) { S.fields = S.fields.filter(x => x.id != FE.id); return; }
-      const o = { name: FE.name, sec: FE.sec, kinds: FE.kinds, multi: FE.multi, opts: FE.opts.split('\n').map(s => s.trim()).filter(Boolean) };
+      const o = { name: FE.name, sec: FE.sec, kinds: FE.kinds, multi: FE.multi, unit: FE.unit, opts: FE.opts.split('\n').map(s => fxNorm(s, FE.unit)).filter(Boolean) };
       if (FE.id) Object.assign(S.fields.find(x => x.id == FE.id), o); else S.fields.push({ id: uid(), ...o });
     });
   });
