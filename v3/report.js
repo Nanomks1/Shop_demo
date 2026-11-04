@@ -218,7 +218,7 @@
 
   /* ---------- إعدادات التقرير ---------- */
   const yn = v => v ? 'نعم' : 'لا', tog = (l, k) => row(l, 'rcSet({' + k + ':' + (rcf()[k] ? 0 : 1) + '})', yn(rcf()[k]));
-  window.rcRh = () => { if (!okEdit()) return toast('للمدير فقط'); ask('ساعة بدء التذكير', [{ k: 'h', l: 'من 0 إلى 23 (مثال: 16)', v: String(rcf().rh) }]).then(v => { const h = v && parseInt(v.h, 10); if (h >= 0 && h <= 23) rcSet({ rh: h }); }); };
+  window.rcRh = () => { if (!okEdit()) return toast('للمدير فقط'); ask('ساعة بدء التذكير', [{ k: 'h', l: 'من 0 إلى 23 (مثال: 16)', v: String(rcf().rh) }]).then(v => { const h = v && parseInt(dg(v.h), 10); if (h >= 0 && h <= 23) rcSet({ rh: h }); }); };
   window.rcNd = i => { const n = rcf().nd.slice(), k = n.indexOf(i); k < 0 ? n.push(i) : n.splice(k, 1); rcSet({ nd: n }); };
   VW.st_rep = () => {
     const c = rcf();

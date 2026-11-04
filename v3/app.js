@@ -283,7 +283,7 @@ function limEd(k) {
   const L = (LM.find(x => x[0] == k) || [])[1] || 'تعديل القيمة';
   ask(L, [{ k: 'v', l: 'القيمة', t: 'tel', v: limShow(k) }]).then(v => {
     if (!v || v.v.trim() === '') return;
-    const n = parseInt(v.v, 10);
+    const n = parseInt(dg(v.v), 10);
     if (isNaN(n) || n < (LMIN1.includes(k) ? 1 : 0)) return toast('اكتب رقماً صحيحاً');
     upd(() => S.cfg[k] = k == 'gmin' ? n + 1 : n);
   });

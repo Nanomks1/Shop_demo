@@ -18,7 +18,7 @@
   const rid = (op, k, n) => 'tp_' + op + '_' + k + n;
   const rec = (op, k, n) => T().find(r => r.id == rid(op, k, n));
   const val = (op, k, n) => { const r = rec(op, k, n); return r && r.val != null ? r.val : null; };
-  const num = s => { s = String(s ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(',', '.').replace(/[^\d.]/g, ''); const n = parseFloat(s); return isNaN(n) ? null : n; };
+  const num = s => { s = dg(s).replace(',', '.').replace(/[^\d.]/g, ''); const n = parseFloat(s); return isNaN(n) ? null : n; };
   const dm = v => +Number(v).toFixed(2) + ' درهم';
   const isToday = t => !!t && new Date(t).toDateString() == new Date().toDateString();
   const pad = n => String(n).padStart(2, '0');
