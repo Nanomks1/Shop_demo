@@ -30,7 +30,7 @@
           i.stock = i.stock || {};
           g.models.forEach(m => { if (i.lv) delete i.lv[m]; });
           i.stock[m0] = (i.stock[m0] || 0) + n;
-          touch(i);
+          touch(i, 1);
         });
         if (typeof reqChk == 'function') reqChk(g.models.join(' '), 1);
       });
@@ -44,22 +44,35 @@
     if (fnName == 'buyP') {
       const i = find(arg); if (!i) return;
       const add = Math.max(1, phLim(i) + 1 - av(i));
-      commit('تم الشراء (+' + add + '): ' + i.brand + ' ' + i.name, () => { i.cnt += add; touch(i); });
+      commit('تم الشراء (+' + add + '): ' + i.brand + ' ' + i.name, () => { i.cnt += add; touch(i, 1); });
       if (typeof reqChk == 'function') reqChk(i.brand + ' ' + i.name);
     } else if (fnName == 'buyC') {
       const i = find(arg); if (!i) return;
+      const badG = typeof csGStats == 'function' ? csGStats(i).filter(x => x.st != 'g') : [];
       commit('تم شراء بوشيط ' + i.name + ' (+3)', () => {
-        const z = (i.v || []).filter(x => x.n <= 0), t = z.length ? z : (i.v || []);
-        t.forEach(x => x.n += 3); i.need = ''; touch(i);
+        if (badG.length && badG[0].g != 'عام') {
+          badG.forEach(b => {
+            const vars = (i.v || []).filter(x => x.g == b.g);
+            if (!vars.length) { i.v = i.v || []; i.v.push({ id: uid(), g: b.g, c: '', n: 3 }); }
+            else {
+              const z = vars.filter(x => x.n <= 0);
+              (z.length ? z : [vars[0]]).forEach(x => x.n += 3);
+            }
+          });
+        } else {
+          const z = (i.v || []).filter(x => x.n <= 0), t = z.length ? z : (i.v || []);
+          t.forEach(x => x.n += 3);
+        }
+        i.need = ''; touch(i, 1);
       });
       if (typeof reqChk == 'function') reqChk('بوشيط ' + i.name);
     } else if (fnName == 'buyA') {
       const i = find(arg); if (!i) return;
       if (typeof i.cnt == 'number') {
         const add = Math.max(1, acLim(i) + 2 - i.cnt);
-        commit('تم الشراء (+' + add + '): ' + acTitle(i), () => { i.cnt += add; touch(i); });
+        commit('تم الشراء (+' + add + '): ' + acTitle(i), () => { i.cnt += add; touch(i, 1); });
       } else {
-        commit('تم الشراء: ' + acTitle(i), () => { i.st = 'g'; touch(i); });
+        commit('تم الشراء: ' + acTitle(i), () => { i.st = 'g'; touch(i, 1); });
       }
       if (typeof reqChk == 'function') reqChk(acName(i));
     } else if (fnName == 'tpFix') {
@@ -71,7 +84,7 @@
         let r = S.tp.find(x => x.id == arg);
         const prev = r ? JSON.stringify(r) : null;
         if (!r) { r = { id: arg, op, k: 'c', n }; S.tp.push(r); }
-        r.val = v; r.est = 1; r.at = Date.now(); r.by = S.me || '';
+        r.val = v; r.est = 1; r.at = r.cf = Date.now(); r.by = S.me || '';
         save(); render();
         toast('تم توفير بطاقة ' + n + ' (' + op + ')', () => {
           if (prev) Object.assign(r, JSON.parse(prev));
@@ -85,8 +98,13 @@
   const lines = () => { const c = rcf(); let L = invLines(!!c.pn).concat(typeof tpLines == 'function' ? tpLines() : []); if ((window.RLV || c.lv) == 'r') L = L.filter(x => x[2] == 'r'); return L; };
   const secs = m => rSecs(m).filter(k => !rcf().hs.includes(k));
   const dstr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); };
-  /* أسطر اختيارية: الصيانة والديون */
-  const rpLine = () => { const i = S.rp.filter(x => x.st == 'in').length, d = S.rp.filter(x => x.st == 'rd'), late = d.filter(x => Date.now() - (x.t1 || x.t0) > 15 * 864e5).length; return i || d.length ? 'الصيانة: ' + i + ' قيد الإصلاح · ' + d.length + ' جاهز للتسليم' + (late ? ' (منسي ' + late + ')' : '') : ''; };
+  /* أسطر اختيارية: الصيانة (مفصلة بين جاهز ولم يصلح) والديون */
+  const rpLine = () => {
+    const i = S.rp.filter(x => x.st == 'in').length, d = S.rp.filter(x => x.st == 'rd');
+    const ok = d.filter(x => x.res != 'fail' && x.res != 'ref').length, nf = d.length - ok;
+    const late = d.filter(x => Date.now() - (x.t1 || x.t0) > 15 * 864e5).length;
+    return i || d.length ? 'الصيانة: ' + i + ' في المحل · ' + ok + ' جاهز للتسليم' + (nf ? ' · ' + nf + ' لم يصلح' : '') + (late ? ' (منسي ' + late + ')' : '') : '';
+  };
   const dbLine = () => { const n = (S.debt || []).filter(x => !x.paid).length; return n ? 'ديون مفتوحة: ' + n : ''; };
   /* تسجيل الإرسال: لآخر من ضغط واتساب أو نسخ (يُزامَن بين الأجهزة) */
   const sentToday = () => { const x = S.cfg.rs; return !!(x && x.t && new Date(x.t).toDateString() == new Date().toDateString()); };
@@ -194,7 +212,7 @@
         + '<p class="m" style="margin:2px 8px 12px;font-size:.8rem">عند تفعيله: ضغطة واحدة على (✓) تعتمد الكمية الافتراضية فوراً، ويظهر بجانبه زر (#) لمن أراد كتابة عدد مخصص.</p>'
         + '<h3>العنوان والتوقيع</h3>' + row('عنوان التقرير', 'rcTt()', c.tt || 'بدون') + tog('إظهار التاريخ بجانب العنوان', 'dt') + row('عبارة في آخر التقرير', 'rcFt()', c.ft || 'بدون')
         + '<h3>ما الذي يُدرج</h3>' + tog('قائمة الهواتف المتوفرة', 'st') + tog('أسعار الهواتف المتوفرة', 'pr') + tog('طلبات الزبائن', 'rq') + tog('ملاحظات البوشيط (باقي / خاصنا)', 'pn') + tog('إظهار الأقسام التي لا نقص فيها', 'em')
-        + '<h3>أسطر إضافية في التقرير</h3>' + tog('سطر الصيانة (قيد الإصلاح / جاهز / منسي)', 'rr') + tog('سطر الديون المفتوحة', 'rd')
+        + '<h3>أسطر إضافية في التقرير</h3>' + tog('سطر الصيانة (في المحل / جاهز / لم يصلح / منسي)', 'rr') + tog('سطر الديون المفتوحة', 'rd')
         + '<h3>تذكير الإرسال</h3>' + tog('تذكير في الرئيسية إن لم يُرسل التقرير اليوم', 'rm') + row('ساعة بدء التذكير', 'rcRh()', c.rh + ':00')
         + '<p class="m">أيام بلا تذكير:</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((n, i) => `<button class="tag ${c.nd.includes(i) ? 'on' : ''}" onclick="rcNd(${i})">${n}</button>`).join('') + '</div>'
         + '<h3>الجولة اليومية</h3>' + row('يُعتبر الصنف غير مؤكد بعد (أيام)', "limEd('stale')", lim('stale') + ' يوم')
