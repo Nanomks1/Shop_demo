@@ -147,8 +147,8 @@ nav button.on .ic{background:var(--ab)}
 .card.rp-late{border-inline-start:4px solid #dc2626}
 
 /* ---- الأيقونة العائمة السريعة (FAB) ---- */
-#fab{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;z-index:12;display:flex;flex-direction:column;align-items:center;gap:10px}
-.fab-b{width:50px;height:50px;border-radius:16px;border:0;background:var(--p);color:var(--onp);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(37,99,235,.32);cursor:pointer;font:inherit}
+#fab{touch-action:none;user-select:none;-webkit-user-select:none;position:fixed;bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;z-index:12;display:flex;flex-direction:column;align-items:center;gap:10px}
+.fab-b{touch-action:none;width:50px;height:50px;border-radius:16px;border:0;background:var(--p);color:var(--onp);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(37,99,235,.32);cursor:pointer;font:inherit}
 .fab-b .ic{width:1.4rem;height:1.4rem}
 
 /* ---- ملاحظة الصيانة البارزة ---- */

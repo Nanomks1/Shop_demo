@@ -236,7 +236,7 @@ VW.st_look = () => {
   return {
     t: 'المظهر والعرض',
     h: '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
-      + `<button class="card row2" onclick="upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة السريعة في الرئيسية</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
+      + `<button class="card row2" onclick="fabReset();upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة السريعة في الرئيسية</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
       + '<h3>الوضع (لهذا الجهاز فقط)</h3>' + THMD.map(([k, n]) => `<button class="tag ${md == k ? 'on' : ''}" onclick="upd(()=>S.cfg.th='${ac}-${k}')">${n}</button>`).join('')
       + '<p class="m">«تلقائي» يتبع وضع الهاتف: نهاري في النهار وليلي في الليل.</p>'
       + '<h3>اللون</h3>' + THA.map(([k, n, c]) => `<button class="tag ${ac == k ? 'on' : ''}" onclick="upd(()=>S.cfg.th='${k}-${md}')"><i style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c};border:2px solid #fff"></i>${n}</button>`).join('')
@@ -261,18 +261,66 @@ function fabAct() {
     else if (w == 5) go('jl');
   });
 }
+/* ---------- الزر العائم: يُسحب بالإصبع، يلتصق بحافة الشاشة، ويحفظ موضعه على هذا الجهاز ---------- */
+const FABK = 'fabPos'; let FABM = 0;
+function fabPlace() {
+  const el = $('fab'); if (!el) return;
+  let p = null; try { p = JSON.parse(localStorage.getItem(FABK) || 'null'); } catch (e) { }
+  if (!p || (p.s != 'l' && p.s != 'r')) { el.style.left = el.style.top = el.style.bottom = el.style.right = ''; return; }
+  const w = el.offsetWidth || 50, h = el.offsetHeight || 50;
+  const x = p.s == 'l' ? 14 : innerWidth - w - 14, y = Math.min(Math.max(70, (+p.y || 0) * innerHeight), innerHeight - h - 4);
+  Object.assign(el.style, { left: x + 'px', top: y + 'px', bottom: 'auto', right: 'auto' });
+}
+function fabReset() { try { localStorage.removeItem(FABK); } catch (e) { } fabPlace(); }
+function fabBind(el) {
+  let st = null;
+  const mv = e => {
+    if (!st) return;
+    const dx = e.clientX - st.x, dy = e.clientY - st.y;
+    if (!st.m && Math.hypot(dx, dy) < 8) return;
+    st.m = true;
+    const w = el.offsetWidth || 50, h = el.offsetHeight || 50;
+    Object.assign(el.style, { left: Math.min(Math.max(4, st.l + dx), innerWidth - w - 4) + 'px', top: Math.min(Math.max(70, st.t + dy), innerHeight - h - 4) + 'px', bottom: 'auto', right: 'auto' });
+  };
+  const up = () => {
+    removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+    if (st && st.m) {
+      const r = el.getBoundingClientRect();
+      try { localStorage.setItem(FABK, JSON.stringify({ s: r.left + r.width / 2 < innerWidth / 2 ? 'l' : 'r', y: +(r.top / innerHeight).toFixed(4) })); } catch (e) { }
+      FABM = Date.now(); fabPlace();
+    }
+    st = null;
+  };
+  el.addEventListener('pointerdown', e => {
+    const r = el.getBoundingClientRect();
+    st = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, m: false };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+  });
+  el.addEventListener('click', e => { if (Date.now() - FABM < 400) { e.stopPropagation(); e.preventDefault(); } }, true);   // السحب لا يُعدّ ضغطاً
+}
 function fabUpd() {
   let el = $('fab');
   if (!el) {
     document.body.insertAdjacentHTML('beforeend', '<div id="fab" hidden></div>');
-    el = $('fab');
+    el = $('fab'); fabBind(el);
   }
   const show = S.cfg.fab !== 0 && V.v == 'home';
   el.hidden = !show;
   if (!show) return;
   el.innerHTML = `<button class="fab-b" onclick="fabAct()" aria-label="إضافة">${ic('plus')}</button>`;
+  fabPlace();
 }
+addEventListener('resize', fabPlace);
 HK.render.push(fabUpd);
+
+/* شرائط الوسوم الأفقية: بعد كل رسم يُوضَع الوسم المختار في وسط الشريط فلا يختفي ولا تختفي جيرانه */
+HK.render.push(() => {
+  document.querySelectorAll('.rtabs, #sc').forEach(c => {
+    const t = c.querySelector('.tag.on'); if (!t || c.scrollWidth <= c.clientWidth + 2) return;
+    const x = c.getBoundingClientRect(), y = t.getBoundingClientRect();
+    c.scrollBy({ left: (y.left + y.width / 2) - (x.left + x.width / 2), top: 0 });
+  });
+});
 
 /* ---------- الحدود ---------- */
 VW.st_lim = () => VW.st();   // احتياط فقط: كل حد في صفحة قسمه

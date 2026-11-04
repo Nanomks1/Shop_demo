@@ -257,7 +257,7 @@ function rForm(rec) {
   const moreOpen = (rec.imei || ZI || +rec.war) ? ' open' : '';
   $('sh').innerHTML = `<div class="bar"></div><div class="row2"><h3 style="color:var(--t);margin:0;flex:1">${rec.id ? 'تعديل صيانة' : 'استلام هاتف'}</h3>${tkShow ? `<span class="tk-b" style="font-size:1.05rem;padding:4px 12px" title="اكتب هذا الرقم على ملصق الهاتف">#${esc(tkShow)}</span>` : '<span class="m" style="font-size:.82rem">رقم التذكرة يظهر بعد الحفظ</span>'}</div>`
     + rpDatalists()
-    + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:1">اسم الزبون<input id="r_n" list="dl_rnames" value="${esc(rec.name || '')}" oninput="rH(1)"></label><label style="flex:1">رقم الهاتف<input id="r_t" type="tel" value="${esc(rec.tel || '')}" oninput="rH()"></label></div><div id="rh" class="m" style="margin-top:4px"></div>`
+    + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:1">اسم الزبون<input id="r_n" autocomplete="off" value="${esc(rec.name || '')}" oninput="rH(1)"></label><label style="flex:1">رقم الهاتف<input id="r_t" type="tel" value="${esc(rec.tel || '')}" oninput="rH()"></label></div><div id="rh" class="m" style="margin-top:4px"></div>`
     + `<label>نوع الهاتف (اكتب أو اختر الماركة تحته)<input id="r_v" list="dl_rdevs" value="${esc(rec.dev || '')}" placeholder="مثال: Samsung A15" oninput="syncRpTags();checkDeviceHistory();suggestGuidePrice()"></label>`
     + `<div id="rp_br_tags" style="margin:4px 0 6px">${S.tags.brand.map((b, j) => `<button type="button" class="tag rp-br-tg" onclick="pickRpBrand(${j})">${esc(b)}</button>`).join('')}</div><div id="rp_dev_hist" class="m" style="color:#d97706;font-weight:700"></div>`
     + `<label>العطل / المشكل (اكتب أو اختر من الأعطال تحته)<input id="r_f" value="${esc(rec.fault || '')}" placeholder="مثال: تغيير شاشة" oninput="syncRpTags();suggestGuidePrice()"></label>`
@@ -322,14 +322,10 @@ function camSnap() {
 HK.hide.push(camStop);
 function rKc() { $('rk').innerHTML = RK.map(k => `<button type="button" class="tag ${ZK.includes(k) ? 'on' : ''}" onclick="rKt('${k}')">${k}</button>`).join(''); }
 function rKt(k) { ZK = ZK.includes(k) ? ZK.filter(x => x != k) : [...ZK, k]; rKc(); }
-function rH(fromName) {   // زبون سابق + تعبئة الرقم تلقائياً عند اختيار اسم معروف + تنبيه ضمان ساري + تنبيه ديون مفتوحة
+function rH(fromName) {   // زبون سابق (بالهاتف فقط، الأسماء متشابهة) + تنبيه ضمان ساري + تنبيه ديون مفتوحة
   const box = $('rh'); if (!box) return;
   const telEl = $('r_t'), nameEl = $('r_n');
   let telVal = (telEl || {}).value || '', nameVal = (nameEl || {}).value || '';
-  if (fromName && nameVal && !telVal && telEl) {
-    const known = S.rp.find(r => r != ZR && r.name == nameVal && r.tel) || (S.debt || []).find(d => d.name == nameVal && d.tel);
-    if (known) { telEl.value = telVal = known.tel; }
-  }
   const t = rph8(telVal), m = t.length >= 8 ? S.rp.filter(r => r != ZR && rph8(r.tel) === t) : [];
   if (!fromName && t.length >= 8 && !nameVal && nameEl && m.length) {
     nameEl.value = nameVal = m[m.length - 1].name;

@@ -120,7 +120,7 @@
     try {
       const t = +localStorage.getItem('rcPend'); if (!t) return;
       if (Date.now() - t > 30 * 60000) { localStorage.removeItem('rcPend'); return; }
-      if (SH || localStorage.getItem('shopLock') == '1') return;
+      if (SH || $('lg') || $('lk') || localStorage.getItem('shopLock') == '1') return;
       localStorage.removeItem('rcPend');
       sure('هل أُرسل التقرير فعلاً؟', 'نعم أُرسل', false).then(y => { if (y) { rcMark(); render(); } });
     } catch (e) { }
