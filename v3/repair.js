@@ -234,17 +234,13 @@ function rWA(id) {
   location.href = 'https://wa.me/' + waNum(r.tel) + '?text=' + encodeURIComponent(`مرحباً ${r.name}، ${s}\n— محل عزيز`);
 }
 
-/* ---------- قوائم الإكمال التلقائي (الزبائن والأجهزة) ---------- */
+/* ---------- قائمة اقتراح الأجهزة (لا اقتراح للأسماء: متشابهة) ---------- */
 function rpDatalists() {
-  const names = new Map(), devs = new Set();
-  [...(S.rp || []), ...(S.debt || []), ...(S.used || [])].forEach(x => {
-    if (x.name && x.tel && !names.has(x.name)) names.set(x.name, x.tel);
-    if (x.dev) devs.add(x.dev.trim());
-  });
+  const devs = new Set();
+  [...(S.rp || []), ...(S.debt || []), ...(S.used || [])].forEach(x => { if (x.dev) devs.add(x.dev.trim()); });
   (S.items || []).forEach(i => { if (i.sec == 'phones') devs.add((i.brand + ' ' + i.name).trim()); });
   (S.guide || []).forEach(g => { if (g.m) devs.add(g.m.trim()); });
-  return `<datalist id="dl_rnames">${[...names.keys()].slice(0, 40).map(n => `<option value="${esc(n)}">`).join('')}</datalist>`
-    + `<datalist id="dl_rdevs">${[...devs].slice(0, 50).map(d => `<option value="${esc(d)}">`).join('')}</datalist>`;
+  return `<datalist id="dl_rdevs">${[...devs].slice(0, 50).map(d => `<option value="${esc(d)}">`).join('')}</datalist>`;
 }
 
 function rEd(id) { const rec = id ? rf(id) : {}; $('sh').innerHTML = ''; sheetOpen(v => rDone(v, rec)); rForm(rec); }
@@ -261,7 +257,7 @@ function rForm(rec) {
     + `<label>نوع الهاتف (اكتب أو اختر الماركة تحته)<input id="r_v" list="dl_rdevs" value="${esc(rec.dev || '')}" placeholder="مثال: Samsung A15" oninput="syncRpTags();checkDeviceHistory();suggestGuidePrice()"></label>`
     + `<div id="rp_br_tags" style="margin:4px 0 6px">${S.tags.brand.map((b, j) => `<button type="button" class="tag rp-br-tg" onclick="pickRpBrand(${j})">${esc(b)}</button>`).join('')}</div><div id="rp_dev_hist" class="m" style="color:#d97706;font-weight:700"></div>`
     + `<label>العطل / المشكل (اكتب أو اختر من الأعطال تحته)<input id="r_f" value="${esc(rec.fault || '')}" placeholder="مثال: تغيير شاشة" oninput="syncRpTags();suggestGuidePrice()"></label>`
-    + `<div id="rp_fl_tags" style="margin:4px 0 6px">${S.tags.fault.map((x, j) => `<button type="button" class="tag rp-fl-tg" onclick="pickRpFault(${j})">${esc(x)}</button>`).join('')}</div>`
+    + `<div id="rp_fl_tags" style="margin:4px 0 6px">${rpFaultOrder().map(j => `<button type="button" class="tag rp-fl-tg" data-j="${j}" onclick="pickRpFault(${j})">${esc(S.tags.fault[j])}</button>`).join('')}</div>`
     + `<div id="rp_price_hint" style="margin:4px 0"></div>`
     + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:1.3"${hh('rp', 'cap')}>السعر المتفق (أو: اتصل)<input id="r_c" value="${esc(rec.cap || '')}" placeholder="مثال: 150"></label><label style="flex:1"${hh('rp', 'dep')}>العربون (اختياري)<input id="r_d" type="tel" value="${esc(rec.dep || '')}" placeholder="0"></label></div>`
     + `<div><label>موعد التسليم الموعود (اختياري)</label><div id="rdue">${[[0, 'اليوم'], [1, 'غداً'], [3, 'بعد 3 أيام']].map(([k, l]) => `<button type="button" class="tag due-tg ${ZDUE && sameDay(ZDUE, dueTs(k)) ? 'on' : ''}" onclick="setRpDue(${k})">${l}</button>`).join('')}<button type="button" class="tag due-tg ${!ZDUE ? 'on' : ''}" onclick="setRpDue(-1)">بدون</button></div></div>`
@@ -278,6 +274,13 @@ function rForm(rec) {
   rKc(); rH(); fxR(); syncRpTags(); checkDeviceHistory(); suggestGuidePrice();
 }
 
+/* ترتيب وسوم الأعطال في الاستلام حسب استعمالكم الفعلي (الأكثر تكراراً أولاً؛ عند التساوي يبقى الترتيب الأصلي) */
+function rpFaultOrder() {
+  const cnt = {};
+  (S.rp || []).forEach(x => String(x.fault || '').split('،').forEach(s => { s = s.trim(); if (s) cnt[s] = (cnt[s] || 0) + 1; }));
+  return S.tags.fault.map((f, j) => j).sort((a, b) => (cnt[S.tags.fault[b]] || 0) - (cnt[S.tags.fault[a]] || 0) || a - b);
+}
+
 /* تلوين وسوم الماركات والأعطال المختارة تلقائياً ليعرف المستخدم ما ضغط عليه */
 function syncRpTags() {
   const dev = (($('r_v') || {}).value || '').trim().toLowerCase();
@@ -286,8 +289,8 @@ function syncRpTags() {
     btn.classList.toggle('on', !!b && dev.startsWith(b));
   });
   const pts = (($('r_f') || {}).value || '').split('،').map(s => s.trim()).filter(Boolean);
-  document.querySelectorAll('.rp-fl-tg').forEach((btn, j) => {
-    btn.classList.toggle('on', pts.includes(S.tags.fault[j]));
+  document.querySelectorAll('.rp-fl-tg').forEach(btn => {
+    btn.classList.toggle('on', pts.includes(S.tags.fault[+btn.dataset.j]));
   });
 }
 

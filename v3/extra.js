@@ -11,16 +11,13 @@ Object.assign(IC, {
 const xn = s => parseFloat(dg(s || '').replace(/[^\d.]/g, '')) || 0;
 const xTel = t => t ? `<a href="tel:${esc(t)}">${esc(t)}</a>` : '';
 
-/* الإكمال التلقائي المشترك لاسم الزبون ورقم هاتفه (في المستعمل والديون) */
+/* إكمال اسم الزبون من رقم هاتفه فقط (في المستعمل والديون) */
 function xCustLookup(nameId, telId, fromName) {
   const nEl = $(nameId), tEl = $(telId); if (!nEl || !tEl) return;
   const nv = nEl.value.trim(), tv = tEl.value.trim(), ph8 = waNum(tv).slice(-8);
   const all = [...(S.rp || []), ...(S.debt || []), ...(S.used || [])];
-  if (fromName && nv && !tv) {
-    const f = all.find(x => x.name == nv && x.tel);
-    if (f) tEl.value = f.tel;
-  } else if (!fromName && ph8.length >= 8 && !nv) {
-    const f = all.find(x => x.tel && waNum(x.tel).slice(-8) === ph8 && x.name);
+  if (!fromName && ph8.length >= 8 && !nv) {   // بالهاتف فقط (الأسماء متشابهة): يُملأ الاسم من آخر سجل بهذا الرقم
+    const f = all.filter(x => x.tel && x.name && waNum(x.tel).slice(-8) === ph8).pop();
     if (f) nEl.value = f.name;
   }
 }
@@ -97,7 +94,7 @@ function usOpen(rec) {
     + `<label>الجهاز / الموديل<input id="u_dev" list="dl_rdevs" value="${esc(UR.dev || '')}" placeholder="اختر ماركة من الأسفل أو اكتب الموديل (مثال: Samsung A54)" oninput="syncUsBrand()"></label>`
     + `<div style="margin:4px 0 8px">${S.tags.brand.map((b, j) => `<button type="button" class="tag us-br" onclick="pickUsBrand(${j})">${esc(b)}</button>`).join('')}</div>`
     + `<div class="row2" style="gap:8px"><label style="flex:1">سعر شراء المستعمل<input id="u_price" type="tel" value="${esc(UR.price || '')}" oninput="usCalcDiff()"></label>${UR.repOf ? `<label style="flex:1">الفرق المقبوض (الصولد)<input id="u_diff" type="tel" value="${esc(UR.diff || '')}"></label>` : ''}</div>`
-    + `<div class="row2" style="gap:8px"><label style="flex:1">اسم البائع<input id="u_name" list="dl_rnames" value="${esc(UR.name || '')}" oninput="xCustLookup('u_name','u_tel',1)"></label><label style="flex:1">رقم البطاقة (CIN)<input id="u_cin" value="${esc(UR.cin || '')}" placeholder="مثال: D123456"></label></div>`
+    + `<div class="row2" style="gap:8px"><label style="flex:1">اسم البائع<input id="u_name" autocomplete="off" value="${esc(UR.name || '')}"></label><label style="flex:1">رقم البطاقة (CIN)<input id="u_cin" value="${esc(UR.cin || '')}" placeholder="مثال: D123456"></label></div>`
     + `<label>هاتف البائع<input id="u_tel" type="tel" value="${esc(UR.tel || '')}" oninput="xCustLookup('u_name','u_tel',0)"></label>`
     + `<label>IMEI / الرقم التسلسلي<div class="row2" style="margin-top:4px"><input id="u_imei" value="${esc(UR.imei || '')}" placeholder="امسح الباركود أو *#06#" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('u_imei')">${I('scan')} مسح</button></div></label>`
     + `<div><label>صورة البطاقة الوطنية / الهاتف (محمية)</label><div class="row2"><button type="button" class="btn s sm" onclick="usCam()">التقاط صورة</button><button type="button" class="btn s sm" onclick="$('u_i').click()">من المعرض</button><button type="button" id="u_imx" class="btn s sm" onclick="usImDel()" ${shownImg ? '' : 'hidden'}>حذف الصورة</button></div><img id="u_im" ${shownImg ? `src="${shownImg}"` : 'hidden'} style="width:100%;border-radius:10px;margin-top:8px"><input id="u_i" type="file" accept="image/*" hidden onchange="usIM(this.files[0])"></div>`
@@ -250,7 +247,7 @@ function dbtForm(rec) {
   if (typeof rpDatalists == 'function' && $('sh')) {
     $('sh').insertAdjacentHTML('beforeend', rpDatalists());
     const nEl = $('f_name'), tEl = $('f_tel');
-    if (nEl) { nEl.setAttribute('list', 'dl_rnames'); nEl.oninput = () => xCustLookup('f_name', 'f_tel', 1); }
+    if (nEl) nEl.setAttribute('autocomplete', 'off');
     if (tEl) { tEl.oninput = () => xCustLookup('f_name', 'f_tel', 0); }
   }
   return p;
@@ -265,6 +262,8 @@ async function dbtSave(rec, v) {
   save(); render(); toast('تم تسجيل الدين', () => { S.debt = S.debt.filter(x => x.id != o.id); if (rec.rp) { const r = S.rp.find(x => x.id == rec.rp); if (r) delete r.debt; } });
 }
 const dbtAdd = () => dbtForm({}).then(v => dbtSave({}, v));
+/* دين جديد لزبون موجود: الاسم والهاتف يُملآن بلمسة واحدة من بطاقته */
+function dbtMore(id) { const d = S.debt.find(x => x.id == id); if (!d) return; const rec = { name: d.name, tel: d.tel || '' }; dbtForm(rec).then(v => dbtSave(rec, v)); }
 function dbtFromRp(id) {
   const r = S.rp.find(x => x.id == id); if (!r) return;
   const rest = Math.max(0, xn(r.cap) - xn(r.dep) - xn(r.paid));
@@ -340,7 +339,7 @@ const dbtCard = d => {
     + (totSame ? `<div class="rs" style="font-size:.85rem;margin:2px 0">إجمالي ديون هذا الزبون: ${totSame} درهم (${same.length} ديون)</div>` : '')
     + (d.tel ? `<div class="m">${xTel(d.tel)}</div>` : '') + (d.why ? `<div class="m">${esc(d.why)}</div>` : '')
     + `<div class="m">${fd(d.at)} · ${esc(d.by || '')}${(d.pays || []).length ? ' · دفعات: ' + d.pays.length : ''}${open && rem < xn(d.amt) ? ' · من أصل ' + esc(d.amt) : ''}${d.paid ? ' · سُدِّد ' + fd(d.paid) : ''}</div>`
-    + `<div class="sub">${open ? `<button class="btn sm" onclick="dbtPay('${d.id}')">تسجيل دفعة</button>${same.length > 1 ? `<button class="btn s sm" onclick="dbtPayAll('${d.id}')">دفعة من الإجمالي</button>` : ''}<button class="btn s sm" onclick="dbtWA('${d.id}')">${I('send')} تذكير واتساب</button>` : ''}<button class="btn s sm" onclick="dbtDel('${d.id}')">حذف</button></div></div>`;
+    + `<div class="sub">${open ? `<button class="btn sm" onclick="dbtPay('${d.id}')">تسجيل دفعة</button>${same.length > 1 ? `<button class="btn s sm" onclick="dbtPayAll('${d.id}')">دفعة من الإجمالي</button>` : ''}<button class="btn s sm" onclick="dbtWA('${d.id}')">${I('send')} تذكير واتساب</button>` : ''}<button class="btn s sm" onclick="dbtMore('${d.id}')">+ دين جديد له</button><button class="btn s sm" onclick="dbtDel('${d.id}')">حذف</button></div></div>`;
 };
 VW.dbt = () => {
   const tab = V.tab || 'o', q = nz(V.q || '');

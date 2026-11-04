@@ -237,6 +237,7 @@ VW.st_look = () => {
     t: 'المظهر والعرض',
     h: '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
       + `<button class="card row2" onclick="fabReset();upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة السريعة في الرئيسية</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
+      + (fabOn ? `<button class="card row2" onclick="fabLockToggle()"><b>تثبيت الزر العائم في مكانه (منع السحب)</b><span class="m">${fabLocked() ? 'مُثبَّت' : 'قابل للسحب'}</span></button>` : '')
       + '<h3>الوضع (لهذا الجهاز فقط)</h3>' + THMD.map(([k, n]) => `<button class="tag ${md == k ? 'on' : ''}" onclick="upd(()=>S.cfg.th='${ac}-${k}')">${n}</button>`).join('')
       + '<p class="m">«تلقائي» يتبع وضع الهاتف: نهاري في النهار وليلي في الليل.</p>'
       + '<h3>اللون</h3>' + THA.map(([k, n, c]) => `<button class="tag ${ac == k ? 'on' : ''}" onclick="upd(()=>S.cfg.th='${k}-${md}')"><i style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c};border:2px solid #fff"></i>${n}</button>`).join('')
@@ -262,7 +263,9 @@ function fabAct() {
   });
 }
 /* ---------- الزر العائم: يُسحب بالإصبع، يلتصق بحافة الشاشة، ويحفظ موضعه على هذا الجهاز ---------- */
-const FABK = 'fabPos'; let FABM = 0;
+const FABK = 'fabPos', FABL = 'fabLk'; let FABM = 0;
+const fabLocked = () => { try { return localStorage.getItem(FABL) == '1'; } catch (e) { return false; } };
+function fabLockToggle() { try { fabLocked() ? localStorage.removeItem(FABL) : localStorage.setItem(FABL, '1'); } catch (e) { } render(); }
 function fabPlace() {
   const el = $('fab'); if (!el) return;
   let p = null; try { p = JSON.parse(localStorage.getItem(FABK) || 'null'); } catch (e) { }
@@ -292,6 +295,7 @@ function fabBind(el) {
     st = null;
   };
   el.addEventListener('pointerdown', e => {
+    if (fabLocked()) return;   // مُثبَّت من الإعدادات: الضغط يعمل والسحب لا
     const r = el.getBoundingClientRect();
     st = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, m: false };
     addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
