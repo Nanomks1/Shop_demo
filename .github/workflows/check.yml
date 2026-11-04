@@ -16,6 +16,7 @@ jobs:
           done
           cat $FILES > /tmp/bundle.js
           node --check /tmp/bundle.js || { echo "CROSS-FILE DUPLICATE DECLARATION ERROR"; exit 1; }
+          test "$(grep -o '?v=[0-9]*' v3/index.html | sort -u | wc -l)" = "1" || { echo "INDEX.HTML: not all ?v= numbers are equal"; exit 1; }
           V_HTML=$(grep -o '?v=[0-9]*' v3/index.html | head -n1 | cut -d= -f2)
           V_SW=$(grep -o "aziz-shop-v3-[0-9]*" v3/sw.js | cut -d- -f4)
           test "$V_HTML" = "$V_SW" || { echo "VERSION MISMATCH: index.html($V_HTML) != sw.js($V_SW)"; exit 1; }
