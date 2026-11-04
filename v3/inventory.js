@@ -188,12 +188,6 @@ function fxN(id) {
   if (v) { const a = [].concat(FS.fx[id] || []); FS.fx[id] = f.multi ? [...a, v] : v; }
   fxR();
 }
-function fxOpen(sec, rec) {   // يُستعمل أيضاً من نموذج الصيانة
-  const a = $('sh').querySelector('.acts'); if (!a || !S.fields.some(f => f.sec == sec)) return;
-  FS.fxSec = sec; FS.fx = { ...((rec && rec.x) || {}) }; FS.fxA = '';
-  if (!$('fx')) a.insertAdjacentHTML('beforebegin', '<div id="fx"></div>');
-  fxR();
-}
 const fxAtt = v => { if (FS.fxSec && v && typeof v == 'object') v.x = { ...FS.fx }; return v; };
 const moreBtn = fn => `<button class="btn s" onclick="${fn}(1)">حفظ وإضافة آخر</button>`;
 const nzText = i => hay(i) + ' ' + fxTxt(i) + ' ' + (i.imei || '') + ' ' + (i.code || '') + ' ' + (i.pw || '');
@@ -221,7 +215,7 @@ function phView() {
   const usedPh = allPh.filter(i => i.cond == 'مستعمل'), usedPcs = usedPh.reduce((s, i) => s + (+i.cnt || 0), 0);
   const brMap = {};
   allPh.forEach(i => { if (i.brand) brMap[i.brand] = (brMap[i.brand] || 0) + (+i.cnt || 0); });
-  const brChips = Object.keys(brMap).map(b => `<button class="tag ${V.pb == b && !V.f ? 'on' : ''}" onclick="V.f=0;V.pb='${esc(b)}';render()">${esc(b)} (${brMap[b]})</button>`).join('');
+  const brChips = Object.keys(brMap).map(b => `<button class="tag ${V.pb == b && !V.f ? 'on' : ''}" data-b="${esc(b)}" onclick="V.f=0;V.pb=this.dataset.b;render()">${esc(b)} (${brMap[b]})</button>`).join('');
   let a = srt(allPh, 'phones', i => i.brand + ' ' + i.name, i => i.cnt, i => i.at);
   if (V.f == 1) a = a.filter(i => phSt(i) != 'g');
   else if (V.f == 2) a = a.filter(i => i.cond == 'مستعمل');
@@ -803,18 +797,6 @@ function buyA(id) {
   if (typeof i.cnt == 'number') return qty(acTitle(i), Math.max(1, acLim(i) + 1 - i.cnt), n => { i.cnt += n; touch(i, 1); reqChk(acName(i), 1); });
   commit('تم الشراء', () => { i.st = 'g'; touch(i, 1); }); reqChk(acName(i));
 }
-function buyGCustom(id) {
-  const i = find(id), g = i && S.gg.find(x => x.id == i.gid); if (!i || !g) return;
-  const def = Math.max(1, gLim(i) - gTot(i, g));
-  qty('زجاج ' + i.ty + ': ' + g.models.join(' / '), def, n => {
-    i.stock = i.stock || {};
-    const m0 = g.models[0];
-    if (i.lv && i.lv[m0] !== undefined) { i.stock[m0] = lvN(i.lv[m0]) + n; delete i.lv[m0]; }
-    else i.stock[m0] = (i.stock[m0] || 0) + n;
-    touch(i, 1); reqChk('أنتي كاس ' + g.models.join(' '), 1);
-  });
-}
-
 /* مجموعات الكابلات والشواحن: الحكم على المجموع (فئة + موصل + قدرة) */
 const gkey = i => [i.kind, i.conn || '', i.tier || '', i.pw || ''].join('|').replace(/\//g, '-');
 const AORD = { r: 0, y: 1, g: 2 }, ALB2 = { g: 'متوفر', y: 'قارب النفاد', r: 'نفد' };

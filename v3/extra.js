@@ -8,20 +8,19 @@ Object.assign(IC, {
   chart: '<path d="M3 3v18h18"/><path d="M7 15v3M12 9v9M17 5v13"/>',
   idcard: '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4M14 14h4M5 16c.6-1.2 1.7-2 3-2s2.4.8 3 2"/>'
 });
-const xn = s => parseFloat(String(s || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^\d.]/g, '')) || 0;
+const xn = s => parseFloat(dg(s || '').replace(/[^\d.]/g, '')) || 0;
 const xTel = t => t ? `<a href="tel:${esc(t)}">${esc(t)}</a>` : '';
-const xNum = t => { t = String(t || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, ''); return t[0] == '0' ? '212' + t.slice(1) : t; };
 
 /* الإكمال التلقائي المشترك لاسم الزبون ورقم هاتفه (في المستعمل والديون) */
 function xCustLookup(nameId, telId, fromName) {
   const nEl = $(nameId), tEl = $(telId); if (!nEl || !tEl) return;
-  const nv = nEl.value.trim(), tv = tEl.value.trim(), ph8 = xNum(tv).slice(-8);
+  const nv = nEl.value.trim(), tv = tEl.value.trim(), ph8 = waNum(tv).slice(-8);
   const all = [...(S.rp || []), ...(S.debt || []), ...(S.used || [])];
   if (fromName && nv && !tv) {
     const f = all.find(x => x.name == nv && x.tel);
     if (f) tEl.value = f.tel;
   } else if (!fromName && ph8.length >= 8 && !nv) {
-    const f = all.find(x => x.tel && xNum(x.tel).slice(-8) === ph8 && x.name);
+    const f = all.find(x => x.tel && waNum(x.tel).slice(-8) === ph8 && x.name);
     if (f) nEl.value = f.name;
   }
 }
@@ -230,10 +229,10 @@ const dRem = d => Math.max(0, xn(d.amt) - (d.pays || []).reduce((a, p) => a + xn
 
 /* فحص الديون المفتوحة لزبون معين بالهاتف أو الاسم (تُستعمل هنا وفي الصيانة) */
 window.dbtCustOpen = function (tel, name) {
-  const ph = xNum(tel), nm = nz(name || '');
+  const ph = waNum(tel), nm = nz(name || '');
   return (S.debt || []).filter(d => {
     if (d.paid || dRem(d) <= 0) return false;
-    const dph = xNum(d.tel);
+    const dph = waNum(d.tel);
     if (ph.length >= 8 && dph.length >= 8) return ph.slice(-8) === dph.slice(-8);   // الهاتف معروف عند الطرفين: هو الحَكَم
     return nm.length >= 4 && nz(d.name) === nm;   // وإلا: الاسم كاملاً مطابقاً تماماً
   });
@@ -319,7 +318,7 @@ function dbtPayAll(id) {
 function dbtWA(id) {
   const d = S.debt.find(x => x.id == id); if (!d) return;
   const send = tel => {
-    const ph = xNum(tel); if (ph.length < 8) return toast('رقم الهاتف غير صالح');
+    const ph = waNum(tel); if (ph.length < 8) return toast('رقم الهاتف غير صالح');
     const all = dbtSameCust(d), tot = all.reduce((s, x) => s + dRem(x), 0), rem = dRem(d);
     const details = all.length > 1
       ? `إجمالي المبلغ المتبقي هو ${tot} درهم (${all.map(x => dRem(x) + ' درهم: ' + (x.why || 'دين')).join(' + ')})`
@@ -327,7 +326,7 @@ function dbtWA(id) {
     const msg = `السلام عليكم ${d.name}، نتمنى أن تكونوا بخير.\nتذكير ودي بخصوص الحساب: ${details}.\n— محل عزيز`;
     location.href = 'https://wa.me/' + ph + '?text=' + encodeURIComponent(msg);
   };
-  if (xNum(d.tel).length >= 8) return send(d.tel);
+  if (waNum(d.tel).length >= 8) return send(d.tel);
   ask('رقم هاتف ' + d.name, [{ k: 't', l: 'أدخل رقم الهاتف لإرسال التذكير وحفظه', t: 'tel', v: d.tel || '' }], 'إرسال واتساب').then(v => {
     if (!v || !v.t.trim()) return;
     d.tel = v.t.trim(); save(); render(); send(d.tel);

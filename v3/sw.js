@@ -1,4 +1,4 @@
-const CACHE = 'aziz-shop-v3-46';
+const CACHE = 'aziz-shop-v3-47';
 const ASSETS = [
   './',
   './index.html',
@@ -32,7 +32,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) return;
   e.respondWith(
-    fetch(e.request).then(res => {
+    fetch(e.request, { cache: 'no-cache' }).then(res => {
       if (res && res.status === 200) {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));

@@ -84,7 +84,7 @@ nav button.on .ic{background:var(--ab)}
 #sc{padding:4px 0 2px;margin-top:4px}
 
 .card .sub{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.card .sub .btn.sm{flex:1 1 auto;min-height:38px;padding:0 8px;white-space:nowrap;font-size:.82rem}
+.card .sub .btn.sm{flex:1 1 auto;min-height:38px;padding:0 8px;white-space:nowrap;font-size:.86rem}
 .row2 .btn.sm{min-height:36px;padding:0 10px;font-size:.85rem;white-space:nowrap}
 
 .bkb{display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:10px;border:1px solid var(--b);border-radius:12px;background:var(--c);font-size:.85rem}
@@ -104,8 +104,8 @@ nav button.on .ic{background:var(--ab)}
 .qpill.al .qic{background:color-mix(in srgb,#dc2626 14%,var(--c));color:#dc2626}
 .qpill.ok .qic{background:color-mix(in srgb,#16a34a 14%,var(--c));color:#16a34a}
 .qpill .qn{font-size:1.7rem;font-weight:800;line-height:1.1}
-.qpill .ql{font-size:.78rem;font-weight:600;line-height:1.2}
-.qpill .qs{font-size:.8rem;color:var(--m)}
+.qpill .ql{font-size:.84rem;font-weight:600;line-height:1.2}
+.qpill .qs{font-size:.86rem;color:var(--m)}
 
 /* ---- بطاقات أقسام الإعدادات (المزيد) ---- */
 .st-card{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer}
@@ -113,7 +113,7 @@ nav button.on .ic{background:var(--ab)}
 .st-ic .ic{width:1.35rem;height:1.35rem}
 .st-txt{flex:1;min-width:0}
 .st-txt b{display:block;font-weight:600;font-size:.96rem}
-.st-txt .m{font-size:.8rem;line-height:1.35;margin-top:2px}
+.st-txt .m{font-size:.86rem;line-height:1.35;margin-top:2px}
 .st-arr{color:var(--m);opacity:.6;transform:scaleX(-1);flex:none}
 
 /* ---- تثبيت شريط الفلاتر والترتيب أثناء التمرير (Sticky Sub-header) ---- */
@@ -123,7 +123,7 @@ nav button.on .ic{background:var(--ab)}
 .card.cmp{padding:10px 12px;margin:6px 0;border-radius:13px}
 .cmp-main{flex:1;min-width:0;cursor:pointer}
 .cmp-main b{display:block;font-size:.94rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cmp-main .m{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-main .m{font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cmp-pr{font-weight:800;font-size:1.02rem;color:var(--p);white-space:nowrap;margin-inline:4px}
 .cs-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .cs-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:10px;background:var(--bg);border:1px solid var(--b);font-size:.83rem}
@@ -135,7 +135,7 @@ nav button.on .ic{background:var(--ab)}
 .jl-row{display:flex;align-items:center;gap:6px;padding:10px 12px;margin:6px 0;border-radius:14px}
 .jl-info{flex:1;min-width:0;cursor:pointer}
 .jl-info b{display:block;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.jl-info .m{font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jl-info .m{font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plk-card{border:1.5px solid var(--p);background:color-mix(in srgb,var(--ab) 25%,var(--c))}
 .plk-sec{border-top:1px solid var(--b);padding-top:7px;margin-top:7px}
 .plk-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;font-size:.88rem}
@@ -165,7 +165,7 @@ nav button.on .ic{background:var(--ab)}
 .gm{border-top:1px solid var(--b);padding-top:8px;margin-top:8px}
 .kvs{display:flex;gap:8px;margin:8px 0}
 .kv{flex:1;background:var(--bg);border-radius:10px;padding:6px 10px;text-align:center}
-.kv small{display:block;color:var(--m);font-size:.82rem}.kv b{font-size:1.1rem}
+.kv small{display:block;color:var(--m);font-size:.86rem}.kv b{font-size:1.1rem}
 
 /* ---- شاشات القفل ---- */
 .lockscr{position:fixed;inset:0;z-index:15;background:var(--bg);overflow:auto;display:flex}
@@ -184,7 +184,7 @@ nav button.on .ic{background:var(--ab)}
 /* التقرير: ملخص + صفوف مضغوطة + شريط إرسال ثابت */
 .rsum .qpill{cursor:default}
 .rsum .al .qn{color:#dc2626}.rsum .wn .qn{color:#d97706}
-.rsent{font-size:.8rem;color:var(--m);margin:-2px 4px 10px;text-align:center}
+.rsent{font-size:.86rem;color:var(--m);margin:-2px 4px 10px;text-align:center}
 .rsent.w{color:#d97706;font-weight:700}
 .rlist{padding:4px 12px}
 .rrow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--b)}

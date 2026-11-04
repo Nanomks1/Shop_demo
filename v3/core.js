@@ -9,6 +9,9 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+/* أرقام عربية→لاتينية، وتطبيع أرقام الهاتف لواتساب (يقبل 0612…، +212…، 00212…، 612… ) */
+const dg = s => String(s ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+const waNum = t => { const d = dg(t).replace(/\D/g, ''); if (d.startsWith('00')) return d.slice(2); if (d.startsWith('2120')) return '212' + d.slice(4); if (d[0] == '0') return '212' + d.slice(1); if (d.length == 9 && /^[567]/.test(d)) return '212' + d; return d; };
 const fd = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
 
 /* الأيقونات */
@@ -54,7 +57,7 @@ const LM = [
 ];
 
 /* ---------- البحث: توحيد الكتابة (عربي/إنجليزي/أرقام) ---------- */
-const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g'};
+const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g','كابل':'cable','كابلو':'cable','كابلات':'cable','câble':'cable','شاحن':'charger','شارجور':'charger','شارجر':'charger','شارجيور':'charger','chargeur':'charger','سماعة':'headset','سماعات':'headset','ecouteur':'headset','écouteur':'headset','اكوتور':'headset','ايربودز':'airpods','بوشيط':'pochette','بوشيت':'pochette','جراب':'pochette','زجاج':'glass','verre':'glass','فلاشة':'usb','فلاش':'usb','يو اس بي':'usb','جالاكسي':'galaxy','جلاكسي':'galaxy','لايتنينغ':'lightning'};
 const KS=Object.keys(AL).sort((a,b)=>b.length-a.length);
 const nz=s=>{s=String(s||'').toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/[\u064B-\u0652]/g,'');for(const k of KS)s=s.split(k).join(AL[k]);return s.replace(/[\s\-_]/g,'')};
 const NZC = new WeakMap();   // ذاكرة مؤقتة خارج البيانات (لا تُحفظ ولا تُزامَن)
