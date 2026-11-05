@@ -4,15 +4,43 @@
    يُحمَّل آخر ملف (بعد ملفات الأقسام).
    ============================================================ */
 
-/* ---------- الأقسام (مع إجمالي القطع الفعلية للجرد بالعين) ---------- */
-const SECS = [['phones', 'الهواتف', 'cphone'], ['glass', 'الأنتي كاس', 'cglass'], ['case', 'البوشيط', 'ccase'], ['acc', 'الإكسسوارات', 'cacc']];
+/* أيقونة ملوّنة لقسم طلبات الزبائن (بنفس أسلوب أيقونات CI في icons.js) */
+if (typeof CI == 'object') {
+  CI.creq = `<rect width="100" height="100" rx="22" fill="#E11D48"/>`
+    + `<path d="M22 24 H78 a8 8 0 0 1 8 8 V60 a8 8 0 0 1 -8 8 H46 L28 82 V68 H22 a8 8 0 0 1 -8 -8 V32 a8 8 0 0 1 8 -8 Z" fill="#FFF1F2"/>`
+    + `<rect x="28" y="36" width="32" height="6" rx="3" fill="#FB7185"/>`
+    + `<rect x="28" y="48" width="44" height="6" rx="3" fill="#FDA4AF"/>`
+    + `<circle cx="74" cy="26" r="14" fill="#FBBF24" stroke="#E11D48" stroke-width="3"/>`
+    + `<path d="M74 20 v12 M68 26 h12" stroke="#78350F" stroke-width="3.5" stroke-linecap="round"/>`;
+}
+
+/* ---------- الأقسام الـ 6 (مع إجمالي القطع وحالة التعبئة وطلبات الزبائن) ---------- */
+const SECS = [
+  ['phones', 'الهواتف', 'cphone'],
+  ['glass', 'الأنتي كاس', 'cglass'],
+  ['case', 'البوشيط', 'ccase'],
+  ['acc', 'الإكسسوارات', 'cacc'],
+  ['tp', 'التعبئة', 'ctopup'],
+  ['req', 'طلبات الزبائن', 'creq']
+];
 function secSub(k) {
   if (k == 'glass') return S.gg.length + ' مجموعة';
+  if (k == 'tp') {
+    const L = typeof tpLines == 'function' ? tpLines() : [];
+    if (!L.length) return 'متوفر بالكامل ✓';
+    const r = L.filter(x => x[2] == 'r').length, y = L.length - r;
+    return [r && r + ' نافد', y && y + ' قارب'].filter(Boolean).join(' · ');
+  }
+  if (k == 'req') {
+    const n = (S.req || []).length;
+    return n ? n + ' طلب مسجّل' : 'سأل ولم نجد';
+  }
   const L = S.items.filter(i => i.sec == k);
   if (k == 'phones') { const pcs = L.reduce((a, i) => a + (+i.cnt || 0), 0); return L.length + ' صنف · ' + pcs + ' قطعة'; }
   if (k == 'case') { const pcs = L.reduce((a, i) => a + (typeof csTot == 'function' ? csTot(i) : 0), 0); return L.length + ' موديل · ' + pcs + ' قطعة'; }
   return L.length + ' صنف';
 }
+const secGo = k => k == 'tp' ? "go('tp')" : k == 'req' ? "go('req')" : `go('sec',{k:'${k}'})`;
 
 /* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري (بدون تكرار) ---------- */
 let SC = '';   // نطاق البحث الحالي
@@ -20,7 +48,7 @@ const scopeChips = () => [['', 'الكل'], ...SRCH.map(p => [p.k, p.l])].map(([
 /* مصادر بحث إضافية: الصيانة، طلبات الزبائن، دليل أسعار الإصلاح */
 SRCH.push(
   { k: 'rp', l: 'صيانة', run: n => S.rp.filter(r => nzOf(r, rpText).includes(n)).sort((x, y) => (y.t0 || 0) - (x.t0 || 0)).slice(0, 20).map(rc) },
-  { k: 'req', l: 'طلبات الزبائن', run: n => S.req.filter(q => nz(q.t).includes(n)).slice(0, 20).map(q => `<div class="card"><div class="m">${fd(q.at)} · ${esc(q.by || '')}</div><div>${esc(q.t)}</div><div class="sub">${rqTel(q.t) ? `<button class="btn s sm" onclick="rqWA('${q.id}')">واتساب</button>` : ''}<button class="btn s sm" onclick="rqD('${q.id}')">مسح</button></div></div>`) },
+  { k: 'req', l: 'طلبات الزبائن', run: n => S.req.filter(q => nz(q.t).includes(n)).slice(0, 20).map(q => typeof rqCard == 'function' ? rqCard(q) : `<div class="card"><div class="m">${fd(q.at)} · ${esc(q.by || '')}</div><div>${esc(q.t)}</div><div class="sub">${rqTel(q.t) ? `<button class="btn s sm" onclick="rqWA('${q.id}')">واتساب</button>` : ''}<button class="btn s sm" onclick="rqD('${q.id}')">مسح</button></div></div>`) },
   { k: 'gd', l: 'أسعار الإصلاح', run: n => S.guide.filter(g => nz(g.m + ' ' + g.f + ' ' + (g.n || '')).includes(n)).slice(0, 20).map(gdCard) }
 );
 function scSet(k) { SC = k; const b = $('sc'); if (b) b.innerHTML = scopeChips(); sq(Q); }
@@ -63,7 +91,7 @@ function homeQuickBar() {
   return `<div class="qbar cmp">`
     + P('rp', `go('rp',{tab:'${rpOk ? 'rd' : rpRd ? 'nf' : 'in'}'})`, 'tool', rpIn + rpRd, 'في الصيانة', rpRd ? rpRd + ' جاهز للتسليم' : '')
     + P(need ? 'al' : 'ok', "go('rep')", need ? 'alert' : 'check', need, 'نواقص المخزون', need ? '' : 'مكتمل')
-    + P(rq ? 'rp' : 'ok', "go('rep')", 'chat', rq, 'طلبات الزبائن', '')
+    + P(rq ? 'rp' : 'ok', "go('req')", 'chat', rq, 'طلبات الزبائن', '')
     + `</div>`
     + todayLine();
 }
@@ -76,9 +104,16 @@ function todayLine() {
 (() => {
   const s = document.createElement('style');
   s.textContent = `.qbar.cmp{gap:6px;margin:8px 0}.qbar.cmp .qic{display:none}.qbar.cmp .qpill{padding:7px 4px;gap:1px}.qbar.cmp .qn{font-size:1.4rem}
-.grid .card.cs2{flex-direction:row;align-items:center;gap:10px;padding:10px 12px}.cs2 .ic{width:2.3rem;height:2.3rem;padding:.5rem;margin:0;flex:none}.cs2 .ct{display:flex;flex-direction:column;min-width:0}.cs2 .ct b{font-size:.95rem}
-.q-wrap{position:relative}.q-wrap input{padding-inline-end:40px;margin:0}.q-clr{position:absolute;inset-inline-end:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:50%;background:var(--bg);color:var(--m);font:inherit;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
-#sc.sec-tags{border-bottom:0;padding:8px 0 0}`;
+.grid .card.cs2{flex-direction:row;align-items:center;gap:8px;padding:10px;min-height:66px}
+.cs2 .ic{width:2.35rem!important;height:2.35rem!important;padding:.45rem;margin:0;flex:none}
+.cs2 .ct{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}
+.cs2 .ct b{font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs2 .ct .m{font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-wrap{position:relative}.q-wrap input{padding-inline-end:40px;margin:0}
+.q-clr{position:absolute;inset-inline-end:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:50%;background:var(--bg);color:var(--m);font:inherit;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+#sc{display:flex!important;flex-wrap:nowrap!important;gap:6px;overflow-x:auto;padding:8px 0 2px!important;margin:0!important;border:0!important;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#sc::-webkit-scrollbar{display:none}
+#sc .tag{margin:0!important;flex:0 0 auto;padding:5px 11px;font-size:.82rem;border-radius:9px}`;
   document.head.appendChild(s);
 })();
 
@@ -91,16 +126,16 @@ VW.home = () => {
   const call = L => L.map(f => f()).join('');
   const T = HOME.tools.map(f => f()), A = HOME.after.map(f => f());
   const scan = T.filter(h => h.includes('bcHome()')).join('').replace('بيع سريع −1', 'بيع سريع (خصم 1)');
-  const topup = A.filter(h => h.includes('tph')).join('');
+  /* التعبئة أصبحت داخل شبكة الأقسام لذلك نستثني بطاقتها العريضة المكررة (tph) */
   const more = T.filter(h => !h.includes('bcHome()')).join('') + A.filter(h => !h.includes('tph')).join('');
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
       + `<div class="sec-panel" style="margin-top:4px"><div class="q-wrap"><input id="q_inp" placeholder="ابحث عن ثمن أو سلعة: هاتف، زجاج، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)"><button id="q_clr" type="button" class="q-clr" ${Q ? '' : 'hidden'} onclick="qClear()" aria-label="مسح البحث">✕</button></div>`
-      + `<div id="sc" class="sec-tags">${scopeChips()}</div></div><div id="res"></div>`
-      + '<div id="hm">' + homeQuickBar() + scan + topup
+      + `<div id="sc" class="sec-tags nowrap">${scopeChips()}</div></div><div id="res"></div>`
+      + '<div id="hm">' + homeQuickBar() + scan
       + '<h3>الأقسام</h3>'
-      + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="go('sec',{k:'${k}'})">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`
+      + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`
       + more + '</div>',
     a: () => sq(Q)
   };

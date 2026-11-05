@@ -1,7 +1,7 @@
 /* ============================================================
    repair.js — الصيانة: الاستلام والتسليم، رقم التذكرة (#A101)،
    تنبيه الديون، إرفاق السلع، الضمان، IMEI، الصور، واتساب،
-   دليل أسعار الإصلاح، وطلبات الزبائن.
+   دليل أسعار الإصلاح، وشاشة طلبات الزبائن المستقلة.
    يُحمَّل بعد invtools.js وقبل report.js.
    ============================================================ */
 
@@ -409,7 +409,7 @@ VW.gd = () => {
     t: 'دليل أسعار الإصلاح',
     h: (can('price') ? '<button class="btn" onclick="gdEd(null)">+ إضافة تسعيرة</button>' : '')
       + `<div class="sec-panel">`
-      + `<div class="sec-tags"><button class="tag ${!gf ? 'on' : ''}" onclick="V.gf='';render()">الكل (${S.guide.length})</button>${S.tags.fault.map(f => `<button class="tag ${gf == f ? 'on' : ''}" onclick="V.gf='${esc(f)}';render()">${esc(f)}</button>`).join('')}</div>`
+      + `<div class="sec-tags">${[`<button class="tag ${!gf ? 'on' : ''}" onclick="V.gf='';render()">الكل (${S.guide.length})</button>`, ...S.tags.fault.map(f => `<button class="tag ${gf == f ? 'on' : ''}" onclick="V.gf='${esc(f)}';render()">${esc(f)}</button>`)].join('')}</div>`
       + `<input style="margin-top:10px;margin-bottom:0" placeholder="ابحث: موديل الهاتف أو العطل..." value="${esc(V.q || '')}" oninput="V.q=this.value;$('gdl').innerHTML=gdList(V.q,V.gf)">`
       + `</div>`
       + `<div id="gdl">${gdList(V.q, gf)}</div>`
@@ -430,9 +430,27 @@ function gdEd(id) {
 }
 function gdDel(id) { const g = S.guide.find(x => x.id == id); del('guide', id, g.m + ' ' + g.f); }
 
-/* ---------- طلبات الزبائن («زبون سأل ولم نجد») + التقاط الرقم للاتصال والواتساب ---------- */
-function rq() { ask('طلب زبون', [{ k: 't', l: 'ماذا طلب؟ (مع رقمه إن أمكن)', t: 'area' }]).then(v => { const t = v && v.t.trim(); if (t) commit('تم التسجيل', () => S.req.push({ id: uid(), t, by: S.me, at: Date.now() })); }); }
-function rqD(id) { commit('تم', () => { S.req = S.req.filter(r => r.id != id); }); }
+/* ---------- شاشة طلبات الزبائن («زبون سأل ولم نجد») + الاتصال والواتساب والتعديل ---------- */
+function rq() {
+  ask('تسجيل طلب زبون (سأل ولم نجد)', [
+    { k: 't', l: 'السلعة أو الموديل المطلوب (مثال: بوشيط A54 / شاشة iPhone 13)', v: '' },
+    { k: 'p', l: 'اسم الزبون ورقم هاتفه (اختياري — لإبلاغه بالواتساب فور توفرها)', t: 'tel', v: '' }
+  ]).then(v => {
+    if (!v) return;
+    const item = v.t.trim(), ph = (v.p || '').trim();
+    if (!item) return toast('اكتب اسم السلعة المطلوبة');
+    const full = ph ? item + ' — ' + ph : item;
+    commit('تم تسجيل الطلب', () => S.req.push({ id: uid(), t: full, by: S.me, at: Date.now() }));
+  });
+}
+function rqEd(id) {
+  const q = S.req.find(x => x.id == id); if (!q) return;
+  ask('تعديل طلب الزبون', [{ k: 't', l: 'الطلب (مع رقم الهاتف إن وجد)', t: 'area', v: q.t }]).then(v => {
+    const t = v && v.t.trim(); if (!t) return;
+    commit('تم تعديل الطلب', () => { q.t = t; });
+  });
+}
+function rqD(id) { commit('تم مسح الطلب', () => { S.req = S.req.filter(r => r.id != id); }); }
 function rqTel(txt) {
   const s = String(txt || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
   const m = s.match(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/);
@@ -444,7 +462,26 @@ function rqWA(id) {
   const clean = q.t.replace(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/, '').replace(/[-–—:،.]/g, ' ').trim();
   location.href = 'https://wa.me/' + rnum(ph) + '?text=' + encodeURIComponent(`مرحباً، بخصوص طلبك (${clean || 'السلعة المطلوبة'}) فقد توفرت لدينا في محل عزيز. مرحباً بك!`);
 }
-HOME.after.push(() => '<button class="btn s" onclick="rq()">زبون سأل ولم نجد</button>');
+function rqCard(q) {
+  const ph = rqTel(q.t);
+  return `<div class="card"><div class="row2"><b style="flex:1;line-height:1.45">${esc(q.t)}</b></div>`
+    + `<div class="m" style="margin-top:4px"><bdi>${fd(q.at)}</bdi>${q.by ? ' · ' + esc(q.by) : ''}${ph ? ` · هاتف: <bdi>${esc(ph)}</bdi>` : ''}</div>`
+    + `<div class="sub">${ph ? `<a href="tel:${esc(ph)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a><button class="btn sm" onclick="rqWA('${q.id}')">${I('send')} إبلاغ واتساب</button>` : ''}<button class="btn s sm" onclick="rqEd('${q.id}')">تعديل</button><button class="btn s sm" style="color:#ef4444" onclick="rqD('${q.id}')">مسح</button></div></div>`;
+}
+function rqList() {
+  const n = nz(V.q || '');
+  const L = (S.req || []).slice().sort((a, b) => (b.at || 0) - (a.at || 0)).filter(q => !n || nz(q.t).includes(n));
+  return L.map(rqCard).join('') || emptyBox('لا توجد طلبات زبائن مسجلة حالياً', 'اضغط على «+ تسجيل طلب زبون» لتدوين أي سلعة سأل عنها زبون ولم يجدها');
+}
+VW.req = () => ({
+  t: 'طلبات الزبائن',
+  h: `<button class="btn" onclick="rq()">+ تسجيل طلب زبون (سأل ولم نجد)</button>`
+    + `<div class="sec-panel" style="padding:10px">`
+    + `<div class="row2" style="margin-bottom:8px"><b style="flex:1">إجمالي الطلبات المسجلة: ${(S.req || []).length}</b><span class="m" style="font-size:.78rem">تظهر أيضاً في التقرير اليومي</span></div>`
+    + `<input style="margin:0" placeholder="ابحث في الطلبات: موديل، سلعة، أو رقم..." value="${esc(V.q || '')}" oninput="V.q=this.value;$('rql').innerHTML=rqList()">`
+    + `</div>`
+    + `<div id="rql">${rqList()}</div>`
+});
 
 /* ---------- ربط الباركود/IMEI، الإعدادات ---------- */
 function bcNewRp() { $('sh').innerHTML = ''; const rec = { imei: BCODE }; sheetOpen(v => rDone(v, rec)); rForm(rec); }
