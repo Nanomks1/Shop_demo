@@ -32,13 +32,12 @@ function srch(q) {
     const topCard = window.priceLookupHtml(n);
     if (topCard) o.push(topCard);
   }
-  /* نتجنب تشغيل قسم 'prc' مرتين عندما يكون البحث على «الكل» لأن topCard عرضته بالفعل */
   SRCH.forEach(p => {
     if (SC ? SC != p.k : p.k == 'prc') return;
     const r = p.run(n);
     if (r.length) o.push((SC ? '' : `<h3>${p.l} <span class="m">(${r.length})</span></h3>`) + r.join(''));
   });
-  return o.join('') || '<p class="m">لا نتائج</p>';
+  return o.join('') || emptyBox('لا توجد نتائج مطابقة لبحثك');
 }
 function sq(q) {
   if (q && !QP) { QP = 1; history.pushState({ V, q: 1 }, ''); }
@@ -46,7 +45,7 @@ function sq(q) {
   const hasQ = !!(q && String(q).trim());
   const cBtn = $('q_clr'); if (cBtn) cBtn.hidden = !hasQ;
   const r = $('res'); if (r) r.innerHTML = hasQ ? srch(q) : '';
-  const hm = $('hm'); if (hm) hm.hidden = hasQ;   // أثناء البحث: أخفِ بقية الرئيسية
+  const hm = $('hm'); if (hm) hm.hidden = hasQ;
 }
 function qClear() {
   const i = $('q_inp'); if (i) { i.value = ''; i.focus(); }
@@ -68,7 +67,6 @@ function homeQuickBar() {
     + `</div>`
     + todayLine();
 }
-/* سطر صغير: كم هاتفاً استلمنا وسلّمنا اليوم */
 function todayLine() {
   if (!S.rp.length) return '';
   const day = new Date(); day.setHours(0, 0, 0, 0); const t = day.getTime();
@@ -79,7 +77,8 @@ function todayLine() {
   const s = document.createElement('style');
   s.textContent = `.qbar.cmp{gap:6px;margin:8px 0}.qbar.cmp .qic{display:none}.qbar.cmp .qpill{padding:7px 4px;gap:1px}.qbar.cmp .qn{font-size:1.4rem}
 .grid .card.cs2{flex-direction:row;align-items:center;gap:10px;padding:10px 12px}.cs2 .ic{width:2.3rem;height:2.3rem;padding:.5rem;margin:0;flex:none}.cs2 .ct{display:flex;flex-direction:column;min-width:0}.cs2 .ct b{font-size:.95rem}
-.q-wrap{position:relative}.q-wrap input{padding-inline-end:40px}.q-clr{position:absolute;inset-inline-end:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:50%;background:var(--bg);color:var(--m);font:inherit;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}`;
+.q-wrap{position:relative}.q-wrap input{padding-inline-end:40px;margin:0}.q-clr{position:absolute;inset-inline-end:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:50%;background:var(--bg);color:var(--m);font:inherit;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+#sc.sec-tags{border-bottom:0;padding:8px 0 0}`;
   document.head.appendChild(s);
 })();
 
@@ -97,8 +96,8 @@ VW.home = () => {
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
-      + `<div class="q-wrap"><input id="q_inp" placeholder="ابحث عن ثمن أو سلعة: هاتف، زجاج، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)"><button id="q_clr" type="button" class="q-clr" ${Q ? '' : 'hidden'} onclick="qClear()" aria-label="مسح البحث">✕</button></div>`
-      + `<div id="sc">${scopeChips()}</div><div id="res"></div>`
+      + `<div class="sec-panel" style="margin-top:4px"><div class="q-wrap"><input id="q_inp" placeholder="ابحث عن ثمن أو سلعة: هاتف، زجاج، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)"><button id="q_clr" type="button" class="q-clr" ${Q ? '' : 'hidden'} onclick="qClear()" aria-label="مسح البحث">✕</button></div>`
+      + `<div id="sc" class="sec-tags">${scopeChips()}</div></div><div id="res"></div>`
       + '<div id="hm">' + homeQuickBar() + scan + topup
       + '<h3>الأقسام</h3>'
       + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="go('sec',{k:'${k}'})">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`
@@ -113,7 +112,6 @@ const MG = [
   ['dev', 'المظهر والقفل', 'الثيم وحجم الخط والزر العائم، ورمز القفل السريع والقفل التلقائي.', 'palette'],
   ['adm', 'الإدارة والبيانات', 'المستخدمون والصلاحيات، المزامنة بين الأجهزة، النسخ الاحتياطي، وسلة المحذوفات.', 'users']
 ];
-/* مواضع أعمق تظهر في بحث الإعدادات: [الاسم, الدالة, القسم, كلمات مساعدة] */
 const STX = [
   ['الشراء السريع بضغطة واحدة في التقرير (✓)', "go('st_rep')", 'التقرير اليومي', 'تأشير صح كمية افتراضية'],
   ['ساعة تذكير التقرير', "go('st_rep')", 'التقرير اليومي', 'موعد تنبيه إرسال'],
@@ -151,7 +149,6 @@ VW.st = () => ({
 VW.st_grp = () => {
   const g = V.g || 'shop', info = MG.find(x => x[0] == g) || MG[0];
   const L = MORE.filter(x => x.g == g).sort((a, b) => (a.o || 50) - (b.o || 50));
-  /* دمج الوصف داخل البطاقة نفسها ليكون المظهر متناسقاً وواضحاً */
   const R = x => {
     const sub = x.n ? x.n() : '';
     return `<button class="card st-card" onclick="${x.fn}"><div class="st-txt"><b>${esc(x.l)}</b>${x.d ? `<div class="m">${esc(x.d)}</div>` : ''}</div>${sub ? `<span class="m" style="white-space:nowrap">${esc(sub)}</span>` : ''}<span class="st-arr">${ic('back')}</span></button>`;
@@ -172,7 +169,6 @@ MORE.push(
   { g: 'sec', o: 60, l: 'كل الوسوم (قائمة كاملة)', d: 'كل القوائم (ماركات، ألوان، سعات...) في مكان واحد', fn: "go('st_tags')" }
 );
 
-/* إعادة ترتيب عناصر سجّلتها ملفات أخرى (بدون تعديل تلك الملفات): [القسم, الترتيب, متقدم؟, اسم جديد] */
 (() => {
   MORE.push({ g: 'adm', o: 40, l: 'سلة المحذوفات', d: 'استرجاع ما حُذف خلال آخر 30 يوماً', fn: "go('st_trash')", n: () => S.trash.length || '' });
   const P = {
@@ -232,7 +228,6 @@ function fabAct() {
     else if (w == 5) go('jl');
   });
 }
-/* ---------- الزر العائم: يُسحب بالإصبع، يلتصق بحافة الشاشة، ويحفظ موضعه على هذا الجهاز ---------- */
 const FABK = 'fabPos', FABL = 'fabLk'; let FABM = 0;
 const fabLocked = () => { try { return localStorage.getItem(FABL) == '1'; } catch (e) { return false; } };
 function fabLockToggle() { try { fabLocked() ? localStorage.removeItem(FABL) : localStorage.setItem(FABL, '1'); } catch (e) { } render(); }
@@ -265,12 +260,12 @@ function fabBind(el) {
     st = null;
   };
   el.addEventListener('pointerdown', e => {
-    if (fabLocked()) return;   // مُثبَّت من الإعدادات: الضغط يعمل والسحب لا
+    if (fabLocked()) return;
     const r = el.getBoundingClientRect();
     st = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, m: false };
     addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
   });
-  el.addEventListener('click', e => { if (Date.now() - FABM < 400) { e.stopPropagation(); e.preventDefault(); } }, true);   // السحب لا يُعدّ ضغطاً
+  el.addEventListener('click', e => { if (Date.now() - FABM < 400) { e.stopPropagation(); e.preventDefault(); } }, true);
 }
 function fabUpd() {
   let el = $('fab');
@@ -287,7 +282,6 @@ function fabUpd() {
 addEventListener('resize', fabPlace);
 HK.render.push(fabUpd);
 
-/* شرائط الوسوم الأفقية: بعد كل رسم يُوضَع الوسم المختار في وسط الشريط فلا يختفي ولا تختفي جيرانه */
 HK.render.push(() => {
   document.querySelectorAll('.rtabs, #sc').forEach(c => {
     const t = c.querySelector('.tag.on'); if (!t || c.scrollWidth <= c.clientWidth + 2) return;
@@ -297,9 +291,9 @@ HK.render.push(() => {
 });
 
 /* ---------- الحدود ---------- */
-VW.st_lim = () => VW.st();   // احتياط فقط: كل حد في صفحة قسمه
+VW.st_lim = () => VW.st();
 const LMIN1 = ['alk', 'stale'];
-const limShow = k => k == 'gmin' ? lim(k) - 1 : lim(k);   // حد الأنتي كاس يُخزَّن (أقل من) ويُعرض (≤) بدون تغيير بياناتك
+const limShow = k => k == 'gmin' ? lim(k) - 1 : lim(k);
 function limEd(k) {
   if (!isAdmin()) return toast('للمدير فقط');
   const L = (LM.find(x => x[0] == k) || [])[1] || 'تعديل القيمة';
@@ -311,7 +305,7 @@ function limEd(k) {
   });
 }
 
-/* ---------- الوسوم (القائمة العامة وإضافة وسم؛ التعديل والحذف الذكي موحدان في invtools.js) ---------- */
+/* ---------- الوسوم ---------- */
 VW.st_tags = () => ({ t: 'الوسوم', h: Object.keys(TG).map(g => row(TG[g], `go('st_tg',{g:'${g}'})`, S.tags[g].length)).join('') });
 function tgAdd(g) {
   if (!can('tags')) return toast('للمدير فقط');
@@ -324,7 +318,7 @@ function tgAdd(g) {
 /* ---------- المحذوفات ---------- */
 VW.st_trash = () => ({
   t: 'المحذوفات (30 يوماً)',
-  h: S.trash.map(t => `<div class="card row2"><div style="flex:1"><b>${esc(t.label)}</b><div class="m"><bdi>${fd(t.t)}</bdi></div></div><button class="btn s sm" onclick="restore('${t.id}')">استرجاع</button></div>`).join('') || '<p class="m">لا شيء</p>'
+  h: S.trash.map(t => `<div class="card row2"><div style="flex:1"><b>${esc(t.label)}</b><div class="m"><bdi>${fd(t.t)}</bdi></div></div><button class="btn s sm" onclick="restore('${t.id}')">استرجاع</button></div>`).join('') || emptyBox('سلة المحذوفات فارغة')
 });
 
 /* ---------- المستخدمون والصلاحيات ---------- */
@@ -367,7 +361,6 @@ const uEd = needAdm(function (i) {
 const pinCh = needAdm(function () { ask('رمز المدير الجديد', [{ k: 'p', l: 'الرمز الجديد', t: 'password' }]).then(v => { if (v && v.p) upd(() => S.pin = hs(v.p)); }); });
 function pTog(k) { if (isAdmin()) upd(() => S.perm[k] = S.perm[k] == 'a' ? 'e' : 'a'); }
 
-/* تبديل المستخدم: الموظف برمزه (أو برمز المدير)، والمدير برمز المدير */
 function who() {
   ask('من أنت؟', [{ k: 'u', l: 'المستخدم', t: 'sel', o: S.users.map(u => u.name), v: S.me }], 'اختيار').then(v => {
     if (!v) return;
@@ -392,7 +385,7 @@ function setup() {
 /* ---------- القفل: تسجيل الدخول (#lg) والقفل السريع (#lk) ---------- */
 let LAST = Date.now(), HID_AT = 0;
 ['touchstart', 'click', 'keydown'].forEach(e => addEventListener(e, () => { LAST = Date.now(); }, true));
-const TRIES = {};   // 5 محاولات خاطئة = تجميد 10 ثوانٍ (لكل شاشة)
+const TRIES = {};
 function tryBlocked(k, m, pad) { const t = TRIES[k] || (TRIES[k] = { n: 0, until: 0 }); if (Date.now() < t.until) { if (m) m.textContent = 'انتظر 10 ثوانٍ ثم أعد المحاولة'; pkTap(pad, 'C'); return true; } return false; }
 function tryFail(k, m, pad, txt) { const t = TRIES[k]; t.n++; pkTap(pad, 'C'); if (t.n >= 5) { t.n = 0; t.until = Date.now() + 10000; if (m) m.textContent = 'محاولات كثيرة! انتظر 10 ثوانٍ'; } else if (m) m.textContent = txt; }
 
@@ -435,7 +428,6 @@ function lockNow() {
   try { localStorage.setItem('shopLock', '1'); } catch (e) { }
   lkShow();
 }
-/* قفل تلقائي: عند ترك التطبيق أكثر من 90 ثانية، أو الخمول */
 addEventListener('visibilitychange', () => {
   if (document.hidden) HID_AT = Date.now();
   else if (HID_AT && Date.now() - HID_AT > 90000 && S.users.length && (S.cfg.lk || S.pin)) lockNow();
@@ -449,7 +441,6 @@ setInterval(() => {
 }, 15000);
 
 /* ---------- النسخ الاحتياطي ---------- */
-/* تشفير بيانات الزبائن ورموز الموظفين داخل ملف النسخة */
 async function bkKey(pin) {
   const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: new TextEncoder().encode('aziz-bk-v1'), iterations: 150000, hash: 'SHA-256' }, k, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
@@ -480,7 +471,6 @@ async function makeSafeBackupJson(pinOrHash) {
 }
 
 let AB_T = 0, AB_FH = null;
-/* النسخ التلقائية داخل الهاتف (IndexedDB): آخر حفظ + نسخة يومية (آخر 7 أيام) + نسخة قبل كل استعادة (آخر 3). الصور تُستثنى لخفة الحجم. */
 function bkCopy() { return JSON.parse(JSON.stringify(S, function (k, v) { return (k === 'img' && typeof v === 'string' && v.startsWith('data:') && this.id) ? 'idb:' + this.id : v; })); }
 const bkSize = d => (d.items || []).length + (d.rp || []).length + (d.gg || []).length + (d.tp || []).length + (d.used || []).length + (d.debt || []).length;
 function bkPrune(pre, n) { AUTOBK.all().then(all => Object.keys(all).filter(k => k.startsWith(pre)).sort().reverse().slice(n).forEach(k => AUTOBK.del(k))).catch(() => { }); }
@@ -492,7 +482,7 @@ function schedAutoBk() {
   clearTimeout(AB_T);
   AB_T = setTimeout(async () => {
     try {
-      if (!S.users.length) return;   // لا نحفظ حالة فارغة فوق نسخة سليمة
+      if (!S.users.length) return;
       const rec = { at: Date.now(), data: bkCopy() }, d = new Date(), p = n => String(n).padStart(2, '0');
       await AUTOBK.put('latest', rec);
       const k = 'd:' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());

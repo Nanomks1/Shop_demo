@@ -98,7 +98,6 @@
   const lines = () => { const c = rcf(); let L = invLines(!!c.pn).concat(typeof tpLines == 'function' ? tpLines() : []); if ((window.RLV || c.lv) == 'r') L = L.filter(x => x[2] == 'r'); return L; };
   const secs = m => rSecs(m).filter(k => !rcf().hs.includes(k));
   const dstr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); };
-  /* أسطر اختيارية: الصيانة (مفصلة بين جاهز ولم يصلح) والديون */
   const rpLine = () => {
     const i = S.rp.filter(x => x.st == 'in').length, d = S.rp.filter(x => x.st == 'rd');
     const ok = d.filter(x => x.res != 'fail' && x.res != 'ref').length, nf = d.length - ok;
@@ -106,7 +105,6 @@
     return i || d.length ? 'الصيانة: ' + i + ' في المحل · ' + ok + ' جاهز للتسليم' + (nf ? ' · ' + nf + ' لم يصلح' : '') + (late ? ' (منسي ' + late + ')' : '') : '';
   };
   const dbLine = () => { const n = (S.debt || []).filter(x => !x.paid).length; return n ? 'ديون مفتوحة: ' + n : ''; };
-  /* تسجيل الإرسال: لآخر من ضغط واتساب أو نسخ (يُزامَن بين الأجهزة) */
   const sentToday = () => { const x = S.cfg.rs; return !!(x && x.t && new Date(x.t).toDateString() == new Date().toDateString()); };
   window.rcMark = () => { S.cfg.rs = { t: Date.now(), by: S.me }; save(); };
   window.rcSend = () => { rcMark(); location.href = 'https://wa.me/?text=' + encodeURIComponent(generateReportText(window.reportSectionFilter)); };
@@ -117,7 +115,6 @@
     let s = x[1].replace(/\s—\s(?:العدد |المجموع |المتوفر )(≈?)(\d+)/, (m, a, n) => cnt(a, n)).replace(/\s—\s(\d+)$/, (m, n) => cnt('', n));
     if (x[2] == 'r' && !/نفد/.test(s)) s += ' — نفد'; return s;
   };
-  /* كتل التقرير: قسم لكل مجموعة + طلبات الزبائن */
   const blocks = mode => {
     const c = rcf(), L = lines(), out = [];
     secs(mode).forEach(k => {
@@ -127,7 +124,6 @@
     if (c.rq && mode == 'all') out.push({ k: 'req', t: 'طلبات الزبائن', ls: S.req.map(q => ({ r: 0, s: q.t, id: q.id })) });
     return out;
   };
-  /* تداخل العربي والإنجليزي: كل مقطع لاتيني يُعزل بعلامة اتجاه كي لا ينقلب ترتيب السطر */
   const bd = s => {
     if (!/[A-Za-z]/.test(s)) return s;
     const w = s.replace(/[A-Za-z0-9][A-Za-z0-9+\-\/.#&' ]*/g, m => { if (!/[A-Za-z]/.test(m)) return m; const q = m.replace(/\s+$/, ''); return '\u200E' + q + '\u200E' + m.slice(q.length); });
@@ -176,8 +172,10 @@
       + `<div class="rsent ${sl[1] ? 'w' : ''}">${esc(sl[0])}</div>`;
     if (c.rr) { const x = rpLine(); if (x) h += `<div class="card row2">${I('tool')}<span style="flex:1">${esc(x)}</span><button class="btn s sm" onclick="go('rp')">افتح</button></div>`; }
     if (c.rd) { const x = dbLine(); if (x) h += `<div class="card row2">${I('wallet')}<span style="flex:1">${esc(x)}</span><button class="btn s sm" onclick="go('dbt')">افتح</button></div>`; }
-    h += `<div class="rtabs">${tabs.map(([k, l]) => `<button class="tag ${F === k ? 'on' : ''}" onclick="reportSectionFilter='${k}';render()">${l}</button>`).join('')}</div>`
-      + `<div class="rtabs"><button class="tag ${lv == 'a' ? 'on' : ''}" onclick="RLV='a';render()">نافد وقارب</button><button class="tag ${lv == 'r' ? 'on' : ''}" onclick="RLV='r';render()">نافد فقط</button><button class="tag" style="margin-inline-start:auto" onclick="go('st_rep')">تخصيص</button></div>`;
+    h += `<div class="sec-panel">`
+      + `<div class="sec-tags">${tabs.map(([k, l]) => `<button class="tag ${F === k ? 'on' : ''}" onclick="reportSectionFilter='${k}';render()">${l}</button>`).join('')}</div>`
+      + `<div class="sec-toolbar"><div class="seg-group"><button type="button" class="seg-btn ${lv == 'a' ? 'on' : ''}" onclick="RLV='a';render()">نافد وقارب</button><button type="button" class="seg-btn ${lv == 'r' ? 'on' : ''}" onclick="RLV='r';render()">نافد فقط</button></div><button type="button" class="tool-pill" onclick="go('st_rep')">${I('sl')} تخصيص</button></div>`
+      + `</div>`;
     { const stl = rnd().length; if (stl) h += `<div class="card row2"><span style="flex:1">${I('alert')} ${stl} صنف لم يُؤكَّد منذ أكثر من ${lim('stale')} أيام</span><button class="btn sm" onclick="go('jl')">افتح الجولة</button></div>`; }
     B.forEach(b => {
       let x = '';
@@ -193,7 +191,7 @@
     });
     if ((F == 'all' || F == 'phones') && c.st && !c.hs.includes('phones') && s.length)
       h += '<h3>الهواتف المتوفرة</h3><div class="card rlist">' + s.map(i => `<div class="rrow"><span class="rt">${esc(stkN(i))}</span><span class="m">${i.cnt}${rsQ(i) ? ' (محجوز ' + rsQ(i) + ')' : ''}${c.pr && i.price ? ' · ' + esc(dh(i.price)) : ''}</span></div>`).join('') + '</div>';
-    if (!h.includes('<h3')) h += '<p class="m" style="text-align:center;margin:24px 0">لا يوجد نقص حالياً</p>';
+    if (!h.includes('<h3')) h += emptyBox('لا يوجد نقص في المخزون حالياً ✓', 'جميع الأصناف متوفرة فوق الحد المطلوب');
     h += `<details class="card" style="margin-top:14px"><summary><b>معاينة النص</b></summary><div style="white-space:pre-wrap;margin-top:8px;line-height:1.8">${esc(generateReportText(F))}</div></details>`
       + `<div class="rbar"><button class="btn" onclick="rcSend()">${I('send')} إرسال بالواتساب</button><button class="btn s" onclick="rcCopy()">نسخ</button></div>`;
     return { t: 'التقرير اليومي', h };
@@ -221,7 +219,6 @@
         + `<div style="margin-top:14px"><button class="btn s" onclick="rcSet({lv:'a',tt:'تقرير محل عزيز',dt:1,st:1,pr:0,rq:1,pn:1,em:0,ft:'',hs:[],rr:0,rd:0,rm:1,nd:[],rh:16,qb:0})">إرجاع الإعدادات الافتراضية</button></div>`
     };
   };
-  /* إلغاء تذكير اليوم (لا تقرير اليوم) مع تأكيد وتراجع؛ يعود التذكير غداً تلقائياً */
   window.rcSkip = () => sure('لن يُرسل تقرير اليوم؟ سيختفي التذكير حتى الغد.', 'نعم، لا تقرير اليوم', false).then(ok => {
     if (!ok) return;
     S.cfg.rx = new Date().toDateString(); save(); render();

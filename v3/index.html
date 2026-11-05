@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>محل عزيز</title>
-<link rel="stylesheet" href="style.css?v=48">
+<link rel="stylesheet" href="style.css?v=49">
 </head>
 <body>
 <header>
@@ -24,18 +24,21 @@
 <nav id="nv"></nav>
 <div id="ts" class="toast" hidden></div>
 <div id="ov" hidden><div id="sh"></div></div>
-<script src="core.js?v=48"></script>
-<script src="icons.js?v=48"></script>
-<script src="topup.js?v=48"></script>
-<script src="inventory.js?v=48"></script>
-<script src="invtools.js?v=48"></script>
-<script src="repair.js?v=48"></script>
-<script src="report.js?v=48"></script>
-<script src="sync.js?v=48"></script>
-<script src="extra.js?v=48"></script>
-<script src="app.js?v=48"></script>
+<script src="core.js?v=49"></script>
+<script src="icons.js?v=49"></script>
+<script src="topup.js?v=49"></script>
+<script src="inventory.js?v=49"></script>
+<script src="invtools.js?v=49"></script>
+<script src="repair.js?v=49"></script>
+<script src="report.js?v=49"></script>
+<script src="sync.js?v=49"></script>
+<script src="extra.js?v=49"></script>
+<script src="app.js?v=49"></script>
 <script>
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js?v=49").then(r=>{r.update().catch(()=>{});}).catch(()=>{});
+  let swR=0;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!swR){swR=1;location.reload();}});
+}
 </script>
 </body>
 </html>
