@@ -17,8 +17,8 @@ Object.assign(IC, {
 const find = id => S.items.find(i => i.id == id);
 const ph = () => S.items.filter(i => i.sec == 'phones');
 const lim = k => S.cfg[k] ?? DL0[k];
-const ci = v => Math.max(0, Math.floor(+v || 0));
-const fmtPr = p => { p = String(p ?? '').trim(); return !p ? '' : /^\d+(\.\d+)?$/.test(p) ? p + ' درهم' : p; };
+const ci = v => Math.max(0, Math.floor(+dg(v) || 0));
+const fmtPr = p => { p = dg(p ?? '').trim(); return !p ? '' : /^\d+(\.\d+)?$/.test(p) ? p + ' درهم' : p; };
 /* فصل وقت التعديل العام (at) عن وقت تأكيد الجولة اليومية (cf) */
 const cfTime = x => (x && (x.cf || x.at)) || 0;
 const touch = (i, cf) => {
@@ -58,7 +58,7 @@ function cmpTog(s) { upd(() => { S.cfg.cmp = S.cfg.cmp || {}; S.cfg.cmp[s] = S.c
 function reqFind(txt) {
   const n = nz(txt); if (n.length < 2 || !(S.req && S.req.length)) return [];
   return S.req.filter(q => {
-    const clean = String(q.t || '').replace(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/g, '').replace(/[-–—:،.]/g, ' ').trim();
+    const clean = dg(q.t || '').replace(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/g, '').replace(/[-–—:،.]/g, ' ').trim();
     const qn = nz(clean); if (qn.length < 2) return false;
     if (n.includes(qn) || qn.includes(n)) return true;
     const w = clean.split(/\s+/).map(nz).filter(x => x.length >= 3 || /^[a-z]\d$|^\d[a-z]$/.test(x));
@@ -136,7 +136,7 @@ function fTog(s, k) { if (!can('fields')) return toast('للمدير فقط'); u
 
 /* ---------- الخانات المخصصة (حقول إضافية بخيارات لكل قسم) ---------- */
 const SECN = { phones: 'الهواتف', acc: 'الإكسسوارات', case: 'البوشيط', rp: 'الصيانة' };
-const fxNorm = (v, u) => { v = String(v || '').trim(); return u && /^\d+(\.\d+)?$/.test(v) ? v + u : v; };   // 32 + GB => 32GB
+const fxNorm = (v, u) => { v = dg(v || '').trim(); return u && /^\d+(\.\d+)?$/.test(v) ? v + u : v; };   // 32 + GB => 32GB
 const fxList = (sec, key) => S.fields.filter(f => f.sec == sec && (!f.kinds || !f.kinds.length || f.kinds.includes(key)));
 const fxVal = (i, f) => [].concat((i.x || {})[f.id] || []).filter(Boolean);
 const fxTxt = i => S.fields.map(f => fxVal(i, f).length ? f.name + ' ' + fxVal(i, f).join(' ') : '').join(' ');
@@ -170,7 +170,7 @@ function chPick(g, j) {
 function chOk(g) {
   if (!can('tags')) return toast('للمدير فقط');
   const t = ($('chn').value || '').trim();
-  if (t) { if (!S.tags[g].includes(t)) { S.tags[g].push(t); if (g == 'brand') autoBc(t); } FS.v[g] = t; save(); }
+  if (t) { if (!S.tags[g].includes(t)) { S.tags[g].push(t); if (g == 'brand') autoBc(t); tagFix(); } FS.v[g] = t; save(); }
   FS.add = ''; chipsR();
 }
 const fxKey = () => FS.fxSec == 'acc' ? FS.v.kind : FS.fxSec == 'phones' ? FS.v.brand : '';
@@ -358,7 +358,7 @@ function rsCb(v) {
   commit(v.sold ? 'سُلِّم الحجز' : 'أُلغي الحجز', () => { const R = L.filter((_, k) => k != v.k); i.res = R.length ? R : null; if (v.sold) { i.cnt = Math.max(0, i.cnt - (+r.q || 1)); touch(i); } });
 }
 
-/* سجل الحركات (آخر 20 حركة للهواتف والإكسسوارات ذات العدد) + دمج الوسوم المكررة — يعملان قبل كل حفظ */
+/* سجل الحركات (آخر 20 حركة للهواتف والإكسسوارات ذات العدد) + دمج الوسوم المكررة عند الإقلاع */
 const LGB = {}; let LGI = 0;
 function lgScan() {
   S.items.forEach(i => {
@@ -377,17 +377,20 @@ function lgOpen(id) {
 }
 const TKEY = x => String(x ?? '').toLowerCase().replace(/[\s\-_.]/g, '');
 function tagFix() {
+  let ch = 0;
   ['brand', 'color', 'cap', 'ram'].forEach(g => {
     const a = S.tags && S.tags[g]; if (!Array.isArray(a)) return;
     const keep = {}, out = [], map = {};
     a.forEach(x => { const k = TKEY(x); if (!k) return; if (keep[k] === undefined) { keep[k] = x; out.push(x); } else if (keep[k] !== x) map[x] = keep[k]; });
-    if (out.length === a.length) return; S.tags[g] = out;
+    if (out.length === a.length) return;
+    S.tags[g] = out; ch = 1;
     S.items.forEach(i => { if (map[i[g]] !== undefined) i[g] = map[i[g]]; if (g == 'color' && Array.isArray(i.v)) i.v.forEach(x => { if (map[x.c] !== undefined) x.c = map[x.c]; }); });
     if (g == 'brand') ['bcol', 'bl'].forEach(c => { const o = S.cfg && S.cfg[c]; if (!o) return; Object.keys(map).forEach(x => { if (o[x] !== undefined) { if (o[map[x]] === undefined) o[map[x]] = o[x]; delete o[x]; } }); });
   });
+  return ch;
 }
-HK.save.push(() => { tagFix(); lgScan(); S.items.forEach(i => { delete i._nz; delete i._nzV; }); });
-lgScan(); LGI = 1;
+HK.save.push(() => { lgScan(); S.items.forEach(i => { delete i._nz; delete i._nzV; }); });
+tagFix(); lgScan(); LGI = 1;
 
 /* ============================ الأنتي كاس ============================ */
 const gOf = m => S.gg.find(g => g.models.some(x => nz(x) == nz(m)));
@@ -550,11 +553,22 @@ const csSt = i => {
   return 'g';
 };
 const csGSummaryTxt = i => csGStats(i).map(x => `${x.g} ${x.tot}`).join(' · ');
+const csSummaryTxt = csGSummaryTxt;
 const csGBadgesHtml = i => csGStats(i).map(x => `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:8px;background:var(--bg);border:1px solid var(--b);font-size:.8rem"><span class="dotl" style="background:${DT[x.st]};width:8px;height:8px"></span><span>${esc(x.g)}:</span><b>${x.tot}</b></span>`).join(' ');
 const csChipCls = (i, x) => {
   const L = x.g ? csGLim(i, x.g) : csLim(i);
   return x.n <= 0 ? 'low' : (L > 0 && x.n <= L) ? 'warn' : '';
 };
+
+/* كبسولات البوشيط (تُستعمل في بطاقة القسم وفي سطر الجرد السريع) */
+function csChipsHtml(i, cmp) {
+  const V0 = i.v || [], ex = EXP['c_' + i.id];
+  const limV = !ex && V0.length > (cmp ? 3 : 4) ? V0.slice(0, cmp ? 2 : 4) : V0;
+  const missingG = csGenders().map((g, gIdx) => (csGLim(i, g) >= 0 && !V0.some(x => x.g == g)) ? `<div class="cs-chip low"><span>${esc(g)}</span><button onclick="csQuickG('${i.id}',${gIdx},-1)">−</button><b>0</b><button onclick="csQuickG('${i.id}',${gIdx},1)">+</button></div>` : '').join('');
+  return `<div class="cs-chips">` + limV.map(x => `<div class="cs-chip ${csChipCls(i, x)}"><span>${esc([x.g, x.c].filter(Boolean).join('·') || 'عام')}</span><button onclick="csC('${i.id}','${x.id}',-1)">−</button><b>${x.n}</b><button onclick="csC('${i.id}','${x.id}',1)">+</button>${x.n <= 0 && can('del') ? `<button onclick="csX('${i.id}','${x.id}')" style="color:#dc2626">×</button>` : ''}</div>`).join('')
+    + missingG
+    + (V0.length > limV.length || ex ? `<button class="tag" style="margin:0;padding:4px 10px;font-size:.8rem" onclick="toggleExp('c_${i.id}')">${ex ? 'طيّ ▴' : '+' + (V0.length - limV.length) + ' أخرى ▾'}</button>` : '') + `</div>`;
+}
 
 /* زيادة أو إنقاص سريعة لجنس معين حتى لو لم تكن له كبسولة سابقة */
 function csQuickG(id, gIdx, d) {
@@ -571,19 +585,13 @@ function csQuickG(id, gIdx, d) {
 
 function csClrNeed(id) {
   const i = find(id); if (!i || !i.need) return;
-  const old = i.need;
   commit('تم مسح تنبيه «خاصنا»', () => { i.need = ''; i.by = S.me; });
 }
 
 function csCard(i) {
-  const s = csSt(i), gs = csGStats(i), V0 = i.v || [], ex = EXP['c_' + i.id], cmp = isCmp('case') && V.v == 'sec';
-  const limV = !ex && V0.length > (cmp ? 3 : 4) ? V0.slice(0, cmp ? 2 : 4) : V0;
-  const prHtml = i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : '';
-  /* إذا كان هناك جنس مقرر (رجالي/نسائي) ليس له كبسولة بعد في i.v، نعرض له كبسولة صفرية جاهزة للزيادة بضغطة + */
-  const missingG = csGenders().map((g, gIdx) => (csGLim(i, g) >= 0 && !V0.some(x => x.g == g)) ? `<div class="cs-chip low"><span>${esc(g)}</span><button onclick="csQuickG('${i.id}',${gIdx},-1)">−</button><b>0</b><button onclick="csQuickG('${i.id}',${gIdx},1)">+</button></div>` : '').join('');
-  const chips = `<div class="cs-chips">` + limV.map(x => `<div class="cs-chip ${csChipCls(i, x)}"><span>${esc([x.g, x.c].filter(Boolean).join('·') || 'عام')}</span><button onclick="csC('${i.id}','${x.id}',-1)">−</button><b>${x.n}</b><button onclick="csC('${i.id}','${x.id}',1)">+</button>${x.n <= 0 && can('del') ? `<button onclick="csX('${i.id}','${x.id}')" style="color:#dc2626">×</button>` : ''}</div>`).join('')
-    + missingG
-    + (V0.length > limV.length || ex ? `<button class="tag" style="margin:0;padding:4px 10px;font-size:.8rem" onclick="toggleExp('c_${i.id}')">${ex ? 'طيّ ▴' : '+' + (V0.length - limV.length) + ' أخرى ▾'}</button>` : '') + `</div>`;
+  const s = csSt(i), cmp = isCmp('case') && V.v == 'sec';
+  const prHtml = i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : (!cmp && can('price') ? `<button class="tag" style="margin:0;padding:2px 8px;font-size:.76rem" onclick="csLimEd('${i.id}')">+ السعر</button>` : '');
+  const chips = csChipsHtml(i, cmp);
   if (cmp) {
     return cardH(`<div class="row2" style="flex-wrap:wrap;gap:6px"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csQuickNote('${i.id}')"><b>${esc(i.name)}</b></div>${prHtml}${csGBadgesHtml(i)}<button class="btn s sm" onclick="csLimEd('${i.id}')">الحد والسعر</button><button class="btn s sm" onclick="csVar('${i.id}')">+ نوع</button></div>` + chips, colOf(i), 'cmp');
   }
@@ -679,7 +687,7 @@ function csLimEd(id) {
       if (n === '') delete i.lim; else i.lim = ci(n);
       const newGl = {};
       G.forEach((g, idx) => {
-        const s = String(v['g' + idx] ?? '').trim();
+        const s = dg(v['g' + idx] ?? '').trim();
         if (s !== '') newGl[g] = s === '-1' ? -1 : ci(s);
       });
       if (Object.keys(newGl).length) i.glim = newGl; else delete i.glim;
@@ -746,7 +754,7 @@ function acView() {
   return { t: 'الإكسسوارات', h: `<button class="btn" onclick="acAdd()">+ إضافة إكسسوار</button><div><button class="tag ${j == null ? 'on' : ''}" onclick="V.kk=null;render()">الكل</button>${S.tags.kind.map((t, x) => `<button class="tag ${j == x ? 'on' : ''}" onclick="V.kk=${x};render()">${esc(t)}</button>`).join('')}</div>` + sortBar('acc') + G + (a.map(acCard).join('') || (G ? '' : '<p class="m">لا شيء بعد</p>')) };
 }
 function acC(id, d) { const i = find(id); upd(() => { i.cnt = Math.max(0, i.cnt + d); touch(i); }); if (d > 0) reqChk(acName(i)); }
-function acCnt(id) { const i = find(id); ask('عدد القطع', [{ k: 'n', l: 'العدد الحالي', t: 'tel', v: '' }]).then(v => { if (v && v.n.trim() !== '') { upd(() => { i.cnt = ci(v.n); touch(i, 1); }); if (+v.n > 0) reqChk(acName(i), 1); } }); }
+function acCnt(id) { const i = find(id); ask('عدد القطع', [{ k: 'n', l: 'العدد الحالي', t: 'tel', v: '' }]).then(v => { if (v && v.n.trim() !== '') { upd(() => { i.cnt = ci(v.n); touch(i, 1); }); if (+dg(v.n) > 0) reqChk(acName(i), 1); } }); }
 function acS(id, s) { const i = find(id); upd(() => { i.st = s; touch(i, 1); }); if (s != 'r') reqChk(acName(i)); }
 function acNote(id) { const i = find(id); ask('ملاحظة للمشتري', [{ k: 'n', l: 'مثال: بقي 5 حبات', v: i.note || '' }]).then(v => { if (v) upd(() => { i.note = v.n.trim(); i.by = S.me; }); }); }
 function acDel(id) { del('items', id, acName(find(id))); }
@@ -831,7 +839,7 @@ function agCard(d) {
 }
 const agLv = (e, l) => { const d = agD(e); if (d) { agSet(d, g => { g.lv = l; delete g.cnt; }, true, true); if (l != 'r') reqChk(d.title); } };
 const agBuy = e => { const d = agD(e); if (d) { agSet(d, g => { g.lv = 'g'; delete g.cnt; }, true, true); reqChk(d.title); } };
-function agCnt(e) { const d = agD(e); if (d) ask('المجموع التقريبي — ' + d.title, [{ k: 'n', l: 'العدد تقريباً', t: 'tel', v: d.tot ?? '' }]).then(v => { if (v && v.n.trim() !== '') { agSet(d, g => { g.cnt = ci(v.n); delete g.lv; }, true, true); if (+v.n > 0) reqChk(d.title, 1); } }); }
+function agCnt(e) { const d = agD(e); if (d) ask('المجموع التقريبي — ' + d.title, [{ k: 'n', l: 'العدد تقريباً', t: 'tel', v: d.tot ?? '' }]).then(v => { if (v && v.n.trim() !== '') { agSet(d, g => { g.cnt = ci(v.n); delete g.lv; }, true, true); if (+dg(v.n) > 0) reqChk(d.title, 1); } }); }
 function agLimEd(e) {
   const d = agD(e); if (!d) return; if (!isAdmin()) return toast('للمدير فقط');
   ask('الحد — ' + d.title, [{ k: 'n', l: '«قارب النفاد» عند مجموع فأقل (فارغ = الحد العام)', t: 'tel', v: d.g && d.g.lim != null ? d.g.lim : '' }]).then(v => { if (v) agSet(d, g => { if (v.n.trim() === '') delete g.lim; else g.lim = ci(v.n); }, false); });
@@ -855,7 +863,7 @@ function agDel(e) {
 }
 
 /* ============================ الشراء والتقرير ============================ */
-function qty(t, d, fn) { ask(t, [{ k: 'n', l: 'الكمية التي وصلت', t: 'tel', v: d }], 'تم الشراء').then(v => { if (v && +v.n > 0) commit('تم الشراء', () => fn(ci(v.n))); }); }
+function qty(t, d, fn) { ask(t, [{ k: 'n', l: 'الكمية التي وصلت', t: 'tel', v: d }], 'تم الشراء').then(v => { if (v && ci(v.n) > 0) commit('تم الشراء', () => fn(ci(v.n))); }); }
 function buyP(id) { const i = find(id); qty(i.brand + ' ' + i.name, 1, n => { i.cnt += n; touch(i, 1); reqChk(i.brand + ' ' + i.name, 1); }); }
 /* كل سطر: [القسم, النص, الحالة r/y, دالة «تم الشراء»] */
 function invLines(notes = true) {

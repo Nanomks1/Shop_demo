@@ -71,7 +71,7 @@ function jlTpCard(r) {
   return `<div class="card"><div class="row2"><b>تعبئة ${esc(r.op)} — بطاقة ${r.n} درهم</b><span class="m">${r.val <= 0 ? 'نفد' : r.est ? '≈' + r.val : 'العدد ' + r.val}</span></div><div class="m">آخر تأكيد قبل ${Math.floor((Date.now() - cfTime(r)) / 864e5)} يوم</div><div class="sub"><button class="btn s sm" onclick="go('tp')">فتح شاشة التعبئة</button></div></div>`;
 }
 
-const fmtDh = p => { p = String(p || '').trim(); return !p ? '' : /^\d+(\.\d+)?$/.test(p) ? p + ' درهم' : p; };
+const fmtDh = p => { p = dg(p || '').trim(); return !p ? '' : /^\d+(\.\d+)?$/.test(p) ? p + ' درهم' : p; };
 
 /* سطر جرد مضغوط وسريع (تعديل فوري + زر تأكيد ✓ في نفس السطر) */
 function jlCompactRow(i) {
@@ -102,8 +102,8 @@ function jlCompactRow(i) {
       + `<button class="btn s sm" onclick="go('sec',{k:'glass',ty:${j}})">فتح</button><button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div></div>`;
   }
   if (i.sec == 'case') {
-    const s = csSt(i), gSum = typeof csSummaryTxt == 'function' ? csSummaryTxt(i) : 'المجموع ' + csTot(i);
-    const chips = (typeof csChipsHtml == 'function') ? csChipsHtml(i, true) : '';
+    const s = csSt(i), gSum = typeof csGSummaryTxt == 'function' ? csGSummaryTxt(i) : 'المجموع ' + csTot(i);
+    const chips = typeof csChipsHtml == 'function' ? csChipsHtml(i, true) : '';
     return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csQuickNote('${i.id}')"><b>بوشيط ${esc(i.name)}</b><div class="m">${esc(gSum)}${i.price ? ' · ' + esc(fmtDh(i.price)) : ''} · ${dBadge}</div></div>`
       + `<button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div>${chips}</div>`;
   }
@@ -209,7 +209,7 @@ window.priceLookupHtml = function (q) {
     });
   });
   css.forEach(c => {
-    const s = csSt(c), gSum = typeof csSummaryTxt == 'function' ? csSummaryTxt(c) : 'المتوفر ' + csTot(c);
+    const s = csSt(c), gSum = typeof csGSummaryTxt == 'function' ? csGSummaryTxt(c) : 'المتوفر ' + csTot(c);
     rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="csLimEd('${c.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">🅿️ بوشيط <b>${esc(c.name)}</b> <small class="m">(${esc(gSum)})</small></span><b class="cmp-pr">${esc(c.price ? fmtDh(c.price) : 'حدّد السعر')}</b></div>`;
   });
   acs.forEach(a => {
@@ -228,8 +228,6 @@ SRCH.unshift({
   l: 'الأثمنة',
   run: n => { const h = window.priceLookupHtml(n); return h ? [h] : []; }
 });
-/* منع أي تكرار مع الدالة القديمة في app.js */
-HK.render.push(() => { if (window.priceLookupCard) window.priceLookupCard = () => ''; });
 
 /* ============================ الباركود و IMEI والبيع السريع المتتالي ============================ */
 let BS = null, BI = 0, BCODE = '', BDP = null, BC_AC = null, BC_LAST = { c: '', t: 0 };
@@ -433,7 +431,7 @@ MORE.push(
 function glTyEd(j) {
   if (!isAdmin()) return toast('للمدير فقط'); const t = S.tags.glass[j], c = (S.cfg.gtl || {})[t];
   ask('حد زجاج ' + t, [{ k: 'n', l: `«قارب النفاد» عند مجموع المجموعة (فارغ = الحد العام ${lim('gmin') - 1} فأقل). اكتب 0 للنوع النادر`, t: 'tel', v: c != null ? c - 1 : '' }]).then(v => {
-    if (!v) return; const n = v.n.trim();
+    if (!v) return; const n = dg(v.n).trim();
     upd(() => { S.cfg.gtl = S.cfg.gtl || {}; if (n === '') delete S.cfg.gtl[t]; else S.cfg.gtl[t] = ci(n) + 1; });
   });
 }
@@ -456,7 +454,7 @@ function ceR() {
     + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="if($('blim'))CE.l=$('blim').value;finish(CE)">حفظ</button></div>`;
 }
 function ceOpen(o, cb) { if (!can('tags')) return toast('للمدير فقط'); CE = o; ceR(); sheetOpen(cb); }
-function brEd(j) { const b = S.tags.brand[j]; ceOpen({ t: 'b', n: b, c: BC(b), l: (S.cfg.bl || {})[b] ?? '' }, v => { if (!v) return; upd(() => { S.cfg.bcol = S.cfg.bcol || {}; S.cfg.bcol[b] = v.c; S.cfg.bl = S.cfg.bl || {}; const l = String(v.l).trim(); if (l === '') delete S.cfg.bl[b]; else S.cfg.bl[b] = Math.max(1, +l || 1); }); }); }
+function brEd(j) { const b = S.tags.brand[j]; ceOpen({ t: 'b', n: b, c: BC(b), l: (S.cfg.bl || {})[b] ?? '' }, v => { if (!v) return; upd(() => { S.cfg.bcol = S.cfg.bcol || {}; S.cfg.bcol[b] = v.c; S.cfg.bl = S.cfg.bl || {}; const l = dg(v.l).trim(); if (l === '') delete S.cfg.bl[b]; else S.cfg.bl[b] = Math.max(1, +l || 1); }); }); }
 function cmEd(s) { ceOpen({ t: 's', n: SN3[s], m: CM(s), c: SCOL(s), mo: s == 'acc' ? [['s', 'لون واحد للقسم'], ['o', 'بدون']] : [['b', 'حسب الماركة'], ['s', 'لون واحد للقسم'], ['o', 'بدون']] }, v => { if (!v) return; upd(() => { S.cfg.cm = S.cfg.cm || {}; S.cfg.cm[s] = v.m; S.cfg.scol = S.cfg.scol || {}; S.cfg.scol[s] = v.c; }); }); }
 VW.st_col = () => ({ t: 'الألوان', h: '<p class="m">ألوان خفيفة على خلفية البطاقات للتمييز بسرعة.</p>' + ['phones', 'glass', 'case', 'acc'].map(s => { const m = CM(s), c = m == 's' ? SCOL(s) : ''; return `<button class="card row2" onclick="cmEd('${s}')"><b>${SN3[s]}</b><span class="m">${MN[m]}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') + row('ألوان الماركات وحدودها', "go('st_br')") });
 VW.st_br = () => ({ t: 'ألوان الماركات', h: '<p class="m">اللون + حد «قارب على النفاد» لكل ماركة (اختياري).</p>' + S.tags.brand.map((b, j) => { const c = BC(b), l = (S.cfg.bl || {})[b]; return `<button class="card row2" onclick="brEd(${j})"><b>${esc(b)}</b><span class="m">${l != null ? 'حد ' + l + ' فأقل' : ''}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') });
@@ -477,7 +475,7 @@ function akLim(j, w) {
   if (!isAdmin()) return toast('للمدير فقط');
   const k = S.tags.kind[j], grp = w == 'g', cur = grp ? gkc(k).lim : kc(k).lim, gen = lim(grp ? 'agl' : 'acl');
   ask('الحد — ' + k, [{ k: 'n', l: (grp ? '«قارب النفاد» عند مجموع المجموعة' : '«قليل» لكل قطعة من هذا النوع عند') + ' (فارغ = الحد العام ' + gen + ' فأقل)', t: 'tel', v: cur ?? '' }]).then(v => {
-    if (!v) return; const n = v.n.trim();
+    if (!v) return; const n = dg(v.n).trim();
     upd(() => {
       const o = grp ? (S.cfg.gkc = S.cfg.gkc || {}) : (S.cfg.kc = S.cfg.kc || {}), c = kc(k), g = gkc(k);
       o[k] = { ...(o[k] || {}), ...(grp ? { g: g.g, w: g.w } : { conn: c.conn, tier: c.tier }) };
@@ -606,11 +604,11 @@ window.tgRen = (g, i) => {
     const t = v && v.t.trim(); if (!t || t === oldV) return;
     if (S.tags[g].includes(t)) {
       sure(`«${t}» موجود مسبقاً. هل تريد دمج «${oldV}» فيه؟`, 'دمج', false).then(y => {
-        if (y) commit(`تم دمج «${oldV}» في «${t}»`, () => { S.tags[g].splice(i, 1); tgReplace(g, oldV, t); });
+        if (y) commit(`تم دمج «${oldV}» في «${t}»`, () => { S.tags[g].splice(i, 1); tgReplace(g, oldV, t); if (typeof tagFix == 'function') tagFix(); });
       });
       return;
     }
-    commit('تم تعديل الوسم إلى «' + t + '»', () => { S.tags[g][i] = t; tgReplace(g, oldV, t); });
+    commit('تم تعديل الوسم إلى «' + t + '»', () => { S.tags[g][i] = t; tgReplace(g, oldV, t); if (typeof tagFix == 'function') tagFix(); });
   });
 };
 window.tgDel = (g, i) => {
@@ -634,6 +632,7 @@ window.tgDel = (g, i) => {
     commit(target ? `تم دمج «${val}» في «${target}»` : `تم حذف «${val}»`, () => {
       S.tags[g].splice(i, 1);
       tgReplace(g, val, target);
+      if (typeof tagFix == 'function') tagFix();
     });
   });
 };

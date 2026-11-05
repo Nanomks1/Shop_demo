@@ -102,31 +102,14 @@
   const rpLine = () => {
     const i = S.rp.filter(x => x.st == 'in').length, d = S.rp.filter(x => x.st == 'rd');
     const ok = d.filter(x => x.res != 'fail' && x.res != 'ref').length, nf = d.length - ok;
-    const late = d.filter(x => Date.now() - (x.t1 || x.t0) > 15 * 864e5).length, ld = S.rp.filter(x => x.st == 'in' && x.due && Date.now() > x.due).length;
-    return i || d.length ? 'الصيانة: ' + i + ' في المحل' + (ld ? ' (متأخر عن الموعد ' + ld + ')' : '') + ' · ' + ok + ' جاهز للتسليم' + (nf ? ' · ' + nf + ' لم يصلح' : '') + (late ? ' (منسي ' + late + ')' : '') : '';
+    const late = d.filter(x => Date.now() - (x.t1 || x.t0) > 15 * 864e5).length;
+    return i || d.length ? 'الصيانة: ' + i + ' في المحل · ' + ok + ' جاهز للتسليم' + (nf ? ' · ' + nf + ' لم يصلح' : '') + (late ? ' (منسي ' + late + ')' : '') : '';
   };
   const dbLine = () => { const n = (S.debt || []).filter(x => !x.paid).length; return n ? 'ديون مفتوحة: ' + n : ''; };
   /* تسجيل الإرسال: لآخر من ضغط واتساب أو نسخ (يُزامَن بين الأجهزة) */
   const sentToday = () => { const x = S.cfg.rs; return !!(x && x.t && new Date(x.t).toDateString() == new Date().toDateString()); };
   window.rcMark = () => { S.cfg.rs = { t: Date.now(), by: S.me }; save(); };
-  /* الإرسال: لا يُعلَّم «أُرسل» قبل التأكد. بعد العودة يُسأل المستخدم مرة واحدة. الرابط الطويل جداً يُنسخ بدل أن يفشل */
-  window.rcSend = () => {
-    const txt = generateReportText(window.reportSectionFilter), url = 'https://wa.me/?text=' + encodeURIComponent(txt);
-    try { localStorage.setItem('rcPend', String(Date.now())); } catch (e) { }
-    if (url.length <= 7000) { location.href = url; return; }
-    navigator.clipboard.writeText(txt).then(() => { toast('التقرير طويل: نُسخ، الصقه في واتساب', null, 3000); setTimeout(() => { location.href = 'https://wa.me/?text=%20'; }, 1200); }).catch(() => { location.href = url; });
-  };
-  const rcPendChk = () => {
-    try {
-      const t = +localStorage.getItem('rcPend'); if (!t) return;
-      if (Date.now() - t > 30 * 60000) { localStorage.removeItem('rcPend'); return; }
-      if (SH || $('lg') || $('lk') || localStorage.getItem('shopLock') == '1') return;
-      localStorage.removeItem('rcPend');
-      sure('هل أُرسل التقرير فعلاً؟', 'نعم أُرسل', false).then(y => { if (y) { rcMark(); render(); } });
-    } catch (e) { }
-  };
-  addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(rcPendChk, 700); });
-  setTimeout(rcPendChk, 2500);
+  window.rcSend = () => { rcMark(); location.href = 'https://wa.me/?text=' + encodeURIComponent(generateReportText(window.reportSectionFilter)); };
   window.rcCopy = () => navigator.clipboard.writeText(generateReportText(window.reportSectionFilter)).then(() => { rcMark(); render(); toast('تم النسخ'); }).catch(() => toast('تعذّر النسخ'));
   const sentLine = () => { const x = S.cfg.rs; if (!x || !x.t) return ['لم يُرسل التقرير بعد', 1]; const t = sentToday(), d = new Date(x.t), p = n => String(n).padStart(2, '0'); return ['آخر إرسال: ' + (t ? 'اليوم ' + p(d.getHours()) + ':' + p(d.getMinutes()) : fd(x.t)) + (x.by ? ' — ' + x.by : ''), !t]; };
   const cnt = (a, n) => n == '0' ? ' — نفد' : ' — العدد ' + a + n;
@@ -218,7 +201,7 @@
 
   /* ---------- إعدادات التقرير ---------- */
   const yn = v => v ? 'نعم' : 'لا', tog = (l, k) => row(l, 'rcSet({' + k + ':' + (rcf()[k] ? 0 : 1) + '})', yn(rcf()[k]));
-  window.rcRh = () => { if (!okEdit()) return toast('للمدير فقط'); ask('ساعة بدء التذكير', [{ k: 'h', l: 'من 0 إلى 23 (مثال: 16)', v: String(rcf().rh) }]).then(v => { const h = v && parseInt(dg(v.h), 10); if (h >= 0 && h <= 23) rcSet({ rh: h }); }); };
+  window.rcRh = () => { if (!okEdit()) return toast('للمدير فقط'); ask('ساعة بدء التذكير', [{ k: 'h', l: 'من 0 إلى 23 (مثال: 16)', v: String(rcf().rh) }]).then(v => { const h = v && parseInt(v.h, 10); if (h >= 0 && h <= 23) rcSet({ rh: h }); }); };
   window.rcNd = i => { const n = rcf().nd.slice(), k = n.indexOf(i); k < 0 ? n.push(i) : n.splice(k, 1); rcSet({ nd: n }); };
   VW.st_rep = () => {
     const c = rcf();

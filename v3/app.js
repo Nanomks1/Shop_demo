@@ -13,10 +13,6 @@ function secSub(k) {
   if (k == 'case') { const pcs = L.reduce((a, i) => a + (typeof csTot == 'function' ? csTot(i) : 0), 0); return L.length + ' موديل · ' + pcs + ' قطعة'; }
   return L.length + ' صنف';
 }
-const soon = t => ({ t, h: '<div class="card"><b>يُبنى في مرحلة قادمة</b><p class="m">هذا القسم لم يُنقل إلى النسخة الجديدة بعد، والنسخة القديمة (v2) ما زالت تعمل.</p></div>' });
-VW.sec = VW.sec || (() => soon('قسم'));
-VW.rp = VW.rp || (() => soon('الصيانة'));
-VW.rep = VW.rep || (() => soon('التقرير'));
 
 /* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري (بدون تكرار) ---------- */
 let SC = '';   // نطاق البحث الحالي
@@ -29,47 +25,13 @@ SRCH.push(
 );
 function scSet(k) { SC = k; const b = $('sc'); if (b) b.innerHTML = scopeChips(); sq(Q); }
 
-/* بطاقة ملخص الأثمنة والتوفر التفاعلية للموديل المبحوث عنه */
-function priceLookupCard(n) {
-  if (SC || n.length < 2) return '';
-  if (typeof window.priceLookupHtml == 'function') return window.priceLookupHtml(n);
-  const phs = S.items.filter(i => i.sec == 'phones' && nzOf(i, nzText).includes(n)).slice(0, 4);
-  const gls = S.gg.filter(g => g.models.some(m => nz(((g.br || {})[m] || '') + m).includes(n))).slice(0, 2);
-  const css = S.items.filter(i => i.sec == 'case' && nz(i.name).includes(n)).slice(0, 3);
-  const gds = S.guide.filter(g => nz(g.m + ' ' + g.f).includes(n)).slice(0, 5);
-  const hits = (phs.length ? 1 : 0) + (gls.length ? 1 : 0) + (css.length ? 1 : 0) + (gds.length ? 1 : 0);
-  if (hits < 2 && !gds.length) return '';
-  const rowP = (icName, lbl, right, stCol, fn) => `<div class="rrow" style="padding:6px 0;${fn ? 'cursor:pointer' : ''}" ${fn ? `onclick="${fn}"` : ''}>${stCol ? `<span class="dotl" style="background:${stCol}"></span>` : I(icName)}<span class="rt" style="font-size:.88rem">${lbl}</span><b style="color:var(--p);white-space:nowrap;font-size:.92rem">${right}</b></div>`;
-  let rows = '';
-  phs.forEach(i => {
-    const st = typeof phSt == 'function' ? DT[phSt(i)] : '';
-    rows += rowP('mobile', `<b>${esc(i.brand + ' ' + i.name)}</b> <span class="m">${esc([i.color, i.cap].filter(Boolean).join('·'))} (${av(i)} متاح)</span>`, esc(i.price ? dh(i.price) : 'بدون سعر'), st, `phEd('${i.id}')`);
-  });
-  gls.forEach(g => {
-    const parts = S.tags.glass.map((t, j) => {
-      const it = gitem(g.id, t), tot = it ? gTot(it, g) : 0;
-      if (!tot && !(it && it.price)) return '';
-      return `<span onclick="glMin('${g.id}',${j})" style="cursor:pointer">${esc(t)}: <b>${it && it.price ? esc(dh(it.price)) : '—'}</b> <span class="m">(${it && gEst(it, g) ? '≈' : ''}${tot})</span></span>`;
-    }).filter(Boolean);
-    if (parts.length) rows += `<div class="rrow" style="padding:6px 0">${I('shield')}<span class="rt" style="font-size:.86rem"><b>زجاج ${esc(g.models.slice(0, 3).join(' / '))}:</b> ${parts.join(' · ')}</span></div>`;
-  });
-  css.forEach(c => {
-    const st = typeof csSt == 'function' ? DT[csSt(c)] : '';
-    const gTxt = typeof csGText == 'function' ? csGText(c) : 'المتوفر ' + csTot(c);
-    rows += rowP('box', `<b>بوشيط ${esc(c.name)}</b> <span class="m">(${esc(gTxt)})</span>`, esc(c.price ? dh(c.price) : csTot(c) + ' قطعة'), st, `csLimEd('${c.id}')`);
-  });
-  gds.forEach(g => {
-    const pr = dh(g.p) + (g.p2 ? ' / أصلي ' + dh(g.p2) : '');
-    rows += rowP('tool', `إصلاح ${esc(g.m)} — <b>${esc(g.f)}</b>${g.n ? ` <span class="m">(${esc(g.n)})</span>` : ''}`, esc(pr), '', `go('gd')`);
-  });
-  return rows ? `<div class="card" style="border-color:var(--p);background:color-mix(in srgb,var(--ab) 35%,var(--c));padding:10px 12px"><div class="row2" style="margin-bottom:4px"><b style="color:var(--p);font-size:.9rem">${I('tag')} ملخص الأثمنة والتوفر</b></div>${rows}</div>` : '';
-}
-
 function srch(q) {
   const n = nz(q); if (!n) return '';
   const o = [];
-  const topCard = priceLookupCard(n);
-  if (topCard) o.push(topCard);
+  if (!SC && n.length >= 2 && typeof window.priceLookupHtml == 'function') {
+    const topCard = window.priceLookupHtml(n);
+    if (topCard) o.push(topCard);
+  }
   /* نتجنب تشغيل قسم 'prc' مرتين عندما يكون البحث على «الكل» لأن topCard عرضته بالفعل */
   SRCH.forEach(p => {
     if (SC ? SC != p.k : p.k == 'prc') return;
@@ -80,8 +42,15 @@ function srch(q) {
 }
 function sq(q) {
   if (q && !QP) { QP = 1; history.pushState({ V, q: 1 }, ''); }
-  Q = q; const r = $('res'); if (r) r.innerHTML = q ? srch(q) : '';
-  const hm = $('hm'); if (hm) hm.hidden = !!(q && String(q).trim());   // أثناء البحث: أخفِ بقية الرئيسية
+  Q = q;
+  const hasQ = !!(q && String(q).trim());
+  const cBtn = $('q_clr'); if (cBtn) cBtn.hidden = !hasQ;
+  const r = $('res'); if (r) r.innerHTML = hasQ ? srch(q) : '';
+  const hm = $('hm'); if (hm) hm.hidden = hasQ;   // أثناء البحث: أخفِ بقية الرئيسية
+}
+function qClear() {
+  const i = $('q_inp'); if (i) { i.value = ''; i.focus(); }
+  sq('');
 }
 function goSearch() { go('home'); setTimeout(() => { const i = $('q_inp') || document.querySelector('main input'); if (i) i.focus(); }, 60); }
 
@@ -109,7 +78,8 @@ function todayLine() {
 (() => {
   const s = document.createElement('style');
   s.textContent = `.qbar.cmp{gap:6px;margin:8px 0}.qbar.cmp .qic{display:none}.qbar.cmp .qpill{padding:7px 4px;gap:1px}.qbar.cmp .qn{font-size:1.4rem}
-.grid .card.cs2{flex-direction:row;align-items:center;gap:10px;padding:10px 12px}.cs2 .ic{width:2.3rem;height:2.3rem;padding:.5rem;margin:0;flex:none}.cs2 .ct{display:flex;flex-direction:column;min-width:0}.cs2 .ct b{font-size:.95rem}`;
+.grid .card.cs2{flex-direction:row;align-items:center;gap:10px;padding:10px 12px}.cs2 .ic{width:2.3rem;height:2.3rem;padding:.5rem;margin:0;flex:none}.cs2 .ct{display:flex;flex-direction:column;min-width:0}.cs2 .ct b{font-size:.95rem}
+.q-wrap{position:relative}.q-wrap input{padding-inline-end:40px}.q-clr{position:absolute;inset-inline-end:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:50%;background:var(--bg);color:var(--m);font:inherit;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}`;
   document.head.appendChild(s);
 })();
 
@@ -127,7 +97,7 @@ VW.home = () => {
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
-      + `<input id="q_inp" placeholder="ابحث عن ثمن أو سلعة: هاتف، زجاج، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)">`
+      + `<div class="q-wrap"><input id="q_inp" placeholder="ابحث عن ثمن أو سلعة: هاتف، زجاج، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)"><button id="q_clr" type="button" class="q-clr" ${Q ? '' : 'hidden'} onclick="qClear()" aria-label="مسح البحث">✕</button></div>`
       + `<div id="sc">${scopeChips()}</div><div id="res"></div>`
       + '<div id="hm">' + homeQuickBar() + scan + topup
       + '<h3>الأقسام</h3>'
