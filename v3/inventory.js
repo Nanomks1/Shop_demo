@@ -1,7 +1,7 @@
 /* ============================================================
    inventory.js — المخزون: الهواتف، الأنتي كاس، البوشيط، الإكسسوارات
-   (+ العرض المضغوط، نظام البوشيط المقسم رجالي/نسائي، الحجز، الروپريز،
-   اقتراح الأنتي كاس والبوشيط عند بيع هاتف، وتنبيه طلبات الزبائن)
+   (+ لوحة التحكم المجمّعة، العرض المضغوط، نظام البوشيط المقسم رجالي/نسائي،
+   الحجز، الروپريز، اقتراح الملحقات عند بيع هاتف، وتنبيه طلبات الزبائن)
    يُحمَّل بعد topup.js وقبل invtools.js.
    ============================================================ */
 
@@ -12,6 +12,26 @@ Object.assign(IC, {
   zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   swap: '<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>'
 });
+
+/* ---------- تنسيقات لوحة التحكم المجمّعة (التصميم 1 المحسّن) ---------- */
+(() => {
+  const s = document.createElement('style');
+  s.textContent = `.sec-panel{background:var(--c);border:1.5px solid var(--b);border-radius:16px;padding:10px 11px;margin:8px 0 12px;box-shadow:0 2px 6px rgba(15,23,42,.05)}
+.sec-tags{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:10px;border-bottom:1px dashed var(--b)}
+.sec-tags .tag{margin:0!important;padding:6px 12px;border-radius:10px;border:1px solid var(--b);background:var(--bg);color:var(--t);font-size:.86rem;font-weight:600;transition:all .15s ease}
+.sec-tags .tag.on{background:var(--p);color:#fff;border-color:var(--p);box-shadow:0 2px 5px color-mix(in srgb,var(--p) 35%,transparent)}
+.sec-toolbar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:9px;flex-wrap:nowrap}
+.seg-group{display:inline-flex;align-items:center;background:var(--bg);padding:3px;border-radius:11px;border:1px solid var(--b);gap:2px;min-width:0}
+.seg-btn{border:0;background:transparent;color:var(--m);font:inherit;font-size:.8rem;font-weight:700;padding:5px 9px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.seg-btn.on{background:var(--c);color:var(--p);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.sec-actions{display:inline-flex;align-items:center;gap:5px;flex-shrink:0}
+.tool-pill{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:10px;border:1px solid var(--b);background:var(--bg);color:var(--t);font:inherit;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.tool-pill.on{background:var(--ab);color:var(--p);border-color:var(--p)}
+.empty-state{background:var(--c);border:1.5px dashed var(--b);border-radius:16px;padding:26px 16px;text-align:center;margin:10px 0}
+.empty-state b{display:block;color:var(--t);font-size:.95rem;margin-bottom:4px}
+.empty-state span{color:var(--m);font-size:.84rem}`;
+  document.head.appendChild(s);
+})();
 
 /* ---------- مساعدات ---------- */
 const find = id => S.items.find(i => i.id == id);
@@ -88,7 +108,7 @@ const rsHtml = i => {
   return `<div class="rs">محجوز ${rsQ(i)} من ${i.cnt}: ${L.map(r => esc(r.n) + ((+r.q || 1) > 1 ? ' ×' + r.q : '') + (r.d ? ' · عربون ' + esc(r.d) : '')).join('، ')}${av(i) <= 0 ? ' — كل القطع محجوزة' : ''}</div>`;
 };
 
-/* ---------- الألوان والترتيب ---------- */
+/* ---------- الألوان والترتيب ولوحة الفلترة الموحدة ---------- */
 const PAL = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1',
   '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78716c', '#b91c1c', '#c2410c', '#a16207', '#15803d', '#0f766e', '#1d4ed8',
   '#6d28d9', '#a21caf', '#be185d', '#92400e', '#64748b', '#1e293b'];
@@ -112,14 +132,21 @@ const cardH = (h, c, cls = '') => `<div class="card${cls ? ' ' + cls : ''}"${c ?
 const SOL = { phones: [['n', 'الماركة'], ['d', 'الأحدث'], ['l', 'الأقل']] };
 ['glass', 'case', 'acc'].forEach(s => SOL[s] = [['n', 'الاسم'], ['d', 'الأحدث'], ['l', 'الأقل']]);
 const SO = s => (S.cfg.so || {})[s] || 'n';
-const sortBar = s => {
+
+/* شريط الأدوات المدمج + لوحة القسم الموحدة + صندوق الفراغ المتوازن */
+const sortToolbarHtml = s => {
   const canCmp = s != 'glass', cm = isCmp(s);
-  return `<div class="stk-bar"><div class="row2" style="flex-wrap:wrap;gap:4px"><span class="m" style="font-size:.82rem;margin-inline-end:4px">ترتيب:</span>`
-    + SOL[s].map(([k, l]) => `<button class="tag ${SO(s) == k ? 'on' : ''}" style="margin:0;padding:5px 11px;font-size:.84rem" onclick="soSet('${s}','${k}')">${l}</button>`).join('')
-    + `<button class="tag" style="margin:0;margin-inline-start:auto;padding:5px 10px;font-size:.82rem" onclick="go('jl',{js:'${s}',jk:'${s}',jm:'all'})">${I('check')} جرد</button>`
-    + (canCmp ? `<button class="tag ${cm ? 'on' : ''}" style="margin:0;padding:5px 11px;font-size:.84rem" onclick="cmpTog('${s}')">${I(cm ? 'cards' : 'rows')} ${cm ? 'مفصل' : 'مضغوط'}</button>` : '')
+  return `<div class="sec-toolbar"><div class="seg-group">`
+    + SOL[s].map(([k, l]) => `<button type="button" class="seg-btn ${SO(s) == k ? 'on' : ''}" onclick="soSet('${s}','${k}')">${l}</button>`).join('')
+    + `</div><div class="sec-actions">`
+    + `<button type="button" class="tool-pill" onclick="go('jl',{js:'${s}',jk:'${s}',jm:'all'})">${I('check')} جرد</button>`
+    + (canCmp ? `<button type="button" class="tool-pill ${cm ? 'on' : ''}" onclick="cmpTog('${s}')">${I(cm ? 'cards' : 'rows')} ${cm ? 'مفصل' : 'مضغوط'}</button>` : '')
     + `</div></div>`;
 };
+const secPanel = (s, tagsHtml) => `<div class="sec-panel"><div class="sec-tags">${tagsHtml}</div>${sortToolbarHtml(s)}</div>`;
+const sortBar = s => `<div class="sec-panel" style="padding:7px 10px">${sortToolbarHtml(s).replace('padding-top:9px', 'padding-top:0')}</div>`;
+const emptyBox = (title, sub) => `<div class="empty-state"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
+
 function soSet(s, k) { upd(() => { S.cfg.so = S.cfg.so || {}; S.cfg.so[s] = k; }); }
 const srt = (a, s, nm, lo, at) => { const k = SO(s); return [...a].sort((x, y) => k == 'd' ? (at(y) || 0) - (at(x) || 0) : k == 'l' ? (lo(x) - lo(y)) || String(nm(x)).localeCompare(String(nm(y))) : String(nm(x)).localeCompare(String(nm(y)))); };
 
@@ -220,15 +247,15 @@ function phView() {
   if (V.f == 1) a = a.filter(i => phSt(i) != 'g');
   else if (V.f == 2) a = a.filter(i => i.cond == 'مستعمل');
   else if (V.pb) a = a.filter(i => i.brand == V.pb);
+  const tagsHtml = `<button class="tag ${!V.f && !V.pb ? 'on' : ''}" onclick="V.f=0;V.pb='';render()">الكل (${allPh.length} · ${totPcs} قطعة)</button>`
+    + `<button class="tag ${V.f == 1 ? 'on' : ''}" onclick="V.f=1;V.pb='';render()">يحتاج شراء (${lowCnt})</button>`
+    + brChips
+    + (usedPh.length ? `<button class="tag ${V.f == 2 ? 'on' : ''}" onclick="V.f=2;V.pb='';render()">مستعمل (${usedPcs})</button>` : '');
   return {
     t: 'الهواتف',
     h: `<button class="btn" onclick="phAdd()">+ إضافة هاتف</button>`
-      + `<div class="rtabs"><button class="tag ${!V.f && !V.pb ? 'on' : ''}" onclick="V.f=0;V.pb='';render()">الكل (${allPh.length} صنف · ${totPcs} قطعة)</button>`
-      + `<button class="tag ${V.f == 1 ? 'on' : ''}" onclick="V.f=1;V.pb='';render()">يحتاج شراء (${lowCnt})</button>`
-      + brChips
-      + (usedPh.length ? `<button class="tag ${V.f == 2 ? 'on' : ''}" onclick="V.f=2;V.pb='';render()">مستعمل (${usedPcs})</button>` : '')
-      + `</div>`
-      + sortBar('phones') + (a.map(phCard).join('') || '<p class="m">لا شيء في هذا الفلتر</p>')
+      + secPanel('phones', tagsHtml)
+      + (a.map(phCard).join('') || emptyBox('لا توجد هواتف مطابقة لهذا الفلتر', 'اضغط على «+ إضافة هاتف» في الأعلى لإضافة هاتف جديد'))
   };
 }
 
@@ -408,7 +435,13 @@ function glGet(gid, ty) { let i = gitem(gid, ty); if (!i) { const now = Date.now
 function glView() {
   const j = V.ty || 0, ty = S.tags.glass[j], it = g => gitem(g.id, ty);
   const a = srt(S.gg, 'glass', g => g.models[0] || '', g => { const i = it(g); return i ? gTot(i, g) : 0; }, g => { const i = it(g); return i ? i.at : 0; });
-  return { t: 'الأنتي كاس', h: `<button class="btn" onclick="glAdd()">+ إضافة موديل</button><div>${S.tags.glass.map((t, k) => `<button class="tag ${k == j ? 'on' : ''}" onclick="V.ty=${k};render()">${esc(t)}</button>`).join('')}</div>` + sortBar('glass') + (a.map(g => glCard(g, j)).join('') || '<p class="m">أضف أول موديل لتبدأ المجموعات.</p>') };
+  const tagsHtml = S.tags.glass.map((t, k) => `<button class="tag ${k == j ? 'on' : ''}" onclick="V.ty=${k};render()">${esc(t)}</button>`).join('');
+  return {
+    t: 'الأنتي كاس',
+    h: `<button class="btn" onclick="glAdd()">+ إضافة موديل</button>`
+      + secPanel('glass', tagsHtml)
+      + (a.map(g => glCard(g, j)).join('') || emptyBox('لا توجد مجموعات أنتي كاس بعد', 'اضغط على «+ إضافة موديل» في الأعلى لبدء أول مجموعة'))
+  };
 }
 function glRow(g, i, j, k, m) {
   const lv = (i.lv || {})[m], ex = lv === undefined && (i.stock || {})[m] !== undefined, T = GT(), br = (g.br || {})[m];
@@ -530,7 +563,6 @@ const csGLim = (i, g) => (i.glim && i.glim[g] != null) ? i.glim[g] : csLim(i);
 /* إحصائيات كل جنس للبوشيط: [{g, tot, lim, st}] */
 function csGStats(i) {
   const V0 = i.v || [], G = csGenders();
-  /* إذا كانت كل الأنواع بدون تحديد جنس (عام فقط)، نحكم على المجموع العام */
   if (V0.length && V0.every(x => !x.g)) {
     const t = csTot(i), L = csLim(i);
     return [{ g: 'عام', tot: t, lim: L, st: t <= 0 ? 'r' : t <= L ? 'y' : 'g' }];
@@ -538,14 +570,13 @@ function csGStats(i) {
   const out = [];
   G.forEach(g => {
     const L = csGLim(i, g);
-    if (L < 0) return;   // -1 يعني هذا الموديل معفى من هذا الجنس (لا نجلبه)
+    if (L < 0) return;
     const tot = V0.filter(x => x.g == g).reduce((a, x) => a + x.n, 0);
     out.push({ g, tot, lim: L, st: tot <= 0 ? 'r' : tot <= L ? 'y' : 'g' });
   });
   return out.length ? out : [{ g: 'عام', tot: csTot(i), lim: csLim(i), st: csTot(i) <= 0 ? 'r' : csTot(i) <= csLim(i) ? 'y' : 'g' }];
 }
 
-/* الحالة العامة لبطاقة البوشيط هي أسوأ حالة بين الرجالي والنسائي (أو برتقالي عند وجود ملاحظة «خاصنا») */
 const csSt = i => {
   const gs = csGStats(i);
   if (gs.some(x => x.st == 'r')) return 'r';
@@ -560,7 +591,6 @@ const csChipCls = (i, x) => {
   return x.n <= 0 ? 'low' : (L > 0 && x.n <= L) ? 'warn' : '';
 };
 
-/* كبسولات البوشيط (تُستعمل في بطاقة القسم وفي سطر الجرد السريع) */
 function csChipsHtml(i, cmp) {
   const V0 = i.v || [], ex = EXP['c_' + i.id];
   const limV = !ex && V0.length > (cmp ? 3 : 4) ? V0.slice(0, cmp ? 2 : 4) : V0;
@@ -570,7 +600,6 @@ function csChipsHtml(i, cmp) {
     + (V0.length > limV.length || ex ? `<button class="tag" style="margin:0;padding:4px 10px;font-size:.8rem" onclick="toggleExp('c_${i.id}')">${ex ? 'طيّ ▴' : '+' + (V0.length - limV.length) + ' أخرى ▾'}</button>` : '') + `</div>`;
 }
 
-/* زيادة أو إنقاص سريعة لجنس معين حتى لو لم تكن له كبسولة سابقة */
 function csQuickG(id, gIdx, d) {
   const it = find(id), g = csGenders()[gIdx]; if (!it || !g) return;
   let x = (it.v || []).find(y => y.g == g && !y.c) || (it.v || []).find(y => y.g == g);
@@ -607,11 +636,13 @@ function csView() {
   const allCs = S.items.filter(i => i.sec == 'case'), totPcs = allCs.reduce((s, i) => s + csTot(i), 0), lowCnt = allCs.filter(i => csSt(i) != 'g').length;
   let a = srt(allCs, 'case', i => i.name, csTot, i => i.at);
   if (V.cf) a = a.filter(i => csSt(i) != 'g');
+  const tagsHtml = `<button class="tag ${!V.cf ? 'on' : ''}" onclick="V.cf=0;render()">الكل (${allCs.length} موديل · ${totPcs} قطعة)</button>`
+    + `<button class="tag ${V.cf ? 'on' : ''}" onclick="V.cf=1;render()">يحتاج شراء (${lowCnt})</button>`;
   return {
     t: 'البوشيط',
     h: `<button class="btn" onclick="csAdd()">+ إضافة موديل بوشيط</button>`
-      + `<div><button class="tag ${!V.cf ? 'on' : ''}" onclick="V.cf=0;render()">الكل (${allCs.length} موديل · ${totPcs} قطعة)</button><button class="tag ${V.cf ? 'on' : ''}" onclick="V.cf=1;render()">يحتاج شراء (${lowCnt})</button></div>`
-      + sortBar('case') + (a.map(csCard).join('') || '<p class="m">لا شيء بعد</p>')
+      + secPanel('case', tagsHtml)
+      + (a.map(csCard).join('') || emptyBox('لا توجد موديلات بوشيط في هذا الفلتر', 'اضغط على «+ إضافة موديل بوشيط» في الأعلى لإضافة أول موديل'))
   };
 }
 function csC(id, vid, d) { const it = find(id), x = it.v.find(y => y.id == vid); upd(() => { x.n = Math.max(0, x.n + d); touch(it); }); if (d > 0) reqChk('بوشيط ' + it.name); }
@@ -700,7 +731,6 @@ function csQuickNote(id) {
   const i = find(id);
   ask('بوشيط ' + i.name, [{ k: 'rem', l: 'شنو باقي عندنا فالمحل؟ (مثال: غير النسائي)', v: i.rem || '' }, { k: 'need', l: 'شنو خاص يجيب المعلم؟ (مثال: ألوان رجالية / كحل)', v: i.need || '' }]).then(v => { if (v) commit('تم التحديث', () => { i.rem = v.rem.trim(); i.need = v.need.trim(); i.by = S.me; }); });
 }
-/* شراء بوشيط من التقرير: يضيف الكمية للجنس الناقص تحديداً */
 function buyC(id) {
   const i = find(id); if (!i) return;
   const badG = csGStats(i).filter(x => x.st != 'g');
@@ -727,7 +757,7 @@ function buyC(id) {
 const DKC = { 'كابل': { conn: 1 }, 'شاحن': { conn: 1 } }, DK = { 'كابل': { g: 1, w: 0 }, 'شاحن': { g: 1, w: 1 }, 'رأس شاحن': { g: 1, w: 1 } };
 const kc = k => ({ conn: 0, tier: 1, ...(DKC[k] || {}), ...((S.cfg.kc || {})[k] || {}) });
 const gkc = k => ({ g: 0, w: 0, ...(DK[k] || {}), ...((S.cfg.gkc || {})[k] || {}) });
-const fxIn = i => S.fields.filter(f => f.sec == 'acc').map(f => fxVal(i, f).join(' ')).filter(Boolean).join(' ');   // قيم الخاصيات (32GB...) في اسم القطعة
+const fxIn = i => S.fields.filter(f => f.sec == 'acc').map(f => fxVal(i, f).join(' ')).filter(Boolean).join(' ');
 const xSig = o => S.fields.filter(f => f.sec == 'acc').map(f => fxVal(o, f).slice().sort().join('+')).join('|');
 const acName = i => [i.kind, i.conn, fxIn(i), i.tier && 'فئة ' + i.tier, i.brand].filter(Boolean).join(' ');
 const acTitle = i => [i.kind, i.conn, fxIn(i), i.brand].filter(Boolean).join(' ');
@@ -751,7 +781,14 @@ function acView() {
   const j = V.kk, k = j == null ? null : S.tags.kind[j];
   const a = srt(S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && (k == null || i.kind == k)), 'acc', acName, i => ({ r: 0, y: 1, g: 2 })[acSt(i)], i => i.at);
   const G = agList().filter(d => k == null || d.kind == k).map(agCard).join('');
-  return { t: 'الإكسسوارات', h: `<button class="btn" onclick="acAdd()">+ إضافة إكسسوار</button><div><button class="tag ${j == null ? 'on' : ''}" onclick="V.kk=null;render()">الكل</button>${S.tags.kind.map((t, x) => `<button class="tag ${j == x ? 'on' : ''}" onclick="V.kk=${x};render()">${esc(t)}</button>`).join('')}</div>` + sortBar('acc') + G + (a.map(acCard).join('') || (G ? '' : '<p class="m">لا شيء بعد</p>')) };
+  const tagsHtml = `<button class="tag ${j == null ? 'on' : ''}" onclick="V.kk=null;render()">الكل</button>`
+    + S.tags.kind.map((t, x) => `<button class="tag ${j == x ? 'on' : ''}" onclick="V.kk=${x};render()">${esc(t)}</button>`).join('');
+  return {
+    t: 'الإكسسوارات',
+    h: `<button class="btn" onclick="acAdd()">+ إضافة إكسسوار</button>`
+      + secPanel('acc', tagsHtml)
+      + G + (a.map(acCard).join('') || (G ? '' : emptyBox('لا توجد إكسسوارات في هذا القسم بعد', 'اضغط على «+ إضافة إكسسوار» في الأعلى لإضافة أول قطعة')))
+  };
 }
 function acC(id, d) { const i = find(id); upd(() => { i.cnt = Math.max(0, i.cnt + d); touch(i); }); if (d > 0) reqChk(acName(i)); }
 function acCnt(id) { const i = find(id); ask('عدد القطع', [{ k: 'n', l: 'العدد الحالي', t: 'tel', v: '' }]).then(v => { if (v && v.n.trim() !== '') { upd(() => { i.cnt = ci(v.n); touch(i, 1); }); if (+dg(v.n) > 0) reqChk(acName(i), 1); } }); }
@@ -869,7 +906,6 @@ function buyP(id) { const i = find(id); qty(i.brand + ' ' + i.name, 1, n => { i.
 function invLines(notes = true) {
   const L = [];
   ph().filter(i => phSt(i) != 'g').forEach(i => L.push(['الهواتف الناقصة', [i.brand, i.name, i.color, i.cap].filter(Boolean).join(' ') + ' — ' + av(i) + (rsQ(i) ? ' (محجوز ' + rsQ(i) + ')' : ''), phSt(i), `buyP('${i.id}')`]));
-  /* إذا أُضيف موديل أنتي كاس جديد ولم يُملأ مخزونه بعد، ننشئ سجله تلقائياً ليظهر في النواقص */
   S.gg.forEach(g => {
     const hasAny = S.tags.glass.some(t => gitem(g.id, t));
     S.tags.glass.forEach((t, idx) => {

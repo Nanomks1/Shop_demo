@@ -16,7 +16,7 @@ function xCustLookup(nameId, telId, fromName) {
   const nEl = $(nameId), tEl = $(telId); if (!nEl || !tEl) return;
   const nv = nEl.value.trim(), tv = tEl.value.trim(), ph8 = waNum(tv).slice(-8);
   const all = [...(S.rp || []), ...(S.debt || []), ...(S.used || [])];
-  if (!fromName && ph8.length >= 8 && !nv) {   // بالهاتف فقط (الأسماء متشابهة): يُملأ الاسم من آخر سجل بهذا الرقم
+  if (!fromName && ph8.length >= 8 && !nv) {
     const f = all.filter(x => x.tel && x.name && waNum(x.tel).slice(-8) === ph8).pop();
     if (f) nEl.value = f.name;
   }
@@ -139,7 +139,6 @@ async function usCommit(rec, v) {
   if (v.img && v.img.startsWith('data:image')) { putImg(id, v.img); v.img = 'idb:' + id; }
   const o = { id, ...v, by: S.me, at: Date.now() };
   S.used.push(o);
-  /* إن كانت العملية روپريز (استبدال)، نخصم الهاتف المباع من المخزون تلقائياً */
   if (v.repOf) {
     const it = S.items.find(x => x.id == v.repOf);
     if (it && it.cnt > 0) { it.cnt = Math.max(0, it.cnt - 1); it.by = S.me; it.at = Date.now(); }
@@ -163,7 +162,7 @@ function usDel(id) {
     const repIt = o.repOf ? S.items.find(x => x.id == o.repOf) : null;
     if (repIt) { repIt.cnt += 1; repIt.by = S.me; }
     S.trash.push(t); save(); render();
-    toast('تم الحذف', () => restore(t.id));   // restore وحدها تعيد خصم الهاتف المباع دون خصم مزدوج
+    toast('تم الحذف', () => restore(t.id));
   });
 }
 function usZoom(id) {
@@ -171,7 +170,6 @@ function usZoom(id) {
   $('sh').innerHTML = `<div class="bar"></div><h3>${esc(u.dev + ' — ' + u.name)}</h3><img src="${src}" style="width:100%;max-height:70vh;object-fit:contain;border-radius:12px"><div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>`;
   sheetOpen(() => { });
 }
-/* إدخال الهاتف المستعمل للمخزون: نترك سعر البيع فارغاً ليحدده البائع ونحفظ سعر الشراء كتلميح */
 function usInv(id) {
   const u = S.used.find(x => x.id == id); if (!u) return;
   $('sh').innerHTML = '';
@@ -189,7 +187,6 @@ function usInv(id) {
   phForm({ brand: br, name: nm, imei: u.imei || '', price: '', note: noteText, cond: 'مستعمل', cnt: 1 });
   if (u.price && $('pp')) $('pp').placeholder = 'اكتب سعر البيع (اشتريته بـ ' + u.price + ')';
 }
-/* استدعاء سريع للروپريز من بطاقة الهاتف في المخزون */
 window.usFromRep = function (itemId) {
   const it = S.items.find(x => x.id == itemId); if (!it) return;
   if (typeof av == 'function' && av(it) <= 0) return toast('لا توجد قطع متاحة من هذا الهاتف');
@@ -213,25 +210,24 @@ VW.usd = () => {
     t: 'شراء المستعمل',
     h: `<button class="btn" onclick="usAdd()">+ تسجيل شراء هاتف مستعمل</button>`
       + `<input placeholder="ابحث بالاسم، رقم البطاقة CIN، IMEI أو الموديل" value="${esc(V.q || '')}" oninput="V.q=this.value;usF()">`
-      + `<div id="usl">${F.slice(0, 60).map(usedCard).join('') || '<p class="m">لا توجد سجلات</p>'}</div>`
+      + `<div id="usl">${F.slice(0, 60).map(usedCard).join('') || emptyBox('لا توجد سجلات شراء مستعمل بعد', 'اضغط على «+ تسجيل شراء هاتف مستعمل» في الأعلى')}</div>`
   };
 };
 function usF() {
   const n = nz(V.q || ''), L = S.used.slice().sort((a, b) => b.at - a.at).filter(u => !n || usMatch(u, n));
-  $('usl').innerHTML = L.slice(0, 60).map(usedCard).join('') || '<p class="m">لا توجد سجلات</p>';
+  $('usl').innerHTML = L.slice(0, 60).map(usedCard).join('') || emptyBox('لا توجد سجلات مطابقة');
 }
 
 /* ---------- الديون (مع التجميع وتذكير الواتساب والربط الحي مع الصيانة) ---------- */
 const dRem = d => Math.max(0, xn(d.amt) - (d.pays || []).reduce((a, p) => a + xn(p[1]), 0));
 
-/* فحص الديون المفتوحة لزبون معين بالهاتف أو الاسم (تُستعمل هنا وفي الصيانة) */
 window.dbtCustOpen = function (tel, name) {
   const ph = waNum(tel), nm = nz(name || '');
   return (S.debt || []).filter(d => {
     if (d.paid || dRem(d) <= 0) return false;
     const dph = waNum(d.tel);
-    if (ph.length >= 8 && dph.length >= 8) return ph.slice(-8) === dph.slice(-8);   // الهاتف معروف عند الطرفين: هو الحَكَم
-    return nm.length >= 4 && nz(d.name) === nm;   // وإلا: الاسم كاملاً مطابقاً تماماً
+    if (ph.length >= 8 && dph.length >= 8) return ph.slice(-8) === dph.slice(-8);
+    return nm.length >= 4 && nz(d.name) === nm;
   });
 };
 function dbtSameCust(d) { return dbtCustOpen(d.tel, d.name); }
@@ -243,7 +239,6 @@ function dbtForm(rec) {
     { k: 'amt', l: 'المبلغ', t: 'tel', v: rec.amt || '' },
     { k: 'why', l: 'السبب', t: 'area', v: rec.why || '' }
   ]);
-  /* ربط الإكمال التلقائي لأسماء وأرقام الزبائن المسجلين */
   if (typeof rpDatalists == 'function' && $('sh')) {
     $('sh').insertAdjacentHTML('beforeend', rpDatalists());
     const nEl = $('f_name'), tEl = $('f_tel');
@@ -262,7 +257,6 @@ async function dbtSave(rec, v) {
   save(); render(); toast('تم تسجيل الدين', () => { S.debt = S.debt.filter(x => x.id != o.id); if (rec.rp) { const r = S.rp.find(x => x.id == rec.rp); if (r) delete r.debt; } });
 }
 const dbtAdd = () => dbtForm({}).then(v => dbtSave({}, v));
-/* دين جديد لزبون موجود: الاسم والهاتف يُملآن بلمسة واحدة من بطاقته */
 function dbtMore(id) { const d = S.debt.find(x => x.id == id); if (!d) return; const rec = { name: d.name, tel: d.tel || '' }; dbtForm(rec).then(v => dbtSave(rec, v)); }
 function dbtFromRp(id) {
   const r = S.rp.find(x => x.id == id); if (!r) return;
@@ -270,7 +264,6 @@ function dbtFromRp(id) {
   const rec = { name: r.name, tel: r.tel, amt: rest ? String(rest) : '', why: 'باقي إصلاح ' + (r.dev || ''), rp: r.id };
   dbtForm(rec).then(v => dbtSave(rec, v));
 }
-/* لا يظهر زر تسجيل الباقي كدين إلا إذا تم إصلاح الهاتف فعلاً (r.res == 'ok') */
 const dbtRp = r => {
   if (r.st != 'dn') return '';
   const ld = (S.debt || []).find(x => (r.debt && x.id == r.debt) || x.rp == r.id);
@@ -292,7 +285,6 @@ function dbtPay(id) {
     toast(dRem(d) <= 0 ? 'سُدِّد الدين كاملاً' : 'بقي ' + dRem(d), () => { Object.assign(d, JSON.parse(b)); if (!JSON.parse(b).paid) delete d.paid; });
   });
 }
-/* تسديد دفعة تُوزّع تلقائياً على كل ديون الزبون المفتوحة (الأقدم فالأحدث) */
 function dbtPayAll(id) {
   const d0 = S.debt.find(x => x.id == id); if (!d0) return;
   const list = dbtSameCust(d0).sort((a, b) => a.at - b.at);
@@ -313,7 +305,6 @@ function dbtPayAll(id) {
     toast('تم خصم الدفعة من ديون الزبون', () => { S.debt = JSON.parse(snapAll); });
   });
 }
-/* تذكير لبق عبر واتساب */
 function dbtWA(id) {
   const d = S.debt.find(x => x.id == id); if (!d) return;
   const send = tel => {
@@ -352,15 +343,15 @@ VW.dbt = () => {
     h: `<div class="qbar rsum" style="grid-template-columns:1fr 1fr"><div class="qpill wn"><div class="qn">${O0.length}</div><div class="ql">ديون مفتوحة</div></div><div class="qpill al"><div class="qn">${totOpen}</div><div class="ql">مجموع المتبقي (درهم)</div></div></div>`
       + `<button class="btn" onclick="dbtAdd()">+ دين جديد</button>`
       + `<input placeholder="ابحث باسم الزبون أو الهاتف أو السبب" value="${esc(V.q || '')}" oninput="V.q=this.value;dbtF()">`
-      + `<div><button class="tag ${tab == 'o' ? 'on' : ''}" onclick="V.tab='o';render()">مفتوحة (${O0.length})</button><button class="tag ${tab == 'p' ? 'on' : ''}" onclick="V.tab='p';render()">المسدَّدة</button></div>`
-      + `<div id="dbtl">${(tab == 'o' ? flt(O0) : flt(P0)).map(dbtCard).join('') || '<p class="m">لا توجد ديون</p>'}</div>`
+      + `<div class="sec-panel" style="padding:8px"><div class="sec-tags" style="border:0;padding:0"><button class="tag ${tab == 'o' ? 'on' : ''}" style="flex:1;justify-content:center" onclick="V.tab='o';render()">مفتوحة (${O0.length})</button><button class="tag ${tab == 'p' ? 'on' : ''}" style="flex:1;justify-content:center" onclick="V.tab='p';render()">المسدَّدة (${P0.length})</button></div></div>`
+      + `<div id="dbtl">${(tab == 'o' ? flt(O0) : flt(P0)).map(dbtCard).join('') || emptyBox('لا توجد ديون مسجلة هنا')}</div>`
   };
 };
 function dbtF() {
   const tab = V.tab || 'o', q = nz(V.q || '');
   const L = tab == 'o' ? S.debt.filter(d => !d.paid).sort((a, b) => b.at - a.at) : S.debt.filter(d => d.paid).sort((a, b) => b.paid - a.paid).slice(0, 40);
   const F = q ? L.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(q)) : L;
-  if ($('dbtl')) $('dbtl').innerHTML = F.map(dbtCard).join('') || '<p class="m">لا توجد ديون</p>';
+  if ($('dbtl')) $('dbtl').innerHTML = F.map(dbtCard).join('') || emptyBox('لا توجد ديون مطابقة');
 }
 
 /* ---------- الإحصائيات (مع تقسيم الأعطال المركبة بالفاصلة) ---------- */
@@ -377,7 +368,7 @@ VW.stat = () => {
   const In = days.map(d => [nm(d), S.rp.filter(r => r.t0 && dk(r.t0) == d.toDateString()).length]), Out = days.map(d => [nm(d), S.rp.filter(r => r.t2 && dk(r.t2) == d.toDateString()).length]);
   return {
     t: 'إحصائيات',
-    h: `<div>${[[7, 'أسبوع'], [30, 'شهر'], [90, '3 أشهر'], [0, 'الكل']].map(([v, l]) => `<button class="tag ${p == v ? 'on' : ''}" onclick="V.p=${v};render()">${l}</button>`).join('')}</div>`
+    h: `<div class="sec-panel" style="padding:8px"><div class="sec-tags" style="border:0;padding:0">${[[7, 'أسبوع'], [30, 'شهر'], [90, '3 أشهر'], [0, 'الكل']].map(([v, l]) => `<button class="tag ${p == v ? 'on' : ''}" style="flex:1;justify-content:center" onclick="V.p=${v};render()">${l}</button>`).join('')}</div></div>`
       + `<h3>أكثر الأعطال تكراراً</h3><div class="card">${stBars(F, 'لا توجد صيانات في هذه المدة')}</div>`
       + `<h3>أكثر ما يطلبه الزبائن ولا نملكه</h3><div class="card">${stBars(R, 'لا توجد طلبات حالياً')}</div>`
       + `<h3>الصيانات المستلمة آخر 7 أيام</h3><div class="card">${stBars(In, '')}</div>`
