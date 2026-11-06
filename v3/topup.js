@@ -167,21 +167,4 @@
     return `<button class="card tph row2" onclick="go('tp')"><span class="tpic">${ic('ctopup')}</span><div style="flex:1;min-width:0"><b>التعبئة</b><div class="m">${sub}</div></div></button>`;
   });
   MORE.push({ g: 'sec', o: 55, l: 'حدود التعبئة', d: 'حدود أرصدة الهواتف وبطاقات التعبئة وتذكير الصباح', fn: "go('st_tp')" });
-
-  /* ---------- أنماط CSS الخاصة بالتعبئة وأقسام التقرير الملوّنة ---------- */
-  const s = document.createElement('style');
-  s.textContent = `.tph{cursor:pointer;padding:12px 14px}.tph .tpic{width:2.7rem;height:2.7rem;border-radius:14px;background:var(--ab);color:var(--p);display:flex;align-items:center;justify-content:center;flex:none}
-.tpop{border-top:4px solid var(--oc);padding:12px 14px}.tpoh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.tpoh b{font-size:1.05rem;color:var(--oc)}
-.tpl{font-size:.9rem;color:var(--m);margin:10px 0 4px;font-weight:600}
-.tpr{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--b)}.tpr:last-child{border-bottom:0}
-.tpr.r{background:color-mix(in srgb,#dc2626 6%,transparent);margin-inline:-8px;padding-inline:8px;border-radius:10px}
-.tpr.y{background:color-mix(in srgb,#d97706 6%,transparent);margin-inline:-8px;padding-inline:8px;border-radius:10px}
-.tpn{flex:1;font-weight:600;font-size:1rem}.tpt{font-size:.82rem;font-weight:700;color:#dc2626}.tpr.y .tpt{color:#d97706}
-.tpd{min-width:56px;padding:4px 6px;border-radius:9px;background:color-mix(in srgb,var(--dc) 14%,var(--c));color:var(--dc);font-weight:800;font-size:1.08rem;text-align:center;line-height:1.15}
-.tpd small{display:block;font-size:.74rem;font-weight:600;opacity:.85}
-.tps{flex:1;min-height:46px;border-radius:10px;border:1px solid var(--b);background:var(--bg);color:var(--t);font:inherit;font-size:.92rem;font-weight:600;padding:0 4px;cursor:pointer}
-.tps.g.on{background:#16a34a;color:#fff;border-color:#16a34a}.tps.y.on{background:#d97706;color:#fff;border-color:#d97706}.tps.r.on{background:#dc2626;color:#fff;border-color:#dc2626}
-.tpi{width:80px;min-height:46px;padding:4px 6px;text-align:center;font-weight:700;border-radius:10px}.tpu{font-size:.86rem}
-.sch{color:var(--sc)!important;display:flex;align-items:center;gap:4px}.rlist.sx{border-inline-start:5px solid var(--sc)}`;
-  document.head.appendChild(s);
 })();

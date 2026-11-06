@@ -72,13 +72,18 @@ const CI = (() => {
   };
 })();
 
-(() => {
-  const s = document.createElement('style');
-  s.textContent = `.ic.ci{padding:0!important;background:none!important;border-radius:0!important}
-.sc .ic.ci,.cs2 .ic.ci{width:2.7rem;height:2.7rem}
-.btn .ic.s.ci{width:1.6em;height:1.6em;vertical-align:-.45em}
-.tph .tpic{background:none!important}.tph .tpic .ic.ci{width:2.7rem;height:2.7rem}
-nav button .ic.ci{width:2.2rem;height:2.2rem;opacity:.72;transition:transform .15s,opacity .15s}
-nav button.on .ic.ci{opacity:1;transform:scale(1.12)}`;
-  document.head.appendChild(s);
-})();
+/* ---------- أيقونات إضافية للعرض المضغوط والبيع السريع والروپريز (كانت في المخزون) ---------- */
+Object.assign(IC, {
+  rows: '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  cards: '<rect x="3" y="3" width="18" height="7" rx="1.5"/><rect x="3" y="14" width="18" height="7" rx="1.5"/>',
+  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  swap: '<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>'
+});
+
+/* ---------- أيقونة ملوّنة لقسم طلبات الزبائن (كانت في الإقلاع) ---------- */
+CI.creq = `<rect width="100" height="100" rx="22" fill="#E11D48"/>`
+  + `<path d="M22 24 H78 a8 8 0 0 1 8 8 V60 a8 8 0 0 1 -8 8 H46 L28 82 V68 H22 a8 8 0 0 1 -8 -8 V32 a8 8 0 0 1 8 -8 Z" fill="#FFF1F2"/>`
+  + `<rect x="28" y="36" width="32" height="6" rx="3" fill="#FB7185"/>`
+  + `<rect x="28" y="48" width="44" height="6" rx="3" fill="#FDA4AF"/>`
+  + `<circle cx="74" cy="26" r="14" fill="#FBBF24" stroke="#E11D48" stroke-width="3"/>`
+  + `<path d="M74 20 v12 M68 26 h12" stroke="#78350F" stroke-width="3.5" stroke-linecap="round"/>`;
