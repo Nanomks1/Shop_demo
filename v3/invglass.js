@@ -16,6 +16,33 @@ const gTyLim = ty => (S.cfg.gtl || {})[ty] ?? lim('gmin');   // مخزَّن ب�
 const gLim = (i, ty) => (i && i.min) ?? gTyLim(ty || (i && i.ty));
 const gSt = (i, g, ty) => { const t = gTot(i, g), m = gLim(i, ty); return t <= 0 ? 'r' : t < m ? 'y' : 'g'; };
 function glGet(gid, ty) { let i = gitem(gid, ty); if (!i) { const now = Date.now(); i = { id: uid(), sec: 'glass', gid, ty, stock: {}, lv: {}, by: S.me, at: now, cf: now }; S.items.push(i); } i.stock = i.stock || {}; return i; }
+
+/* دمج أي سجلات أنتي كاس مكررة لنفس المجموعة والنوع (من المزامنة) وتهيئة السجل الأساسي */
+function glDedup() {
+  const map = {};
+  S.items = S.items.filter(i => {
+    if (i.sec != 'glass' || !i.gid || !i.ty) return true;
+    const k = i.gid + '|' + i.ty, ex = map[k];
+    if (!ex) { map[k] = i; return true; }
+    ex.stock = ex.stock || {};
+    for (const m in (i.stock || {})) ex.stock[m] = Math.max(ex.stock[m] || 0, i.stock[m]);
+    if (i.lv) { ex.lv = ex.lv || {}; Object.assign(ex.lv, i.lv); }
+    if (ex.min == null && i.min != null) ex.min = i.min;
+    if (!ex.price && i.price) ex.price = i.price;
+    ex.at = Math.max(ex.at || 0, i.at || 0);
+    ex.cf = Math.max(cfTime(ex), cfTime(i));
+    return false;
+  });
+  const defTy = S.tags && S.tags.glass && S.tags.glass[0];
+  if (defTy) {
+    (S.gg || []).forEach(g => {
+      if (g && g.id && !S.tags.glass.some(t => gitem(g.id, t))) glGet(g.id, defTy);
+    });
+  }
+}
+HK.save.push(glDedup);
+glDedup();
+
 function glView() {
   const j = V.ty || 0, ty = S.tags.glass[j], it = g => gitem(g.id, ty);
   const a = srt(S.gg, 'glass', g => g.models[0] || '', g => { const i = it(g); return i ? gTot(i, g) : 0; }, g => { const i = it(g); return i ? i.at : 0; });
@@ -133,8 +160,10 @@ function glRm(gid) {
 }
 const gl2 = i => { const g = S.gg.find(x => x.id == i.gid); return g ? `<div class="card"><b>زجاج ${esc(i.ty)}: ${esc(g.models.join(' / '))}</b><div class="m">المجموع <bdi>${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · آخر تأكيد قبل ${Math.floor((Date.now() - cfTime(i)) / 864e5)} يوم</div></div>` : ''; };
 function buyG(id) {
-  const i = find(id), g = i && S.gg.find(x => x.id == i.gid); if (!i || !g) return;
+  let i = find(id);
+  const g = i ? S.gg.find(x => x.id == i.gid) : S.gg.find(x => x.id == id);
+  if (!g) return;
+  if (!i) i = glGet(g.id, S.tags.glass[0] || 'عادي');
   commit('تم الشراء', () => { i.lv = i.lv || {}; i.stock = i.stock || {}; for (const l of ['c', 'b', 'a']) { g.models.forEach(m => { if (mval(i, m) < lvN(l)) { i.lv[m] = l; delete i.stock[m]; } }); if (gSt(i, g, i.ty) == 'g') break; } touch(i, 1); });
   reqChk(g.models.join(' '));
 }
-

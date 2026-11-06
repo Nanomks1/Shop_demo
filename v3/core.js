@@ -9,6 +9,7 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+const vib = (ms = 25) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { } };
 /* أرقام عربية→لاتينية، وتطبيع أرقام الهاتف لواتساب (يقبل 0612…، +212…، 00212…، 612… ) */
 const dg = s => String(s ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 const waNum = t => { const d = dg(t).replace(/\D/g, ''); if (d.startsWith('00')) return d.slice(2); if (d.startsWith('2120')) return '212' + d.slice(4); if (d[0] == '0') return '212' + d.slice(1); if (d.length == 9 && /^[567]/.test(d)) return '212' + d; return d; };
@@ -219,7 +220,11 @@ function toast(msg, undo, ms) {
 }
 
 /* ---------- التنقل وزر الرجوع ---------- */
-function go(v, p) { V = { v, ...p }; Q = ''; QP = 0; history.pushState({ V }, ''); render(); }
+function go(v, p) {
+  V = { v, ...p }; Q = ''; QP = 0; history.pushState({ V }, ''); render();
+  const m = $('m'); if (m) { m.classList.remove('vw-in'); void m.offsetWidth; m.classList.add('vw-in'); }
+  scrollTo(0, 0);
+}
 addEventListener('popstate', e => {
   const s = e.state || {};
   if (SH) { hideSheet(); return; }
@@ -298,8 +303,16 @@ function commit(label, fn) {
   toast(label, () => {
     const o = JSON.parse(b);
     S.items = o.items; S.req = o.req; S.tags = o.tags; S.cfg = o.cfg || S.cfg; S.gg = o.gg; S.guide = o.guide; S.ag = o.ag; S.debt = o.debt || S.debt; S.tp = o.tp || S.tp; S.fields = o.fields || S.fields;
-    S.used = (o.used || []).map(u => { const m = im[u.id]; if (m && m[1] && !IMG[u.id]) putImg(u.id, m[1]); return { ...u, img: m && m[0] ? 'idb:' + u.id : '' }; });
-    S.rp = o.rp.map(r => { const m = im[r.id]; if (m && m[1] && !IMG[r.id]) putImg(r.id, m[1]); return { ...r, img: m && m[0] ? 'idb:' + r.id : '' }; });
+    const fixIm = r => {
+      const m = im[r.id];
+      if (m && m[1]) { if (IMG[r.id] !== m[1]) putImg(r.id, m[1]); }
+      else if (IMG[r.id]) delImg(r.id);
+      return { ...r, img: m && m[0] ? 'idb:' + r.id : '' };
+    };
+    S.used = (o.used || []).map(fixIm);
+    S.rp = o.rp.map(fixIm);
+    const keep = new Set([...S.rp.map(r => r.id), ...S.used.map(u => u.id), ...(S.trash || []).map(t => t.obj && t.obj.id)]);
+    Object.keys(IMG).forEach(id => { if (!keep.has(id)) delImg(id); });
   });
 }
 function del(coll, id, label) {

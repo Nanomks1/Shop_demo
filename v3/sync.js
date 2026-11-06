@@ -8,7 +8,7 @@ const SY_ARR=['items','rp','req','gg','guide','fields','ag','used','debt','tp'],
 const SYM={off:'متوقفة',ok:'متصلة',busy:'جارٍ المزامنة…',offline:'لا يوجد إنترنت (سيُعاد المحاولة)',err:'خطأ'};
 let SYS={st:'off',msg:'',busy:false,key:null,last:null,t:0,rr:0,again:0},SYR='first';
 const syLS=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
-const syCfg=()=>syLS('shopSyncCfg')||{},syStt=()=>syLS('shopSyncSt')||{cur:SY_E0,base:{},dt:{}},syPut2=s=>localStorage.setItem('shopSyncSt',JSON.stringify(s));
+const syCfg=()=>syLS('shopSyncCfg')||{},syStt=()=>syLS('shopSyncSt')||{cur:SY_E0,curM:SY_E0,base:{},dt:{}},syPut2=s=>localStorage.setItem('shopSyncSt',JSON.stringify(s));
 const syH=s=>{let a=0xdeadbeef,b=0x41c6ce57;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677)}a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);return(4294967296*(2097151&b)+(a>>>0)).toString(36)};
 
 /* التشفير: AES-GCM بمفتاح مشتق من رمز المحل (يُحفظ كمفتاح مشتق JWK في الذاكرة لسرعة فائقة) */
@@ -43,7 +43,7 @@ function syCollect(){const m={};SY_ARR.forEach(c=>(S[c]||[]).forEach(r=>{if(r&&r
 const syImgStub=id=>({l:IMG[id].length,t:IMG[id].slice(-24)});
 function syApplyImg(r,k,val,st,cm){const pid=String(r.id).slice(4),rr=S.rp.find(x=>x.id==pid)||(S.used||[]).find(x=>x.id==pid);
 if(val===null){if(IMG[pid]){delete IMG[pid];MEDIA.del(pid).catch(()=>{})}delete cm[k];st.base[k]={h:'',ts:r.ts,d:1};return 1}
-IMG[pid]=val;MEDIA.put(pid,val).catch(e=>errLog('حفظ صورة: '+(e&&e.message||e)));if(rr)rr.img=val;
+IMG[pid]=val;MEDIA.put(pid,val).catch(e=>errLog('حفظ صورة: '+(e&&e.message||e)));if(rr)rr.img='idb:'+pid;
 const sb=syImgStub(pid);cm[k]=sb;st.base[k]={h:syH(JSON.stringify(sb)),ts:r.ts};return 1}
 
 /* دمج الوسوم بالجمع عند التزامن المتوازي بين هاتفين */
@@ -80,6 +80,19 @@ function syFixTickets(){
   if(S.cfg&&maxSeq>(S.cfg.tkSeq||0))S.cfg.tkSeq=maxSeq;
 }
 
+/* التحقق من صلاحية المستخدم النشط بعد المزامنة */
+function syCheckUser(){
+  if(!Array.isArray(S.users)||!S.users.length)return;
+  let u=S.users.find(x=>x.name==S.me);
+  if(!u){
+    u=S.users.find(x=>x.admin)||S.users[0];
+    S.me=u?u.name:'';
+    if(typeof admSet=='function')admSet(false);
+  }else if(!u.admin&&typeof admOk=='function'&&admOk()){
+    admSet(false);
+  }
+}
+
 /* اكتشاف التغييرات المحلية (لا يُستدعى إلا عند وجود تعديل فعلي) */
 function syMark(){const c=syCfg();if(!c.on)return;const st=syStt(),cur=syCollect(),n=Date.now();let ch=0;
 for(const k in cur){const h=syH(JSON.stringify(cur[k])),b=st.base[k];if(!b||b.h!==h){if(!st.dt[k]){st.dt[k]=n;ch=1}}else if(st.dt[k]){delete st.dt[k];ch=1}}
@@ -96,7 +109,27 @@ cm[k]=val===null?undefined:(k=='one/cfg'?(()=>{const v={...S.cfg};SY_LOC.forEach
 const newH=val===null?'':syH(JSON.stringify(cm[k]));
 if(k=='one/tags'){st.tagSnap=JSON.parse(JSON.stringify(S.tags));if(val&&newH!==syH(JSON.stringify(val)))st.dt[k]=Date.now()}
 st.base[k]=val===null?{h:'',ts:r.ts,d:1}:{h:k=='one/tags'&&val?syH(JSON.stringify(val)):newH,ts:r.ts};return 1}
-async function syPull(st,force){let n=0;const cm=syCollect();for(;;){const rows=await syReq('records?srv=gt.'+encodeURIComponent(st.cur)+'&order=srv.asc&limit=20');for(const r of rows)n+=await syApply(r,st,cm,force);if(rows.length)st.cur=rows[rows.length-1].srv;syPut2(st);if(rows.length<20)break}return n}
+
+/* سحب سريع: السجلات النصية بدفعات كبيرة (200) والصور بدفعات خفيفة (12) */
+async function syPull(st,force){
+  let n=0;const cm=syCollect();
+  if(!st.curM)st.curM=st.cur||SY_E0;
+  for(;;){
+    const rows=await syReq('records?coll=neq.meta&srv=gt.'+encodeURIComponent(st.cur)+'&order=srv.asc&limit=200');
+    for(const r of rows)n+=await syApply(r,st,cm,force);
+    if(rows.length)st.cur=rows[rows.length-1].srv;
+    syPut2(st);
+    if(rows.length<200)break;
+  }
+  for(;;){
+    const rows=await syReq('records?coll=eq.meta&srv=gt.'+encodeURIComponent(st.curM)+'&order=srv.asc&limit=12');
+    for(const r of rows)n+=await syApply(r,st,cm,force);
+    if(rows.length)st.curM=rows[rows.length-1].srv;
+    syPut2(st);
+    if(rows.length<12)break;
+  }
+  return n;
+}
 
 /* دورة المزامنة */
 async function syNow(){const c=syCfg();if(!c.on||LOAD_BAD)return;if(SYS.busy){SYS.again=1;return}
@@ -112,12 +145,12 @@ for(const k in st.base){if(!(k in cur)&&!st.base[k].d){const[cc,id]=k.split('/')
 const dl=rows.filter(r=>r.deleted&&r.coll!='meta').length,tot=Object.keys(st.base).filter(k=>!st.base[k].d&&!k.startsWith('meta/')).length;
 if(dl>=10&&dl>tot*0.5&&!SYS.okDel){SYS.big=dl;SYS.busy=false;syStat('err','توقفت المزامنة حمايةً: اختفى '+dl+' سجلاً من هذا الجهاز');return}
 SYS.big=0;
-const lost=[];const BT=[];{let cb=[],sz=0;for(const r of rows){const l=(r.data||'').length;if(cb.length&&(cb.length>=20||sz+l>300000)){BT.push(cb);cb=[];sz=0}cb.push(r);sz+=l}if(cb.length)BT.push(cb)}
+const lost=[];const BT=[];{let cb=[],sz=0;for(const r of rows){const l=(r.data||'').length;if(cb.length&&(cb.length>=40||sz+l>300000)){BT.push(cb);cb=[];sz=0}cb.push(r);sz+=l}if(cb.length)BT.push(cb)}
 for(const b of BT){const res=await syReq('records?on_conflict=coll,id&select=coll,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(b.map(({_k,_h,_d,...r})=>r))}),ok=new Set(res.map(x=>x.coll+'/'+x.id));
 for(const r of b){st.base[r._k]=r._d?{h:'',ts:r.ts,d:1}:{h:r._h,ts:r.ts};if(r._k=='one/tags')st.tagSnap=JSON.parse(JSON.stringify(S.tags));delete st.dt[r._k];if(!ok.has(r._k))lost.push(r)}syPut2(st)}
 const cm=syCollect();for(const r of lost){const g=await syReq('records?coll=eq.'+encodeURIComponent(r.coll)+'&id=eq.'+encodeURIComponent(r.id));if(g[0])chg+=await syApply(g[0],st,cm,true)}
 chg+=await syPull(st,false);for(const k in st.base){if(k.startsWith('meta/img:')&&st.base[k].d&&n-st.base[k].ts>90*864e5)delete st.base[k]}syPut2(st);
-if(chg){syFixTickets();if(typeof cleanOldRpMedia=='function')cleanOldRpMedia();save();window._syDirty=0;syRender()}
+if(chg){syFixTickets();syCheckUser();if(typeof glDedup=='function')glDedup();if(typeof cleanOldRpMedia=='function')cleanOldRpMedia();save();window._syDirty=0;syRender()}
 SYS.okDel=0;SYS.last=Date.now();syStat('ok')}catch(e){syStat(e.code=='auth'?'err':((e instanceof TypeError||e.name=='AbortError')?'offline':'err'),e.code=='auth'?'انتهت الجلسة أو بيانات الدخول خاطئة (أعد إدخال كلمة السر)':e.code=='enc'?'رمز التشفير لا يطابق رمز المحل':(e instanceof TypeError||e.name=='AbortError')?'':'تعذّرت المزامنة ('+(e.code||e.message)+')')}
 SYS.busy=false;if(SYS.again){SYS.again=0;syKick()}}
 function syKick(now){clearTimeout(SYS.t);SYS.t=setTimeout(syNow,now===true?0:1500)}
@@ -145,7 +178,7 @@ try{
     if(!S.items.length&&!S.rp.length&&!(S.req||[]).length&&!(S.gg||[]).length){v={...v,r:'extra'};toast('المحل يحتوي بيانات: سيُحمَّل هذا الجهاز كجهاز إضافي')}
     else if(!(await sure('المحل يحتوي بيانات سابقة. رفع بيانات هذا الجهاز قد يستبدل الموظفين ورمز المدير والإعدادات على كل الأجهزة. هل تريد المتابعة؟','متابعة والرفع',false)))throw 'cancel';
   }
-  if(v.r=='extra'){await snapPre();SY_ARR.forEach(c=>{S[c]=[]})}syPut2({cur:SY_E0,base:{},dt:{},fresh:v.r=='extra'?1:0,tagSnap:JSON.parse(JSON.stringify(S.tags))});save();syKick(true);toast('بدأت المزامنة بأمان')
+  if(v.r=='extra'){await snapPre();SY_ARR.forEach(c=>{S[c]=[]})}syPut2({cur:SY_E0,curM:SY_E0,base:{},dt:{},fresh:v.r=='extra'?1:0,tagSnap:JSON.parse(JSON.stringify(S.tags))});save();syKick(true);toast('بدأت المزامنة بأمان')
 }catch(e){
   if(old)localStorage.setItem('shopSyncCfg',old);else localStorage.removeItem('shopSyncCfg');
   if(oldTok)localStorage.setItem('shopSyncTok',oldTok);

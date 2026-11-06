@@ -32,7 +32,7 @@ function secSub(k) {
 const secGo = k => k == 'tp' ? "go('tp')" : k == 'req' ? "go('req')" : `go('sec',{k:'${k}'})`;
 
 /* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري (بدون تكرار) ---------- */
-let SC = '';   // نطاق البحث الحالي
+let SC = '', SQ_T = 0;   // نطاق البحث الحالي + مؤقت تهدئة الكتابة
 const scopeChips = () => [['', 'الكل'], ...SRCH.map(p => [p.k, p.l])].map(([k, l]) => `<button class="tag ${SC == k ? 'on' : ''}" onclick="scSet('${k}')">${l}</button>`).join('');
 /* مصادر بحث إضافية: الصيانة، طلبات الزبائن، دليل أسعار الإصلاح */
 SRCH.push(
@@ -40,7 +40,7 @@ SRCH.push(
   { k: 'req', l: 'طلبات الزبائن', run: n => S.req.filter(q => nz(q.t).includes(n)).slice(0, 20).map(q => typeof rqCard == 'function' ? rqCard(q) : `<div class="card"><div class="m">${fd(q.at)} · ${esc(q.by || '')}</div><div>${esc(q.t)}</div><div class="sub">${rqTel(q.t) ? `<button class="btn s sm" onclick="rqWA('${q.id}')">واتساب</button>` : ''}<button class="btn s sm" onclick="rqD('${q.id}')">مسح</button></div></div>`) },
   { k: 'gd', l: 'أسعار الإصلاح', run: n => S.guide.filter(g => nz(g.m + ' ' + g.f + ' ' + (g.n || '')).includes(n)).slice(0, 20).map(gdCard) }
 );
-function scSet(k) { SC = k; const b = $('sc'); if (b) b.innerHTML = scopeChips(); sq(Q); }
+function scSet(k) { SC = k; const b = $('sc'); if (b) b.innerHTML = scopeChips(); sq(Q, 1); }
 
 function srch(q) {
   const n = nz(q); if (!n) return '';
@@ -56,17 +56,20 @@ function srch(q) {
   });
   return o.join('') || emptyBox('لا توجد نتائج مطابقة لبحثك');
 }
-function sq(q) {
+function sq(q, now) {
   if (q && !QP) { QP = 1; history.pushState({ V, q: 1 }, ''); }
   Q = q;
   const hasQ = !!(q && String(q).trim());
   const cBtn = $('q_clr'); if (cBtn) cBtn.hidden = !hasQ;
-  const r = $('res'); if (r) r.innerHTML = hasQ ? srch(q) : '';
   const hm = $('hm'); if (hm) hm.hidden = hasQ;
+  clearTimeout(SQ_T);
+  const run = () => { const r = $('res'); if (r) r.innerHTML = hasQ ? srch(q) : ''; };
+  if (!hasQ || now) run();
+  else SQ_T = setTimeout(run, 90);
 }
 function qClear() {
   const i = $('q_inp'); if (i) { i.value = ''; i.focus(); }
-  sq('');
+  sq('', 1);
 }
 function goSearch() { go('home'); setTimeout(() => { const i = $('q_inp') || document.querySelector('main input'); if (i) i.focus(); }, 60); }
 
@@ -99,8 +102,7 @@ VW.home = () => {
   const call = L => L.map(f => f()).join('');
   const T = HOME.tools.map(f => f()), A = HOME.after.map(f => f());
   const scan = T.filter(h => h.includes('bcHome()')).join('').replace('بيع سريع −1', 'بيع سريع (خصم 1)');
-  /* التعبئة أصبحت داخل شبكة الأقسام لذلك نستثني بطاقتها العريضة المكررة (tph) */
-  const more = T.filter(h => !h.includes('bcHome()')).join('') + A.filter(h => !h.includes('tph')).join('');
+  const more = T.filter(h => !h.includes('bcHome()')).join('') + A.join('');
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
@@ -110,7 +112,7 @@ VW.home = () => {
       + '<h3>الأقسام</h3>'
       + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`
       + more + '</div>',
-    a: () => sq(Q)
+    a: () => sq(Q, 1)
   };
 };
 
@@ -327,4 +329,3 @@ VW.st_trash = () => ({
   t: 'المحذوفات (30 يوماً)',
   h: S.trash.map(t => `<div class="card row2"><div style="flex:1"><b>${esc(t.label)}</b><div class="m"><bdi>${fd(t.t)}</bdi></div></div><button class="btn s sm" onclick="restore('${t.id}')">استرجاع</button></div>`).join('') || emptyBox('سلة المحذوفات فارغة')
 });
-

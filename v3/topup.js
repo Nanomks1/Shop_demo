@@ -2,7 +2,6 @@
    topup.js — التعبئة: أرصدة هواتف التعبئة (3 لكل شركة) وبطاقات التعبئة (5/10/20/50)
    لشركات IAM و ORANGE و INWI. يُحمَّل بعد core.js مباشرة.
    البيانات: S.tp (سجل لكل رصيد/فئة، يُزامَن) · الحدود: S.cfg.tp.
-   يضيف أيضاً أنماط CSS الخاصة به وبأقسام التقرير الملوّنة (حقن تلقائي).
    ============================================================ */
 (() => {
   Object.assign(IC, { topup: '<path d="M5 20v-4M10 20v-8M15 20V8M20 20V4"/>' });
@@ -36,7 +35,7 @@
   function put(op, k, n, v, est, now) {
     let r = rec(op, k, n);
     if (!r) { r = { id: rid(op, k, n), op, k, n }; T().push(r); }
-    r.val = v; r.est = est ? 1 : 0; r.at = Date.now(); r.by = S.me || '';
+    r.val = v; r.est = est ? 1 : 0; r.at = r.cf = Date.now(); r.by = S.me || '';
     clearTimeout(svT);
     if (now) save();
     else svT = setTimeout(save, 150);   // الحفظ بعد الرسم حتى لا يتأخر الضغط
@@ -158,13 +157,6 @@
   HOME.top.push(() => {
     if ((typeof noRem == 'function' && noRem()) || new Date().getHours() < cf().rh || phDone() >= OPS.length * PH.length || S.cfg.tx == new Date().toDateString()) return '';
     return `<div class="card row2">${I('alert')}<span style="flex:1">لم تُسجَّل أرصدة التعبئة اليوم</span><button class="btn sm" onclick="go('tp')">سجّل الآن</button><button class="btn s sm" aria-label="لا تسجيل اليوم" onclick="tpSkip()">✕</button></div>`;
-  });
-  HOME.after.push(() => {
-    const t = tally(), p = [];
-    if (t.r) p.push(`<span class="dotl" style="background:${DT.r};margin-inline-end:4px"></span>${t.r} نافد`);
-    if (t.y) p.push(`<span class="dotl" style="background:${DT.y};margin-inline-end:4px"></span>${t.y} قارب`);
-    const sub = p.length ? p.join(' · ') : (t.g ? 'كل الأرصدة والبطاقات متوفرة' : 'اضغط لتسجيل الأرصدة والبطاقات');
-    return `<button class="card tph row2" onclick="go('tp')"><span class="tpic">${ic('ctopup')}</span><div style="flex:1;min-width:0"><b>التعبئة</b><div class="m">${sub}</div></div></button>`;
   });
   MORE.push({ g: 'sec', o: 55, l: 'حدود التعبئة', d: 'حدود أرصدة الهواتف وبطاقات التعبئة وتذكير الصباح', fn: "go('st_tp')" });
 })();

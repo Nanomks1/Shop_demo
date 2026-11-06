@@ -84,13 +84,14 @@ function csView() {
   const allCs = S.items.filter(i => i.sec == 'case'), totPcs = allCs.reduce((s, i) => s + csTot(i), 0), lowCnt = allCs.filter(i => csSt(i) != 'g').length;
   let a = srt(allCs, 'case', i => i.name, csTot, i => i.at);
   if (V.cf) a = a.filter(i => csSt(i) != 'g');
+  const pg = pgSlice('cs', a);
   const tagsHtml = `<button class="tag ${!V.cf ? 'on' : ''}" onclick="V.cf=0;render()">الكل (${allCs.length} موديل · ${totPcs} قطعة)</button>`
     + `<button class="tag ${V.cf ? 'on' : ''}" onclick="V.cf=1;render()">يحتاج شراء (${lowCnt})</button>`;
   return {
     t: 'البوشيط',
     h: `<button class="btn" onclick="csAdd()">+ إضافة موديل بوشيط</button>`
       + secPanel('case', tagsHtml)
-      + (a.map(csCard).join('') || emptyBox('لا توجد موديلات بوشيط في هذا الفلتر', 'اضغط على «+ إضافة موديل بوشيط» في الأعلى لإضافة أول موديل'))
+      + (pg.items.map(csCard).join('') + pg.more || emptyBox('لا توجد موديلات بوشيط في هذا الفلتر', 'اضغط على «+ إضافة موديل بوشيط» في الأعلى لإضافة أول موديل'))
   };
 }
 function csC(id, vid, d) { const it = find(id), x = it.v.find(y => y.id == vid); upd(() => { x.n = Math.max(0, x.n + d); touch(it); }); if (d > 0) reqChk('بوشيط ' + it.name); }
@@ -200,4 +201,3 @@ function buyC(id) {
     i.need = ''; touch(i, 1); reqChk('بوشيط ' + i.name, 1);
   });
 }
-

@@ -179,12 +179,14 @@ function usInv(id) {
   const noteText = [u.note || '', buyHint].filter(Boolean).join(' · ');
   sheetOpen(v => {
     if (!v) return;
+    delete v._more;
     phDone(v, PR);
     const added = S.items.filter(x => x.sec == 'phones' && x.brand == v.brand && nz(x.name) == nz(v.name)).sort((a, b) => (b.at || 0) - (a.at || 0))[0];
     u.inv = 1; if (added) u.invId = added.id;
     save(); render();
   });
-  phForm({ brand: br, name: nm, imei: u.imei || '', price: '', note: noteText, cond: 'مستعمل', cnt: 1 });
+  phForm({ brand: br, name: nm, imei: u.imei || '', price: '', note: noteText, cond: 'مستعمل', cnt: 1, _fromUsed: 1 });
+  $('sh').querySelectorAll('button[onclick^="phSave("]').forEach(b => b.remove());
   if (u.price && $('pp')) $('pp').placeholder = 'اكتب سعر البيع (اشتريته بـ ' + u.price + ')';
 }
 window.usFromRep = function (itemId) {
@@ -203,20 +205,20 @@ const usedCard = u => {
     + `<div class="sub">${inInv ? '' : `<button class="btn s sm" onclick="usInv('${u.id}')">إدخال للمخزون</button>`}<button class="btn s sm" onclick="usEd('${u.id}')">تعديل</button><button class="btn s sm" onclick="usDel('${u.id}')">حذف</button></div></div>`;
 };
 const usMatch = (u, n) => nz([u.dev, u.name, u.cin, u.tel, u.imei, u.note, u.repTxt].join(' ')).includes(n);
-VW.usd = () => {
+function usListHtml() {
   const L = S.used.slice().sort((a, b) => b.at - a.at), n = nz(V.q || '');
   const F = n ? L.filter(u => usMatch(u, n)) : L;
-  return {
-    t: 'شراء المستعمل',
-    h: `<button class="btn" onclick="usAdd()">+ تسجيل شراء هاتف مستعمل</button>`
-      + `<input placeholder="ابحث بالاسم، رقم البطاقة CIN، IMEI أو الموديل" value="${esc(V.q || '')}" oninput="V.q=this.value;usF()">`
-      + `<div id="usl">${F.slice(0, 60).map(usedCard).join('') || emptyBox('لا توجد سجلات شراء مستعمل بعد', 'اضغط على «+ تسجيل شراء هاتف مستعمل» في الأعلى')}</div>`
-  };
-};
-function usF() {
-  const n = nz(V.q || ''), L = S.used.slice().sort((a, b) => b.at - a.at).filter(u => !n || usMatch(u, n));
-  $('usl').innerHTML = L.slice(0, 60).map(usedCard).join('') || emptyBox('لا توجد سجلات مطابقة');
+  if (!F.length) return emptyBox(n ? 'لا توجد سجلات مطابقة' : 'لا توجد سجلات شراء مستعمل بعد', n ? '' : 'اضغط على «+ تسجيل شراء هاتف مستعمل» في الأعلى');
+  const limN = V.lim || 40, rem = F.length - limN;
+  return F.slice(0, limN).map(usedCard).join('') + (rem > 0 ? `<button class="btn s" onclick="V.lim=(V.lim||40)+40;usF()">عرض المزيد (+${Math.min(40, rem)} من ${rem} متبقية)</button>` : '');
 }
+VW.usd = () => ({
+  t: 'شراء المستعمل',
+  h: `<button class="btn" onclick="usAdd()">+ تسجيل شراء هاتف مستعمل</button>`
+    + `<input placeholder="ابحث بالاسم، رقم البطاقة CIN، IMEI أو الموديل" value="${esc(V.q || '')}" oninput="V.q=this.value;V.lim=40;usF()">`
+    + `<div id="usl">${usListHtml()}</div>`
+});
+function usF() { if ($('usl')) $('usl').innerHTML = usListHtml(); }
 
 /* ---------- الديون (مع التجميع وتذكير الواتساب والربط الحي مع الصيانة) ---------- */
 const dRem = d => Math.max(0, xn(d.amt) - (d.pays || []).reduce((a, p) => a + xn(p[1]), 0));
@@ -332,27 +334,29 @@ const dbtCard = d => {
     + `<div class="m">${fd(d.at)} · ${esc(d.by || '')}${(d.pays || []).length ? ' · دفعات: ' + d.pays.length : ''}${open && rem < xn(d.amt) ? ' · من أصل ' + esc(d.amt) : ''}${d.paid ? ' · سُدِّد ' + fd(d.paid) : ''}</div>`
     + `<div class="sub">${open ? `<button class="btn sm" onclick="dbtPay('${d.id}')">تسجيل دفعة</button>${same.length > 1 ? `<button class="btn s sm" onclick="dbtPayAll('${d.id}')">دفعة من الإجمالي</button>` : ''}<button class="btn s sm" onclick="dbtWA('${d.id}')">${I('send')} تذكير واتساب</button>` : ''}<button class="btn s sm" onclick="dbtMore('${d.id}')">+ دين جديد له</button><button class="btn s sm" onclick="dbtDel('${d.id}')">حذف</button></div></div>`;
 };
-VW.dbt = () => {
+function dbtListHtml() {
   const tab = V.tab || 'o', q = nz(V.q || '');
-  const O0 = S.debt.filter(d => !d.paid).sort((a, b) => b.at - a.at);
-  const P0 = S.debt.filter(d => d.paid).sort((a, b) => b.paid - a.paid).slice(0, 40);
+  const L = tab == 'o' ? S.debt.filter(d => !d.paid).sort((a, b) => b.at - a.at) : S.debt.filter(d => d.paid).sort((a, b) => b.paid - a.paid);
+  const F = q ? L.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(q)) : L;
+  if (!F.length) return emptyBox(q ? 'لا توجد ديون مطابقة' : 'لا توجد ديون مسجلة هنا');
+  const limN = V.lim || 40, rem = F.length - limN;
+  return F.slice(0, limN).map(dbtCard).join('') + (rem > 0 ? `<button class="btn s" onclick="V.lim=(V.lim||40)+40;dbtF()">عرض المزيد (+${Math.min(40, rem)} من ${rem} متبقية)</button>` : '');
+}
+VW.dbt = () => {
+  const tab = V.tab || 'o';
+  const O0 = S.debt.filter(d => !d.paid);
+  const P0 = S.debt.filter(d => d.paid);
   const totOpen = O0.reduce((s, d) => s + dRem(d), 0);
-  const flt = L => q ? L.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(q)) : L;
   return {
     t: 'الديون',
     h: `<div class="qbar rsum" style="grid-template-columns:1fr 1fr"><div class="qpill wn"><div class="qn">${O0.length}</div><div class="ql">ديون مفتوحة</div></div><div class="qpill al"><div class="qn">${totOpen}</div><div class="ql">مجموع المتبقي (درهم)</div></div></div>`
       + `<button class="btn" onclick="dbtAdd()">+ دين جديد</button>`
-      + `<input placeholder="ابحث باسم الزبون أو الهاتف أو السبب" value="${esc(V.q || '')}" oninput="V.q=this.value;dbtF()">`
-      + `<div class="sec-panel" style="padding:8px"><div class="sec-tags" style="border:0;padding:0"><button class="tag ${tab == 'o' ? 'on' : ''}" style="flex:1;justify-content:center" onclick="V.tab='o';render()">مفتوحة (${O0.length})</button><button class="tag ${tab == 'p' ? 'on' : ''}" style="flex:1;justify-content:center" onclick="V.tab='p';render()">المسدَّدة (${P0.length})</button></div></div>`
-      + `<div id="dbtl">${(tab == 'o' ? flt(O0) : flt(P0)).map(dbtCard).join('') || emptyBox('لا توجد ديون مسجلة هنا')}</div>`
+      + `<input placeholder="ابحث باسم الزبون أو الهاتف أو السبب" value="${esc(V.q || '')}" oninput="V.q=this.value;V.lim=40;dbtF()">`
+      + `<div class="sec-panel" style="padding:8px"><div class="sec-tags" style="border:0;padding:0"><button class="tag ${tab == 'o' ? 'on' : ''}" style="flex:1;justify-content:center" onclick="V.tab='o';V.lim=40;render()">مفتوحة (${O0.length})</button><button class="tag ${tab == 'p' ? 'on' : ''}" style="flex:1;justify-content:center" onclick="V.tab='p';V.lim=40;render()">المسدَّدة (${P0.length})</button></div></div>`
+      + `<div id="dbtl">${dbtListHtml()}</div>`
   };
 };
-function dbtF() {
-  const tab = V.tab || 'o', q = nz(V.q || '');
-  const L = tab == 'o' ? S.debt.filter(d => !d.paid).sort((a, b) => b.at - a.at) : S.debt.filter(d => d.paid).sort((a, b) => b.paid - a.paid).slice(0, 40);
-  const F = q ? L.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(q)) : L;
-  if ($('dbtl')) $('dbtl').innerHTML = F.map(dbtCard).join('') || emptyBox('لا توجد ديون مطابقة');
-}
+function dbtF() { if ($('dbtl')) $('dbtl').innerHTML = dbtListHtml(); }
 
 /* ---------- الإحصائيات (مع تقسيم الأعطال المركبة بالفاصلة) ---------- */
 const stCnt = (arr, f) => { const m = {}; arr.forEach(x => { const k = f(x); if (k) m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };

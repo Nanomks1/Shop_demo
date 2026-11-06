@@ -30,6 +30,7 @@ function acCard(i) {
 function acView() {
   const j = V.kk, k = j == null ? null : S.tags.kind[j];
   const a = srt(S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && (k == null || i.kind == k)), 'acc', acName, i => ({ r: 0, y: 1, g: 2 })[acSt(i)], i => i.at);
+  const pg = pgSlice('ac', a);
   const G = agList().filter(d => k == null || d.kind == k).map(agCard).join('');
   const tagsHtml = `<button class="tag ${j == null ? 'on' : ''}" onclick="V.kk=null;render()">الكل</button>`
     + S.tags.kind.map((t, x) => `<button class="tag ${j == x ? 'on' : ''}" onclick="V.kk=${x};render()">${esc(t)}</button>`).join('');
@@ -37,7 +38,7 @@ function acView() {
     t: 'الإكسسوارات',
     h: `<button class="btn" onclick="acAdd()">+ إضافة إكسسوار</button>`
       + secPanel('acc', tagsHtml)
-      + G + (a.map(acCard).join('') || (G ? '' : emptyBox('لا توجد إكسسوارات في هذا القسم بعد', 'اضغط على «+ إضافة إكسسوار» في الأعلى لإضافة أول قطعة')))
+      + G + (pg.items.map(acCard).join('') + pg.more || (G ? '' : emptyBox('لا توجد إكسسوارات في هذا القسم بعد', 'اضغط على «+ إضافة إكسسوار» في الأعلى لإضافة أول قطعة')))
   };
 }
 function acC(id, d) { const i = find(id); upd(() => { i.cnt = Math.max(0, i.cnt + d); touch(i); }); if (d > 0) reqChk(acName(i)); }
@@ -147,4 +148,3 @@ function agDel(e) {
     });
   });
 }
-

@@ -13,9 +13,9 @@ function invLines(notes = true) {
   S.gg.forEach(g => {
     const hasAny = S.tags.glass.some(t => gitem(g.id, t));
     S.tags.glass.forEach((t, idx) => {
-      let i = gitem(g.id, t);
-      if (!i && !hasAny && idx === 0) i = glGet(g.id, t);
+      const i = gitem(g.id, t);
       if (i && gSt(i, g, t) != 'g') L.push(['الأنتي كاس', t + ': ' + g.models.join(' / ') + ' — المجموع ' + (gEst(i, g) ? '≈' : '') + gTot(i, g), gSt(i, g, t), `buyG('${i.id}')`]);
+      else if (!i && !hasAny && idx === 0) L.push(['الأنتي كاس', t + ': ' + g.models.join(' / ') + ' — المجموع 0', 'r', `buyG('${g.id}')`]);
     });
   });
   S.items.filter(i => i.sec == 'case' && csSt(i) != 'g').forEach(i => {
@@ -37,4 +37,3 @@ SRCH.push(
   { k: 'acc', l: 'إكسسوارات', run: n => S.items.filter(i => i.sec == 'acc' && nzOf(i, nzText).includes(n)).slice(0, 30).map(acCard) }
 );
 VW.sec = () => ({ phones: phView, glass: glView, case: csView, acc: acView }[V.k] || phView)();
-

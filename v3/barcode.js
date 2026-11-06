@@ -8,8 +8,9 @@ let BS = null, BI = 0, BCODE = '', BDP = null, BC_AC = null, BC_LAST = { c: '', 
 const BCX = [], BCM = [];   // ملف الصيانة والمستعمل يضيفان أزراراً (BCX) ونتائج مطابقة (BCM)
 function bcStop() { clearInterval(BI); if (BS) { BS.getTracks().forEach(t => t.stop()); BS = null; } }
 
-/* نغمة صوتية قصيرة (Beep) عند المسح بدون ملفات صوتية خارجية */
+/* نغمة صوتية قصيرة (Beep) + اهتزاز لمسي خفيف عند المسح بدون ملفات صوتية خارجية */
 function bcBeep(ok = true) {
+  if (typeof vib == 'function') vib(ok ? 35 : [40, 60, 40]);
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
     BC_AC = BC_AC || new Ctx(); if (BC_AC.state === 'suspended') BC_AC.resume();
@@ -178,4 +179,3 @@ function bcSet(id) {
   finish(null); toast('تم ربط الباركود بنجاح');
 }
 HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1;margin:0" onclick="bcHome()">${I('scan')} مسح باركود</button><button class="btn ${bcQ() ? '' : 's'} sm" style="min-height:50px" onclick="upd(()=>S.cfg.bcQuick=bcQ()?0:Date.now())" title="خصم قطعة تلقائياً عند المسح (15 دقيقة)">${I('zap')} ${bcQ() ? 'البيع السريع مفعّل' : 'بيع سريع −1'}</button></div>`);
-

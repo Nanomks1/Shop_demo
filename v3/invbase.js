@@ -36,9 +36,19 @@ function invModelDatalist() {
   return `<datalist id="dl_mnames">${[...m].slice(0, 60).map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
 }
 
-/* ---------- طيّ القوائم الطويلة + وضع العرض المضغوط ---------- */
-const EXP = {};   // حفظ حالة فتح القوائم المطوية أثناء الجلسة
+/* ---------- طيّ القوائم الطويلة + التصفح التدريجي للأقسام الكبيرة + وضع العرض المضغوط ---------- */
+const EXP = {}, PG = {};   // حفظ حالة فتح القوائم المطوية وعدد البطاقات المعروضة أثناء الجلسة
 function toggleExp(id) { EXP[id] = !EXP[id]; render(); }
+function pgMore(k, step = 40) { PG[k] = (PG[k] || step) + step; render(); }
+function pgSlice(k, arr, step = 40) {
+  const mx = PG[k] || step, items = arr.slice(0, mx), rem = arr.length - items.length;
+  const more = rem > 0 ? `<button type="button" class="btn s" onclick="pgMore('${k}',${step})">عرض المزيد (+${Math.min(step, rem)} من ${rem} متبقية)</button>` : '';
+  return { items, more };
+}
+function pagedHtml(arr, k, fn, step = 40) {
+  const pg = pgSlice(k, arr, step);
+  return pg.items.map(fn).join('') + pg.more;
+}
 /* البيع السريع: لهذا الجهاز فقط، وينطفئ وحده بعد 15 دقيقة بلا مسح */
 const bcQ = () => !!S.cfg.bcQuick && Date.now() - S.cfg.bcQuick < 9e5;
 const isCmp = s => !!((S.cfg.cmp || {})[s]);
@@ -55,6 +65,11 @@ function reqFind(txt) {
     return w.length > 0 && w.every(x => n.includes(x));
   });
 }
+function reqDismiss(id) {
+  if (typeof rqD == 'function') rqD(id);
+  const el = $('rqa_' + id); if (el) el.remove();
+  if (SH && !$('sh').querySelector('[id^="rqa_"]')) finish(null);
+}
 function reqChk(txt, wait) {
   const m = reqFind(txt); if (!m.length) return;
   setTimeout(() => {
@@ -62,7 +77,7 @@ function reqChk(txt, wait) {
     $('sh').innerHTML = `<div class="bar"></div><h3>${I('bell')} زبون سأل عن هذه السلعة!</h3><p class="m">توفرت الآن «<b>${esc(txt)}</b>» وهناك طلب مسجّل يطابقها:</p>`
       + m.map(q => {
         const tel = typeof rqTel == 'function' ? rqTel(q.t) : '';
-        return `<div class="card" id="rqa_${q.id}"><b>${esc(q.t)}</b><div class="m">${fd(q.at)} · ${esc(q.by || '')}</div><div class="sub">${tel ? `<a href="tel:${esc(tel)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a><button class="btn sm" onclick="rqWA('${q.id}')">${I('send')} إبلاغ واتساب</button>` : ''}<button class="btn s sm" onclick="rqD('${q.id}');if($('rqa_${q.id}'))$('rqa_${q.id}').remove()">مسح الطلب</button></div></div>`;
+        return `<div class="card" id="rqa_${q.id}"><b>${esc(q.t)}</b><div class="m">${fd(q.at)} · ${esc(q.by || '')}</div><div class="sub">${tel ? `<a href="tel:${esc(tel)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a><button class="btn sm" onclick="rqWA('${q.id}')">${I('send')} إبلاغ واتساب</button>` : ''}<button class="btn s sm" onclick="reqDismiss('${q.id}')">مسح الطلب</button></div></div>`;
       }).join('')
       + `<div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>`;
     sheetOpen(() => { });
@@ -188,4 +203,3 @@ const fxAtt = v => { if (FS.fxSec && v && typeof v == 'object') v.x = { ...FS.fx
 const moreBtn = fn => `<button class="btn s" onclick="${fn}(1)">حفظ وإضافة آخر</button>`;
 const nzText = i => hay(i) + ' ' + fxTxt(i) + ' ' + (i.imei || '') + ' ' + (i.code || '') + ' ' + (i.pw || '');
 const hay = i => [i.brand, i.name, i.color, i.ram, i.cap, i.note, i.kind, i.conn, i.tier, (i.v || []).map(x => x.g + x.c).join(' ')].join(' ');
-

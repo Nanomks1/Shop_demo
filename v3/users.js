@@ -35,8 +35,19 @@ const uEd = needAdm(function (i) {
     if (v.x != 'نعم' && v.r == 'موظف' && v.p && v.p.length < 4) return toast('الرمز 4 أرقام على الأقل');
     if (v.x != 'نعم' && v.r == 'موظف' && !u.pin && !v.p) return toast('رمز الموظف إجباري: اكتب رمزاً جديداً للموظف');
     upd(() => {
-      if (v.x == 'نعم') S.users.splice(i, 1);
-      else { u.admin = v.r == 'مدير'; if (u.admin) delete u.pin; else if (v.p) u.pin = hs(v.p); if (v.n == 'مخفية') u.nr = 1; else delete u.nr; }
+      if (v.x == 'نعم') {
+        const wasMe = u.name == S.me;
+        S.users.splice(i, 1);
+        if (wasMe) S.me = (S.users.find(x => x.admin) || S.users[0] || {}).name || '';
+      } else {
+        u.admin = v.r == 'مدير';
+        if (u.admin) delete u.pin;
+        else {
+          if (v.p) u.pin = hs(v.p);
+          if (u.name == S.me) admSet(false);
+        }
+        if (v.n == 'مخفية') u.nr = 1; else delete u.nr;
+      }
     });
   });
 });
@@ -71,8 +82,14 @@ const TRIES = {};
 function tryBlocked(k, m, pad) { const t = TRIES[k] || (TRIES[k] = { n: 0, until: 0 }); if (Date.now() < t.until) { if (m) m.textContent = 'انتظر 10 ثوانٍ ثم أعد المحاولة'; pkTap(pad, 'C'); return true; } return false; }
 function tryFail(k, m, pad, txt) { const t = TRIES[k]; t.n++; pkTap(pad, 'C'); if (t.n >= 5) { t.n = 0; t.until = Date.now() + 10000; if (m) m.textContent = 'محاولات كثيرة! انتظر 10 ثوانٍ'; } else if (m) m.textContent = txt; }
 
+function closeOverlaysForLock() {
+  if (SH) hideSheet();
+  const t = $('ts'); if (t) t.hidden = true;
+}
+
 function lgShow() {
   if ($('lg')) return;
+  closeOverlaysForLock();
   admSet(false);
   const emp = S.users.filter(u => !u.admin), ads = S.users.filter(u => u.admin);
   document.body.insertAdjacentHTML('beforeend', `<div id="lg" class="lockscr"><div class="lockbox"><h2>${I('lock')} تسجيل الدخول — محل عزيز</h2>`
@@ -92,6 +109,7 @@ function lgAdm() {
 }
 function lkShow() {
   if ($('lk')) return;
+  closeOverlaysForLock();
   document.body.insertAdjacentHTML('beforeend', `<div id="lk" class="lockscr"><div class="lockbox"><h2>${I('lock')} محل عزيز مقفل</h2><p id="lkm" class="m c">أدخل رمز القفل السريع أو رمز المدير</p>${pinPadHtml('lki', 'رمز الفتح', 'lkTry()')}<button class="btn" onclick="lkTry()">فتح التطبيق</button></div></div>`);
 }
 function lkTry() {
@@ -121,4 +139,3 @@ setInterval(() => {
     else if ((S.cfg.lk || S.pin) && !$('lk') && !$('lg')) lockNow();
   }
 }, 15000);
-

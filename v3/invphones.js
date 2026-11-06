@@ -30,6 +30,7 @@ function phView() {
   if (V.f == 1) a = a.filter(i => phSt(i) != 'g');
   else if (V.f == 2) a = a.filter(i => i.cond == 'مستعمل');
   else if (V.pb) a = a.filter(i => i.brand == V.pb);
+  const pg = pgSlice('ph', a);
   const tagsHtml = `<button class="tag ${!V.f && !V.pb ? 'on' : ''}" onclick="V.f=0;V.pb='';render()">الكل (${allPh.length} · ${totPcs} قطعة)</button>`
     + `<button class="tag ${V.f == 1 ? 'on' : ''}" onclick="V.f=1;V.pb='';render()">يحتاج شراء (${lowCnt})</button>`
     + brChips
@@ -38,7 +39,7 @@ function phView() {
     t: 'الهواتف',
     h: `<button class="btn" onclick="phAdd()">+ إضافة هاتف</button>`
       + secPanel('phones', tagsHtml)
-      + (a.map(phCard).join('') || emptyBox('لا توجد هواتف مطابقة لهذا الفلتر', 'اضغط على «+ إضافة هاتف» في الأعلى لإضافة هاتف جديد'))
+      + (pg.items.map(phCard).join('') + pg.more || emptyBox('لا توجد هواتف مطابقة لهذا الفلتر', 'اضغط على «+ إضافة هاتف» في الأعلى لإضافة هاتف جديد'))
   };
 }
 
@@ -115,7 +116,7 @@ function phForm(rec) {
     + `<label${hh('phones', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="pimei" value="${esc(rec.imei || '')}" placeholder="امسح الباركود أو اكتب الرقم" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('pimei')">${I('scan')} مسح</button></div></label>`
     + `<div id="fx"></div><label${hh('phones', 'note')}>ملاحظة<textarea id="pt">${esc(rec.note || '')}</textarea></label>`
     + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="phSave()">حفظ</button></div>`
-    + (ed ? '' : `<button class="btn s" onclick="phSave(2)">حفظ وإضافة مثله (لون أو سعة أخرى)</button>` + moreBtn('phSave')) + (ed && S.items.includes(rec) && can('del') ? `<button class="btn s" style="color:#dc2626;margin-top:10px" onclick="phDelF('${rec.id}')">حذف هذا الهاتف</button>` : '');
+    + (ed || rec._fromUsed ? '' : `<button class="btn s" onclick="phSave(2)">حفظ وإضافة مثله (لون أو سعة أخرى)</button>` + moreBtn('phSave')) + (ed && S.items.includes(rec) && can('del') ? `<button class="btn s" style="color:#dc2626;margin-top:10px" onclick="phDelF('${rec.id}')">حذف هذا الهاتف</button>` : '');
   chipsR();
 }
 function phSave(more) {
