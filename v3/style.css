@@ -54,9 +54,7 @@ nav button.on .ic{background:var(--ab)}
 /* الحركات الخفيفة (Animations) للنوافذ والشاشات والإشعارات */
 @keyframes ovFade{from{opacity:0}to{opacity:1}}
 @keyframes shUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@keyframes vwIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-main.vw-in{animation:vwIn .16s cubic-bezier(.2,.8,.2,1)}
 
 /* النافذة السفلية ملتصقة بالأسفل وتغطي شريط التنقل مع تثبيت أزرار الحفظ */
 #ov{position:fixed;inset:0;background:rgba(2,6,23,.65);z-index:25;display:flex;align-items:flex-end;animation:ovFade .18s ease}

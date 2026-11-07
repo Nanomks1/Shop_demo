@@ -365,7 +365,7 @@ VW.stat = () => {
   const p = V.p ?? 30, since = p ? Date.now() - p * 864e5 : 0, rp = S.rp.filter(r => (r.t0 || 0) >= since);
   const faults = rp.flatMap(r => String(r.fault || '').split('،').map(s => s.trim()).filter(Boolean));
   const F = stCnt(faults, x => x).slice(0, 8);
-  const Rq = {}; S.req.forEach(q => { const t = String(q.t || '').replace(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/g, '').replace(/[-–—:،.]/g, ' ').replace(/\s+/g, ' ').trim(), k = nz(t); if (k) { Rq[k] = Rq[k] || [t, 0]; Rq[k][1]++; } });
+  const Rq = {}; S.req.forEach(q => { const t = String(q.t || '').replace(/(?:\+?212|0)[\s\-.]*[567](?:[\s\-.]*\d){8}/g, '').replace(/[-–—:،.]/g, ' ').replace(/\s+/g, ' ').trim(), k = nz(t); if (k) { Rq[k] = Rq[k] || [t, 0]; Rq[k][1]++; } });
   const R = Object.values(Rq).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6 + i); return d; });
   const dk = t => new Date(t).toDateString(), nm = d => d.toLocaleDateString('ar-MA', { weekday: 'short' });

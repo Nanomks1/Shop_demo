@@ -165,6 +165,8 @@ function tgReplace(g, oldV, newV) {
   }
   if (['kind', 'conn', 'tier', 'pw'].includes(g)) {
     (S.ag || []).forEach(a => { if (a[g] === oldV) { a[g] = newV; a.id = gkey(a); } });
+    const seenAg = {};   // دمج المجموعات التي صار لها نفس المعرّف بعد إعادة التسمية
+    S.ag = (S.ag || []).filter(a => { const p = seenAg[a.id]; if (!p) { seenAg[a.id] = a; return true; } if ((a.at || 0) > (p.at || 0)) Object.assign(p, a); return false; });
   }
   if (g == 'glass') {
     const o = S.cfg && S.cfg.gtl;

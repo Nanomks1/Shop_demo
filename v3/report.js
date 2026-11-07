@@ -21,12 +21,13 @@
   window.rcManual = (fnName, arg) => {
     if (fnName == 'agBuy' && typeof agCnt == 'function') return agCnt(arg);
     if (fnName == 'buyG') {
-      const i = find(arg), g = i && S.gg.find(x => x.id == i.gid);
-      if (!i || !g) return;
-      ask('شراء أنتي كاس ' + i.ty + ' — ' + g.models.join(' / '), [{ k: 'n', l: 'الكمية الإجمالية التي وصلت للمجموعة', t: 'tel', v: String(gLim(i, i.ty)) }], 'تم الشراء').then(v => {
+      const i0 = find(arg), g = i0 ? S.gg.find(x => x.id == i0.gid) : S.gg.find(x => x.id == arg);
+      if (!g) return;
+      const ty = i0 ? i0.ty : ((S.tags.glass && S.tags.glass[0]) || 'عادي');
+      ask('شراء أنتي كاس ' + ty + ' — ' + g.models.join(' / '), [{ k: 'n', l: 'الكمية الإجمالية التي وصلت للمجموعة', t: 'tel', v: String(gLim(i0 || gitem(g.id, ty), ty)) }], 'تم الشراء').then(v => {
         const n = v && ci(v.n); if (!n) return;
         commit('تم شراء أنتي كاس (+' + n + ')', () => {
-          const m0 = g.models[0];
+          const i = i0 || glGet(g.id, ty), m0 = g.models[0];
           i.stock = i.stock || {};
           g.models.forEach(m => { if (i.lv) delete i.lv[m]; });
           i.stock[m0] = (i.stock[m0] || 0) + n;

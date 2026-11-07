@@ -17,7 +17,7 @@ const WAR_OPTS = [[0, 'بدون ضمان'], [3, '3 أيام'], [7, '7 أيام']
 const WAR_SEL = ['بدون ضمان (0 يوم)', '3 أيام', '7 أيام', '15 يوم', '30 يوم'];
 let ZP = [], ZK = [], ZI = '', ZD = 0, ZR = {}, ZW = 0, GPM = [];
 const rf = id => S.rp.find(r => r.id == id);
-const rnum = t => { t = String(t || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, ''); return t[0] == '0' ? '212' + t.slice(1) : t; };
+const rnum = t => waNum(t);
 const rph8 = t => rnum(t).slice(-8);
 const sn1 = x => /^\s*\d+(\.\d+)?\s*$/.test(x || '');
 const d0 = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
@@ -510,13 +510,13 @@ function rqD(id) {
 }
 function rqTel(txt) {
   const s = String(txt || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
-  const m = s.match(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/);
+  const m = s.match(/(?:\+?212|0)[\s\-.]*[567](?:[\s\-.]*\d){8}/);
   return m ? m[0].replace(/\D/g, '') : '';
 }
 function rqWA(id) {
   const q = S.req.find(x => x.id == id); if (!q) return;
   const ph = rqTel(q.t); if (!ph) return toast('لا يوجد رقم هاتف في هذا الطلب');
-  const clean = q.t.replace(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/, '').replace(/[-–—:،.]/g, ' ').trim();
+  const clean = q.t.replace(/(?:\+?212|0)[\s\-.]*[567](?:[\s\-.]*\d){8}/, '').replace(/[-–—:،.]/g, ' ').trim();
   location.href = 'https://wa.me/' + rnum(ph) + '?text=' + encodeURIComponent(`مرحباً، بخصوص طلبك (${clean || 'السلعة المطلوبة'}) فقد توفرت لدينا في محل عزيز. مرحباً بك!`);
 }
 function rqCard(q) {

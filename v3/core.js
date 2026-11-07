@@ -58,7 +58,7 @@ const LM = [
 ];
 
 /* ---------- البحث: توحيد الكتابة (عربي/إنجليزي/أرقام) ---------- */
-const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g','كابل':'cable','كابلو':'cable','كابلات':'cable','câble':'cable','شاحن':'charger','شارجور':'charger','شارجر':'charger','شارجيور':'charger','chargeur':'charger','سماعة':'headset','سماعات':'headset','ecouteur':'headset','écouteur':'headset','اكوتور':'headset','ايربودز':'airpods','بوشيط':'pochette','بوشيت':'pochette','جراب':'pochette','انتي كاس':'glass','انتيكاس':'glass','زجاج':'glass','verre':'glass','فلاشة':'usb','فلاش':'usb','يو اس بي':'usb','جالاكسي':'galaxy','جلاكسي':'galaxy','لايتنينغ':'lightning'};
+const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g','كابل':'cable','كابلو':'cable','كابلات':'cable','câble':'cable','شاحن':'charger','شارجور':'charger','شارجر':'charger','شارجيور':'charger','chargeur':'charger','سماعة':'headset','سماعات':'headset','ecouteur':'headset','écouteur':'headset','اكوتور':'headset','ايربودز':'airpods','بوشيط':'pochette','بوشيت':'pochette','جراب':'pochette','انتي كاس':'glass','انتيكاس':'glass','زجاج':'glass','verre':'glass','فلاشة':'usb','افيشور':'شاشة','ميموار':'memorycard','باتري':'بطارية','تيربو':'charger','فلاش':'usb','يو اس بي':'usb','جالاكسي':'galaxy','جلاكسي':'galaxy','لايتنينغ':'lightning'};
 const KS=Object.keys(AL).sort((a,b)=>b.length-a.length);
 const nz=s=>{s=String(s||'').toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/[\u064B-\u0652]/g,'');for(const k of KS)s=s.split(k).join(AL[k]);return s.replace(/[\s\-_]/g,'')};
 const NZC = new WeakMap();   // ذاكرة مؤقتة خارج البيانات (لا تُحفظ ولا تُزامَن)
@@ -222,7 +222,6 @@ function toast(msg, undo, ms) {
 /* ---------- التنقل وزر الرجوع ---------- */
 function go(v, p) {
   V = { v, ...p }; Q = ''; QP = 0; history.pushState({ V }, ''); render();
-  const m = $('m'); if (m) { m.classList.remove('vw-in'); void m.offsetWidth; m.classList.add('vw-in'); }
   scrollTo(0, 0);
 }
 addEventListener('popstate', e => {
@@ -357,10 +356,11 @@ function render() {
   try { r = (VW[V.v] || VW.home)(); }
   catch (e) { errUi((e && e.message) || e); r = { t: 'خطأ', h: '<div class="card"><b>تعذّر عرض هذه الشاشة</b><p class="m">بياناتك سليمة. ارجع للرئيسية وحاول مجدداً.</p></div>' }; }
   $('ti').textContent = r.t; $('bk').hidden = V.v == 'home'; $('me').textContent = S.me; $('m').innerHTML = r.h;
-  $('nv').innerHTML = NV.map(([k, i, l]) => `<button class="${V.v.startsWith(k) ? 'on' : ''}" onclick="go('${k}')">${ic(i)}<span>${l}</span></button>`).join('');
+  const nvh = NV.map(([k, i, l]) => `<button class="${V.v.startsWith(k) ? 'on' : ''}" onclick="go('${k}')">${ic(i)}<span>${l}</span></button>`).join('');
+  if ($('nv').dataset.h !== nvh) { $('nv').innerHTML = nvh; $('nv').dataset.h = nvh; }
   const de = document.documentElement;
   thApply(de);
-  try { const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = getComputedStyle(de).getPropertyValue('--c').trim() || m.content; } catch (e) { }
+  try { const m = document.querySelector('meta[name=theme-color]'); if (m) { const tc = getComputedStyle(de).getPropertyValue('--c').trim(); if (tc && m.content !== tc) m.content = tc; } } catch (e) { }
   r.a && r.a();
   HK.render.forEach(f => { try { f(); } catch (e) { } });   // بعد كل رسم (مثل الزر العائم)
 }

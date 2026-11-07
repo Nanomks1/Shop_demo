@@ -58,7 +58,7 @@ function cmpTog(s) { upd(() => { S.cfg.cmp = S.cfg.cmp || {}; S.cfg.cmp[s] = S.c
 function reqFind(txt) {
   const n = nz(txt); if (n.length < 2 || !(S.req && S.req.length)) return [];
   return S.req.filter(q => {
-    const clean = dg(q.t || '').replace(/(?:\+?212|0)[\s\-]*[567](?:[\s\-]*\d){8}/g, '').replace(/[-–—:،.]/g, ' ').trim();
+    const clean = dg(q.t || '').replace(/(?:\+?212|0)[\s\-.]*[567](?:[\s\-.]*\d){8}/g, '').replace(/[-–—:،.]/g, ' ').trim();
     const qn = nz(clean); if (qn.length < 2) return false;
     if (n.includes(qn) || qn.includes(n)) return true;
     const w = clean.split(/\s+/).map(nz).filter(x => x.length >= 3 || /^[a-z]\d$|^\d[a-z]$/.test(x));
