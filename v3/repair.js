@@ -463,7 +463,7 @@ VW.gd = () => {
     t: 'دليل أسعار الإصلاح',
     h: (can('price') ? '<button class="btn" onclick="gdEd(null)">+ إضافة تسعيرة</button>' : '')
       + `<div class="sec-panel">`
-      + `<div class="sec-tags">${[`<button class="tag ${!gf ? 'on' : ''}" onclick="V.gf='';render()">الكل (${S.guide.length})</button>`, ...S.tags.fault.map(f => `<button class="tag ${gf == f ? 'on' : ''}" onclick="V.gf='${esc(f)}';render()">${esc(f)}</button>`)].join('')}</div>`
+      + `<div class="sec-tags">${[`<button class="tag ${!gf ? 'on' : ''}" onclick="V.gf='';render()">الكل (${S.guide.length})</button>`, ...S.tags.fault.map(f => `<button class="tag ${gf == f ? 'on' : ''}" onclick="V.gf=${esc(JSON.stringify(f))};render()">${esc(f)}</button>`)].join('')}</div>`
       + `<input style="margin-top:10px;margin-bottom:0" placeholder="ابحث: موديل الهاتف أو العطل..." value="${esc(V.q || '')}" oninput="V.q=this.value;$('gdl').innerHTML=gdList(V.q,V.gf)">`
       + `</div>`
       + `<div id="gdl">${gdList(V.q, gf)}</div>`

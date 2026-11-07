@@ -58,7 +58,7 @@ const LM = [
 ];
 
 /* ---------- البحث: توحيد الكتابة (عربي/إنجليزي/أرقام) ---------- */
-const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g','كابل':'cable','كابلو':'cable','كابلات':'cable','câble':'cable','شاحن':'charger','شارجور':'charger','شارجر':'charger','شارجيور':'charger','chargeur':'charger','سماعة':'headset','سماعات':'headset','ecouteur':'headset','écouteur':'headset','اكوتور':'headset','ايربودز':'airpods','بوشيط':'pochette','بوشيت':'pochette','جراب':'pochette','انتي كاس':'glass','انتيكاس':'glass','زجاج':'glass','verre':'glass','فلاشة':'usb','افيشور':'شاشة','ميموار':'memorycard','باتري':'بطارية','تيربو':'charger','فلاش':'usb','يو اس بي':'usb','جالاكسي':'galaxy','جلاكسي':'galaxy','لايتنينغ':'lightning'};
+const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g','كابل':'cable','كابلو':'cable','كابلات':'cable','câble':'cable','شاحن':'charger','شارجور':'charger','شارجر':'charger','شارجيور':'charger','chargeur':'charger','سماعة':'headset','سماعات':'headset','ecouteur':'headset','écouteur':'headset','اكوتور':'headset','ايربودز':'airpods','بوشيط':'pochette','بوشيت':'pochette','جراب':'pochette','انتي كاس':'glass','انتيكاس':'glass','زجاج':'glass','verre':'glass','فلاشة':'usb','افيشور':'شاشة','ميموار':'memorycard','باتري':'بطارية','تيربو':'charger','يو اس بي':'usb','جالاكسي':'galaxy','جلاكسي':'galaxy','لايتنينغ':'lightning'};
 const KS=Object.keys(AL).sort((a,b)=>b.length-a.length);
 const nz=s=>{s=String(s||'').toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/[\u064B-\u0652]/g,'');for(const k of KS)s=s.split(k).join(AL[k]);return s.replace(/[\s\-_]/g,'')};
 const NZC = new WeakMap();   // ذاكرة مؤقتة خارج البيانات (لا تُحفظ ولا تُزامَن)
@@ -165,10 +165,23 @@ function imgInit() {
 function save() {
   try {
     HK.save.forEach(f => { try { f(); } catch (e) { } });
-    localStorage.setItem('shop3', JSON.stringify(S, imgReplacer));
+    const j = JSON.stringify(S, imgReplacer);
+    localStorage.setItem('shop3', j);
     ST.dirty = 1; ST.ver++;
     HK.saved.forEach(f => { try { f(); } catch (e) { } });
-  } catch (e) { toast('الذاكرة ممتلئة'); }
+    stWarn(j.length);
+  } catch (e) { ST.dirty = 1; ST.ver++; toast('الذاكرة ممتلئة: خذ نسخة احتياطية وأرشف الصيانات القديمة', null, 10000); }
+}
+/* تنبيه مرة في اليوم عند اقتراب ذاكرة المتصفح (نحو 5 ملايين حرف) من الامتلاء، دون أن يحجب زر «تراجع» */
+function stWarn(n) {
+  if (n < 4e6) return;
+  try {
+    const t = $('ts'); if (t && !t.hidden) return;
+    const d = new Date().toLocaleDateString('en-CA');
+    if (localStorage.getItem('shopWarnSz') == d) return;
+    localStorage.setItem('shopWarnSz', d);
+    toast('المساحة ' + Math.round(n / 5e4) + '% من الحد: خذ نسخة احتياطية وأرشف الصيانات القديمة', null, 9000);
+  } catch (e) { }
 }
 
 /* ---------- الأخطاء ---------- */
