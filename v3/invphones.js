@@ -72,7 +72,7 @@ function phUpR(id) {
   if (cs.length) {
     cs.forEach(c => {
       h += `<div class="card"><b>${I('box')} بوشيط: ${esc(c.name)} (${csGSummaryTxt(c)}${c.price ? ' · ' + esc(fmtPr(c.price)) : ''})</b><div class="cs-chips">`
-        + (c.v || []).map(x => `<div class="cs-chip ${csChipCls(c, x)}"><span>${esc([x.g, x.c].filter(Boolean).join('·') || 'عام')}</span><button onclick="csC('${c.id}','${x.id}',-1);phUpR('${id}')">−</button><b>${x.n}</b><button onclick="csC('${c.id}','${x.id}',1);phUpR('${id}')">+</button></div>`).join('')
+        + (c.v || []).map(x => `<div class="cs-chip ${csChipCls(c, x)}"><span>${esc(x.c || 'عام')}</span><button onclick="csC('${c.id}','${x.id}',-1);phUpR('${id}')">−</button><b>${x.n}</b><button onclick="csC('${c.id}','${x.id}',1);phUpR('${id}')">+</button></div>`).join('')
         + `</div></div>`;
     });
   }

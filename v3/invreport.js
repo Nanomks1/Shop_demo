@@ -19,10 +19,9 @@ function invLines(notes = true) {
     });
   });
   S.items.filter(i => i.sec == 'case' && csSt(i) != 'g').forEach(i => {
-    const gs = csGStats(i), badG = gs.filter(x => x.st != 'g').map(x => `${x.g} (${x.tot <= 0 ? 'نفد' : x.tot})`);
-    const zColors = (i.v || []).filter(x => x.c && x.n <= 0).map(x => [x.g, x.c].filter(Boolean).join(' '));
-    const miss = [...badG, ...zColors.filter(c => !badG.some(b => c.startsWith(b.split(' ')[0])))];
-    L.push(['البوشيط', i.name + (miss.length ? ' — ناقص: ' + miss.join('، ') : '') + ' — المتوفر (' + csGSummaryTxt(i) + ')' + (notes && i.rem ? ' — باقي: ' + i.rem : '') + (notes && i.need ? ' — خاصنا: ' + i.need : ''), csSt(i), `buyC('${i.id}')`]);
+    const V0 = csN(i).v || [], fm = x => csEmo(x.c) + ' ' + (x.c || 'عام') + ' ' + (x.n <= 0 ? 'نفد' : x.n);
+    const bad = V0.filter(x => csVSt(i, x) != 'g').map(fm), ok = V0.filter(x => csVSt(i, x) == 'g').map(fm);
+    L.push(['البوشيط', i.name + (V0.length ? (bad.length ? ' — ناقص: ' + bad.join('، ') : '') + (ok.length ? ' — متوفر: ' + ok.join('، ') : '') : ' — نفد') + (notes && i.rem ? ' — باقي: ' + i.rem : '') + (notes && i.need ? ' — خاصنا: ' + i.need : ''), csSt(i), `buyC('${i.id}')`]);
   });
   S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && acSt(i) != 'g').forEach(i => L.push(['الإكسسوارات', acName(i) + (typeof i.cnt == 'number' ? ' — العدد ' + i.cnt : '') + (i.note ? ' — ' + i.note : ''), acSt(i), `buyA('${i.id}')`]));
   agList().filter(d => d.st != 'g').forEach(d => L.push(['الإكسسوارات', d.title + (d.tot !== null ? ' — المجموع ' + (d.est ? '≈' : '') + d.tot : d.st == 'r' ? ' — نفد' : ' — قارب النفاد'), d.st, `agBuy('${encodeURIComponent(d.id)}')`]));

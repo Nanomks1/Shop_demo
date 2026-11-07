@@ -49,23 +49,7 @@
       if (typeof reqChk == 'function') reqChk(i.brand + ' ' + i.name);
     } else if (fnName == 'buyC') {
       const i = find(arg); if (!i) return;
-      const badG = typeof csGStats == 'function' ? csGStats(i).filter(x => x.st != 'g') : [];
-      commit('تم شراء بوشيط ' + i.name + ' (+3)', () => {
-        if (badG.length && badG[0].g != 'عام') {
-          badG.forEach(b => {
-            const vars = (i.v || []).filter(x => x.g == b.g);
-            if (!vars.length) { i.v = i.v || []; i.v.push({ id: uid(), g: b.g, c: '', n: 3 }); }
-            else {
-              const z = vars.filter(x => x.n <= 0);
-              (z.length ? z : [vars[0]]).forEach(x => x.n += 3);
-            }
-          });
-        } else {
-          const z = (i.v || []).filter(x => x.n <= 0), t = z.length ? z : (i.v || []);
-          t.forEach(x => x.n += 3);
-        }
-        i.need = ''; touch(i, 1);
-      });
+      commit('تم شراء بوشيط ' + i.name + ' (+3)', () => csBuyApply(i, 3));
       if (typeof reqChk == 'function') reqChk('بوشيط ' + i.name);
     } else if (fnName == 'buyA') {
       const i = find(arg); if (!i) return;
