@@ -119,7 +119,7 @@ VW.home = () => {
 /* ---------- المزيد (منظم بأقسام مستقلة وبطاقات مدمجة الوصف) ---------- */
 const MG = [
   ['shop', 'المحل', 'كل ما يخص الأقسام: الهواتف والأنتي كاس والبوشيط والإكسسوارات والصيانة والتعبئة والتقرير. لكل قسم صفحة واحدة تجمع وسومه وحدوده.', 'grid'],
-  ['dev', 'المظهر والقفل', 'الثيم وحجم الخط والزر العائم، ورمز القفل السريع والقفل التلقائي.', 'palette'],
+  ['dev', 'المظهر والقفل', 'الثيم وحجم الخط وحجم العرض والزر العائم، ورمز القفل السريع والقفل التلقائي.', 'palette'],
   ['adm', 'الإدارة والبيانات', 'المستخدمون والصلاحيات، المزامنة بين الأجهزة، النسخ الاحتياطي، وسلة المحذوفات.', 'users']
 ];
 const STX = [
@@ -129,7 +129,7 @@ const STX = [
   ['عنوان التقرير وعبارة الختام', "go('st_rep')", 'التقرير اليومي', 'توقيع'],
   ['ما يظهر في التقرير', "go('st_rep')", 'التقرير اليومي', 'أسعار طلبات ديون'],
   ['الثيم (فاتح / ليلي / AMOLED)', "go('st_look')", 'المظهر والقفل', 'لون داكن ليل نهار اموليد'],
-  ['حجم الخط', "go('st_look')", 'المظهر والقفل', 'كبير صغير'],
+  ['حجم الخط وحجم العرض (تكبير العناصر)', "go('st_look')", 'المظهر والقفل', 'كبير صغير تكبير العناصر ازرار شاشة'],
   ['الزر العائم (+)', "go('st_look')", 'المظهر والقفل', 'أيقونة إضافة'],
   ['حد «متوفر» و«قارب» لبطاقات التعبئة', "go('st_tp')", 'التعبئة', '5 10 20 50 درهم'],
   ['حدود رصيد هاتف التعبئة', "go('st_tp')", 'التعبئة', 'منخفض نافد'],
@@ -152,7 +152,7 @@ function stQ(q) {
 }
 VW.st = () => ({
   t: 'المزيد',
-  h: `<input placeholder="ابحث في الإعدادات: حد، لون، قفل، تقرير..." oninput="stQ(this.value)"><div id="str"></div><div id="stg">`
+  h: `<input placeholder="ابحث في الإعدادات: حد، لون، حجم العرض، قفل، تقرير..." oninput="stQ(this.value)"><div id="str"></div><div id="stg">`
     + MG.map(([k, t, d, icon]) => `<button class="card st-card" onclick="go('st_grp',{g:'${k}'})"><div class="st-ic">${ic(icon)}</div><div class="st-txt"><b>${t}</b><div class="m">${d}</div></div><span class="st-arr">${ic('back')}</span></button>`).join('')
     + '</div>'
 });
@@ -171,7 +171,8 @@ VW.st_grp = () => {
   };
 };
 MORE.push(
-  { g: 'look', o: 10, l: 'الثيم وحجم الخط والأيقونة العائمة', d: 'ألوان التطبيق وحجم الخط والزر العائم (لهذا الجهاز)', fn: "go('st_look')" },
+  { g: 'look', o: 5, l: 'حجم الخط وحجم العرض (تكبير العناصر)', d: 'تكبير أو تصغير النصوص والأزرار والبطاقات لراحة النظر (لهذا الجهاز)', fn: "go('st_look')", n: () => 'خط ' + (FS_OLD[S.cfg.fs] || S.cfg.fs || 18) + ' · ' + thCfg().ds + '%' },
+  { g: 'look', o: 10, l: 'الثيم والألوان والأيقونة العائمة', d: 'ثيم النهار والليل (LCD / AMOLED) وألوان الهوية والزر العائم', fn: "go('st_look')" },
   { g: 'usr', o: 10, l: 'المستخدمون والصلاحيات', d: 'إضافة موظفين وتحديد ما يستطيعون فعله', fn: "go('st_users')" },
   { g: 'usr', o: 20, l: 'رمز القفل السريع', d: 'رمز قصير لفتح التطبيق بسرعة', fn: 'lkSet()', n: () => S.cfg.lk ? 'مُعيَّن' : 'غير مُعيَّن' },
   { g: 'usr', o: 30, l: 'القفل التلقائي', d: 'يقفل التطبيق والمدير بعد مدة بلا استعمال', fn: "limEd('alk')", n: () => (S.cfg.alk ?? DL0.alk) + ' دقيقة' },
@@ -186,7 +187,8 @@ MORE.push(
     'حدود التعبئة': ['shop', 60, 0, 'التعبئة'], 'إعدادات التقرير': ['shop', 70, 0, 'التقرير اليومي'],
     'إحصائيات: الأعطال وطلبات الزبائن': ['shop', 80],
     'كل الوسوم (قائمة كاملة)': ['shop', 90, 1], 'الحقول في النماذج': ['shop', 91, 1], 'الخانات المخصصة': ['shop', 92, 1], 'تلوين البطاقات': ['shop', 93, 1], 'حدود النفاد': ['shop', 94, 1, 'حدود النفاد العامة'],
-    'الثيم وحجم الخط والأيقونة العائمة': ['dev', 10], 'رمز القفل السريع': ['dev', 20], 'القفل التلقائي': ['dev', 30],
+    'حجم الخط وحجم العرض (تكبير العناصر)': ['dev', 5],
+    'الثيم والألوان والأيقونة العائمة': ['dev', 10], 'رمز القفل السريع': ['dev', 20], 'القفل التلقائي': ['dev', 30],
     'المستخدمون والصلاحيات': ['adm', 10], 'المزامنة بين الأجهزة': ['adm', 20], 'النسخ الاحتياطي والاستعادة': ['adm', 30]
   };
   const D = {
@@ -205,7 +207,7 @@ MORE.push(
   });
 })();
 
-/* ---------- المظهر والأيقونة العائمة (تخصيص مستقل للنهار ولليل) ---------- */
+/* ---------- المظهر، حجم الخط وحجم العرض (على طريقة أندرويد)، والأيقونة العائمة ---------- */
 const THA = [
   ['b', 'أزرق ملكي', '#2563eb', 'رسمي'],
   ['t', 'تيل بترولي', '#0d9488', 'مريح'],
@@ -219,18 +221,35 @@ const THA = [
 const THMD = [['a', 'تلقائي (يتبع الهاتف)'], ['l', 'نهاري دائماً'], ['d', 'ليلي دائماً']];
 const TH_LB_L = [['light', 'نهاري ناصع', 'أبيض نقي لضوء المحل'], ['warm', 'نهاري دافئ', 'عاجي مريح للعين']];
 const TH_LB_D = [['navy', 'كحلي LCD', 'واضح وعالي التباين'], ['slate', 'فحمي Slate', 'رمادي داكن هادئ'], ['amoled', 'أسود AMOLED', 'أسود 100% لتوفير البطارية']];
+const FS_STEPS = [[15, 'أصغر'], [16, 'صغير'], [18, 'عادي (افتراضي)'], [20, 'كبير'], [22, 'أكبر'], [24, 'كبير جداً']];
+const DS_STEPS = [[88, 'مضغوط جداً'], [94, 'مضغوط'], [100, 'عادي (افتراضي)'], [108, 'كبير'], [116, 'أكبر (مريح للنظر)']];
+
+function szSliderHtml(title, sub, steps, curVal, onPick) {
+  let idx = steps.findIndex(s => s[0] == curVal);
+  if (idx < 0) idx = 2;
+  const prev = idx > 0 ? steps[idx - 1][0] : null;
+  const next = idx < steps.length - 1 ? steps[idx + 1][0] : null;
+  return `<div class="sz-card"><div class="sz-head"><b>${title}</b><span>${steps[idx][1]}</span></div><div class="sz-sub">${sub}</div>`
+    + `<div class="sz-ctrl">`
+    + `<button type="button" class="sz-step" ${prev === null ? 'disabled' : `onclick="${onPick(prev)}"`} aria-label="تصغير">−</button>`
+    + `<div class="sz-track">${steps.map(([v, l], i) => `<button type="button" class="sz-seg ${i <= idx ? 'fill' : ''} ${i === idx ? 'cur' : ''}" onclick="${onPick(v)}" title="${l}"><i></i></button>`).join('')}</div>`
+    + `<button type="button" class="sz-step" ${next === null ? 'disabled' : `onclick="${onPick(next)}"`} aria-label="تكبير">+</button>`
+    + `</div></div>`;
+}
 
 VW.st_look = () => {
   const fabOn = S.cfg.fab !== 0, c = thCfg(), fs = FS_OLD[S.cfg.fs] || S.cfg.fs || 18;
   const acGrid = (cur, key) => `<div class="ac-grid">` + THA.map(([k, n, col, sub]) => `<button type="button" class="ac-btn ${cur == k ? 'on' : ''}" onclick="thSet({${key}:'${k}'})"><span class="ac-dot" style="background:${col}"></span><b>${n}</b><small class="m">${sub}</small></button>`).join('') + `</div>`;
   return {
     t: 'المظهر والعرض',
-    h: '<h3>الوضع العام (لهذا الجهاز فقط)</h3>'
+    h: '<h3>حجم الخط وحجم العرض (لهذا الجهاز فقط)</h3>'
+      + szSliderHtml('حجم الخط (Font size)', 'تكبير أو تصغير النصوص والأرقام فقط', FS_STEPS, fs, v => `upd(()=>S.cfg.fs=${v})`)
+      + szSliderHtml('حجم العرض (Display size)', 'تكبير أو تصغير الأزرار والبطاقات والمدخلات وكل عناصر الشاشة', DS_STEPS, c.ds, v => `thSet({ds:${v}})`)
+      + ((fs != 18 || c.ds != 100) ? `<button class="btn s sm" style="width:100%;margin-bottom:6px" onclick="S.cfg.fs=18;thSet({ds:100})">إرجاع الحجم الافتراضي (الخط والعرض)</button>` : '')
+      + '<h3>الوضع العام</h3>'
       + `<div class="sec-tags">${THMD.map(([k, n]) => `<button class="tag ${c.md == k ? 'on' : ''}" onclick="thSet({md:'${k}'})">${n}</button>`).join('')}</div>`
       + (c.md != 'd' ? `<h3>مظهر النهار ${c.md == 'a' ? '(يُفعَّل نهاراً)' : ''}</h3><div class="card"><label style="margin-top:0">خلفية النهار</label><div class="th-grid two">${TH_LB_L.map(([k, n, d]) => `<button type="button" class="ac-btn col ${c.lt == k ? 'on' : ''}" onclick="thSet({lt:'${k}'})"><b>${n}</b><small class="m">${d}</small></button>`).join('')}</div><label>لون الأزرار والتمييز في النهار</label>${acGrid(c.la, 'la')}</div>` : '')
       + (c.md != 'l' ? `<h3>مظهر الليل ${c.md == 'a' ? '(يُفعَّل ليلاً)' : ''}</h3><div class="card"><label style="margin-top:0">خلفية الليل</label><div class="th-grid">${TH_LB_D.map(([k, n, d]) => `<button type="button" class="ac-btn col ${c.dt == k ? 'on' : ''}" onclick="thSet({dt:'${k}'})"><b>${n}</b><small class="m">${d}</small></button>`).join('')}</div><label>لون الأزرار والتمييز في الليل</label>${acGrid(c.da, 'da')}</div>` : '')
-      + '<h3>حجم الخط</h3>'
-      + `<div class="sec-tags">${[[16, 'صغير'], [18, 'عادي'], [20, 'كبير'], [22, 'أكبر']].map(([v, l]) => `<button class="tag ${fs == v ? 'on' : ''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')}</div>`
       + '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
       + `<button class="card row2" onclick="fabReset();upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة السريعة في الرئيسية</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
       + (fabOn ? `<button class="card row2" onclick="fabLockToggle()"><b>تثبيت الزر العائم في مكانه (منع السحب)</b><span class="m">${fabLocked() ? 'مُثبَّت' : 'قابل للسحب'}</span></button>` : '')
