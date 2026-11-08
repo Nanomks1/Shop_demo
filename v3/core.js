@@ -68,7 +68,7 @@ const nzOf = (o, fn) => { let c = NZC.get(o); if (!c || c.v !== ST.ver) { c = { 
 const DEF = {
   me: '', users: [], pin: '',
   perm: { del: 'a', price: 'a', tags: 'a', fields: 'a' },
-  cfg: { fs: 18, th: 'b-a' },
+  cfg: { fs: 18, th: 'a:light:b:navy:b' },
   tags: {
     brand: ['Samsung', 'Xiaomi', 'Redmi', 'Realme', 'Oppo', 'Vivo', 'Tecno', 'Infinix', 'iPhone', 'Itel'],
     color: ['أسود', 'أبيض', 'أزرق', 'أحمر', 'أخضر', 'ذهبي', 'فضي', 'وردي'],
@@ -347,20 +347,43 @@ function restore(id) {
 }
 const row = (l, fn, sub) => `<button class="card row2" onclick="${fn}"><b>${esc(l)}</b><span class="m">${esc(sub || '')}</span></button>`;
 
-/* ---------- المظهر: وضع (تلقائي/نهاري/ليلي) × لون (أزرق/أخضر/بنفسجي/برتقالي) ---------- */
+/* ---------- المظهر: تخصيص مستقل للنهار ولليل (5 ثيمات × 8 ألوان هوية) ---------- */
 const TH_OLD = { a: 'b-a', l: 'b-l', d: 'b-d', g: 'g-l', v: 'v-d', w: 'o-l' }, FS_OLD = { 15: 16, 17: 18, 19: 20, 21: 22 };
+const TH_ACS = ['b', 't', 'g', 'v', 'r', 'o', 'i', 's'];
+const TH_L = ['light', 'warm'], TH_D = ['navy', 'slate', 'amoled'];
+function thCfg() {
+  const raw = String(TH_OLD[S.cfg.th] || S.cfg.th || '');
+  if (raw.includes(':')) {
+    const [md, lt, la, dt, da] = raw.split(':');
+    return {
+      md: ['a', 'l', 'd'].includes(md) ? md : 'a',
+      lt: TH_L.includes(lt) ? lt : 'light',
+      la: TH_ACS.includes(la) ? la : 'b',
+      dt: TH_D.includes(dt) ? dt : 'navy',
+      da: TH_ACS.includes(da) ? da : 'b'
+    };
+  }
+  const p = raw.split('-'), ac = TH_ACS.includes(p[0]) ? p[0] : 'b', md = ['a', 'l', 'd'].includes(p[1]) ? p[1] : 'a';
+  return { md, lt: ac == 'o' ? 'warm' : 'light', la: ac, dt: 'navy', da: ac };
+}
+function thSet(patch) {
+  const c = { ...thCfg(), ...patch };
+  upd(() => { S.cfg.th = [c.md, c.lt, c.la, c.dt, c.da].join(':'); });
+}
 function thGet() {
-  const v = TH_OLD[S.cfg.th] || S.cfg.th || 'b-a', p = String(v).split('-');
-  return [['b', 'g', 'v', 'o'].includes(p[0]) ? p[0] : 'b', ['a', 'l', 'd'].includes(p[1]) ? p[1] : 'a'];
+  const c = thCfg();
+  return [c.md == 'd' ? c.da : c.la, c.md];
 }
 function thApply(de) {
-  const [ac, md] = thGet(); let dark = md == 'd';
-  if (md == 'a') { try { dark = matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { } }
-  de.dataset.ac = ac; de.dataset.md = dark ? 'd' : 'l';
+  const c = thCfg(); let dark = c.md == 'd';
+  if (c.md == 'a') { try { dark = matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { } }
+  de.dataset.md = dark ? 'd' : 'l';
+  de.dataset.th = dark ? c.dt : c.lt;
+  de.dataset.ac = dark ? c.da : c.la;
   de.style.setProperty('--fs', (FS_OLD[S.cfg.fs] || S.cfg.fs || 18) + 'px');
   try { const m = document.querySelector('meta[name=color-scheme]'); if (m) m.content = dark ? 'dark' : 'only light'; } catch (e) { }
 }
-try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (thGet()[1] == 'a') render(); }); } catch (e) { }
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (thCfg().md == 'a') render(); }); } catch (e) { }
 
 /* ---------- الرسم ---------- */
 const NV = [['home', 'chome', 'الرئيسية'], ['rp', 'crepair', 'الصيانة'], ['rep', 'creport', 'التقرير'], ['st', 'cmore', 'المزيد']];

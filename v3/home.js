@@ -128,7 +128,7 @@ const STX = [
   ['أيام بلا تذكير', "go('st_rep')", 'التقرير اليومي', 'عطلة'],
   ['عنوان التقرير وعبارة الختام', "go('st_rep')", 'التقرير اليومي', 'توقيع'],
   ['ما يظهر في التقرير', "go('st_rep')", 'التقرير اليومي', 'أسعار طلبات ديون'],
-  ['الثيم (فاتح / ليلي)', "go('st_look')", 'المظهر والقفل', 'لون داكن ليل'],
+  ['الثيم (فاتح / ليلي / AMOLED)', "go('st_look')", 'المظهر والقفل', 'لون داكن ليل نهار اموليد'],
   ['حجم الخط', "go('st_look')", 'المظهر والقفل', 'كبير صغير'],
   ['الزر العائم (+)', "go('st_look')", 'المظهر والقفل', 'أيقونة إضافة'],
   ['حد «متوفر» و«قارب» لبطاقات التعبئة', "go('st_tp')", 'التعبئة', '5 10 20 50 درهم'],
@@ -205,19 +205,35 @@ MORE.push(
   });
 })();
 
-/* ---------- المظهر والأيقونة العائمة ---------- */
-const THA = [['b', 'أزرق', '#2563eb'], ['g', 'أخضر', '#059669'], ['v', 'بنفسجي', '#7c3aed'], ['o', 'برتقالي', '#ea580c']], THMD = [['a', 'تلقائي'], ['l', 'نهاري'], ['d', 'ليلي']];
+/* ---------- المظهر والأيقونة العائمة (تخصيص مستقل للنهار ولليل) ---------- */
+const THA = [
+  ['b', 'أزرق ملكي', '#2563eb', 'رسمي'],
+  ['t', 'تيل بترولي', '#0d9488', 'مريح'],
+  ['g', 'أخضر زمردي', '#059669', 'هادئ'],
+  ['v', 'بنفسجي', '#7c3aed', 'فخم'],
+  ['r', 'وردي ياقوتي', '#e11d48', 'بارز'],
+  ['o', 'عنبري نحاسي', '#d97706', 'دافئ'],
+  ['i', 'نيلي عميق', '#4f46e5', 'عصري'],
+  ['s', 'صخري محايد', '#475569', 'كلاسيكي']
+];
+const THMD = [['a', 'تلقائي (يتبع الهاتف)'], ['l', 'نهاري دائماً'], ['d', 'ليلي دائماً']];
+const TH_LB_L = [['light', 'نهاري ناصع', 'أبيض نقي لضوء المحل'], ['warm', 'نهاري دافئ', 'عاجي مريح للعين']];
+const TH_LB_D = [['navy', 'كحلي LCD', 'واضح وعالي التباين'], ['slate', 'فحمي Slate', 'رمادي داكن هادئ'], ['amoled', 'أسود AMOLED', 'أسود 100% لتوفير البطارية']];
+
 VW.st_look = () => {
-  const fabOn = S.cfg.fab !== 0, [ac, md] = thGet(), fs = FS_OLD[S.cfg.fs] || S.cfg.fs || 18;
+  const fabOn = S.cfg.fab !== 0, c = thCfg(), fs = FS_OLD[S.cfg.fs] || S.cfg.fs || 18;
+  const acGrid = (cur, key) => `<div class="ac-grid">` + THA.map(([k, n, col, sub]) => `<button type="button" class="ac-btn ${cur == k ? 'on' : ''}" onclick="thSet({${key}:'${k}'})"><span class="ac-dot" style="background:${col}"></span><b>${n}</b><small class="m">${sub}</small></button>`).join('') + `</div>`;
   return {
     t: 'المظهر والعرض',
-    h: '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
+    h: '<h3>الوضع العام (لهذا الجهاز فقط)</h3>'
+      + `<div class="sec-tags">${THMD.map(([k, n]) => `<button class="tag ${c.md == k ? 'on' : ''}" onclick="thSet({md:'${k}'})">${n}</button>`).join('')}</div>`
+      + (c.md != 'd' ? `<h3>مظهر النهار ${c.md == 'a' ? '(يُفعَّل نهاراً)' : ''}</h3><div class="card"><label style="margin-top:0">خلفية النهار</label><div class="th-grid two">${TH_LB_L.map(([k, n, d]) => `<button type="button" class="ac-btn col ${c.lt == k ? 'on' : ''}" onclick="thSet({lt:'${k}'})"><b>${n}</b><small class="m">${d}</small></button>`).join('')}</div><label>لون الأزرار والتمييز في النهار</label>${acGrid(c.la, 'la')}</div>` : '')
+      + (c.md != 'l' ? `<h3>مظهر الليل ${c.md == 'a' ? '(يُفعَّل ليلاً)' : ''}</h3><div class="card"><label style="margin-top:0">خلفية الليل</label><div class="th-grid">${TH_LB_D.map(([k, n, d]) => `<button type="button" class="ac-btn col ${c.dt == k ? 'on' : ''}" onclick="thSet({dt:'${k}'})"><b>${n}</b><small class="m">${d}</small></button>`).join('')}</div><label>لون الأزرار والتمييز في الليل</label>${acGrid(c.da, 'da')}</div>` : '')
+      + '<h3>حجم الخط</h3>'
+      + `<div class="sec-tags">${[[16, 'صغير'], [18, 'عادي'], [20, 'كبير'], [22, 'أكبر']].map(([v, l]) => `<button class="tag ${fs == v ? 'on' : ''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')}</div>`
+      + '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
       + `<button class="card row2" onclick="fabReset();upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة السريعة في الرئيسية</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
       + (fabOn ? `<button class="card row2" onclick="fabLockToggle()"><b>تثبيت الزر العائم في مكانه (منع السحب)</b><span class="m">${fabLocked() ? 'مُثبَّت' : 'قابل للسحب'}</span></button>` : '')
-      + '<h3>الوضع (لهذا الجهاز فقط)</h3>' + THMD.map(([k, n]) => `<button class="tag ${md == k ? 'on' : ''}" onclick="upd(()=>S.cfg.th='${ac}-${k}')">${n}</button>`).join('')
-      + '<p class="m">«تلقائي» يتبع وضع الهاتف: نهاري في النهار وليلي في الليل.</p>'
-      + '<h3>اللون</h3>' + THA.map(([k, n, c]) => `<button class="tag ${ac == k ? 'on' : ''}" onclick="upd(()=>S.cfg.th='${k}-${md}')"><i style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c};border:2px solid #fff"></i>${n}</button>`).join('')
-      + '<h3>حجم الخط</h3>' + [[16, 'صغير'], [18, 'عادي'], [20, 'كبير'], [22, 'أكبر']].map(([v, l]) => `<button class="tag ${fs == v ? 'on' : ''}" onclick="upd(()=>S.cfg.fs=${v})">${l}</button>`).join('')
   };
 };
 
@@ -293,7 +309,7 @@ addEventListener('resize', fabPlace);
 HK.render.push(fabUpd);
 
 HK.render.push(() => {
-  document.querySelectorAll('.rtabs, #sc').forEach(c => {
+  document.querySelectorAll('.rtabs, .sec-tags, #sc').forEach(c => {
     const t = c.querySelector('.tag.on'); if (!t || c.scrollWidth <= c.clientWidth + 2) return;
     const x = c.getBoundingClientRect(), y = t.getBoundingClientRect();
     c.scrollBy({ left: (y.left + y.width / 2) - (x.left + x.width / 2), top: 0 });
