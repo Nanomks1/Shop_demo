@@ -19,17 +19,25 @@
 [data-th=softd]{--bg:#0f1115;--c:#181b22;--t:#eceff5;--m:#9aa3b5;--b:#2f3646;--inp:#1f2430;--rs:#fbbf24;--bl:#2a2f3b;--sh:0 10px 28px rgba(0,0,0,.45);--fb:#1f2430;--fbd:#2f3646;--fbf:#232938;--rb:14px;--rt:12px;--rc:16px;--rf:12px;color-scheme:dark}
 
 /* ألوان الهوية الـ 8 (لكل من النهار والليل بشكل مستقل) */
-[data-ac=b]{--p:#2563eb;--ab:rgba(37,99,235,.16);--onp:#ffffff}
-[data-ac=t]{--p:#0d9488;--ab:rgba(13,148,136,.16);--onp:#ffffff}
-[data-ac=g]{--p:#059669;--ab:rgba(5,150,105,.16);--onp:#ffffff}
-[data-ac=v]{--p:#7c3aed;--ab:rgba(124,58,237,.16);--onp:#ffffff}
-[data-ac=r]{--p:#e11d48;--ab:rgba(225,29,72,.16);--onp:#ffffff}
-[data-ac=o]{--p:#d97706;--ab:rgba(217,119,6,.16);--onp:#ffffff}
-[data-ac=i]{--p:#4f46e5;--ab:rgba(79,70,229,.16);--onp:#ffffff}
-[data-ac=s]{--p:#475569;--ab:rgba(71,85,105,.18);--onp:#ffffff}
-[data-ac=c]{--p:#c2603f;--ab:rgba(194,96,63,.16);--onp:#ffffff}
-[data-md=d][data-ac=c]{--p:#e3906c;--ab:rgba(227,144,108,.2);--onp:#2a140b}
-[data-md=d][data-ac=s]{--p:#64748b;--ab:rgba(148,163,184,.2);--onp:#ffffff}
+/* ألوان التمييز: لكل لون قيمة نهارية وأخرى ليلية مضبوطتان للتباين (نص أبيض على الزر ≥ 4.7 نهاراً، ونص الزر الغامق ≥ 6 ليلاً) */
+[data-ac=b]{--p:#2a6be5;--ab:rgba(42,107,229,.14);--onp:#ffffff}
+[data-md=d][data-ac=b]{--p:#6899f3;--ab:rgba(104,153,243,.2);--onp:#0b0f14}
+[data-ac=t]{--p:#127d74;--ab:rgba(18,125,116,.14);--onp:#ffffff}
+[data-md=d][data-ac=t]{--p:#2fc6ba;--ab:rgba(47,198,186,.2);--onp:#0b0f14}
+[data-ac=g]{--p:#2a7e51;--ab:rgba(42,126,81,.14);--onp:#ffffff}
+[data-md=d][data-ac=g]{--p:#37be76;--ab:rgba(55,190,118,.2);--onp:#0b0f14}
+[data-ac=v]{--p:#7d56d7;--ab:rgba(125,86,215,.14);--onp:#ffffff}
+[data-md=d][data-ac=v]{--p:#aa89f5;--ab:rgba(170,137,245,.2);--onp:#0b0f14}
+[data-ac=r]{--p:#d7234d;--ab:rgba(215,35,77,.14);--onp:#ffffff}
+[data-md=d][data-ac=r]{--p:#f36d8c;--ab:rgba(243,109,140,.2);--onp:#0b0f14}
+[data-ac=o]{--p:#a35e0a;--ab:rgba(163,94,10,.14);--onp:#ffffff}
+[data-md=d][data-ac=o]{--p:#e6850f;--ab:rgba(230,133,15,.2);--onp:#0b0f14}
+[data-ac=c]{--p:#b25534;--ab:rgba(178,85,52,.14);--onp:#ffffff}
+[data-md=d][data-ac=c]{--p:#e77c55;--ab:rgba(231,124,85,.2);--onp:#0b0f14}
+[data-ac=s]{--p:#5e718d;--ab:rgba(94,113,141,.14);--onp:#ffffff}
+[data-md=d][data-ac=s]{--p:#849cbd;--ab:rgba(132,156,189,.2);--onp:#0b0f14}
+[data-ac=i]{--p:#ae47ae;--ab:rgba(174,71,174,.14);--onp:#ffffff}
+[data-md=d][data-ac=i]{--p:#e467e4;--ab:rgba(228,103,228,.2);--onp:#0b0f14}
 [data-md=d] .btn.del{color:#f87171}
 
 html{font-size:var(--fs);overflow-x:hidden;background:var(--bg);min-height:100%}
@@ -414,3 +422,9 @@ html[data-ics=line] .ci .iD{stroke:var(--f)}
 .hr::after{content:"";flex:none;width:.5rem;height:.5rem;border-left:2px solid var(--m);border-bottom:2px solid var(--m);transform:rotate(45deg);opacity:.7}
 .grid .card.cs2{flex-direction:column;align-items:flex-start;gap:8px;min-height:calc(104px * var(--ds));padding:calc(12px * var(--ds))}
 .cs2 .ct b,.cs2 .ct .m{white-space:normal}
+/* ---- وسوم الشرائح (الصفحة الرئيسية والإعدادات): نفس الشكل الموحّد ---- */
+.sec-tags .tag,#sc .tag{border:1px solid var(--fbd);border-radius:var(--rt);background:var(--fb)}
+.sec-tags .tag.on,#sc .tag.on{background:var(--p);border-color:var(--p);color:var(--onp);box-shadow:none}
+.sec-tags .tag.on::before{display:none}
+/* التاسع (طوبي دافئ) لا يبقى وحيداً في الصف */
+.ac-grid>.ac-btn:last-child:nth-child(odd){grid-column:1/-1}
