@@ -336,7 +336,7 @@ input,select,textarea{min-height:calc(44px * var(--ds));padding:calc(8px * var(-
 #cc .tag,#cc2 .tag,#fx .tag,#rk .tag,#rp_br_tags .tag,#rp_fl_tags .tag{min-height:calc(36px * var(--ds))}
 .qpill{padding:calc(9px * var(--ds)) 4px}
 .grid .card.cs2{padding:calc(9px * var(--ds));min-height:calc(62px * var(--ds))}
-.cs2 .ic{width:calc(2.25rem * var(--ds))!important;height:calc(2.25rem * var(--ds))!important}
+.cs2 .ic{width:calc(40px * var(--ds))!important;height:calc(40px * var(--ds))!important}
 .csd{width:calc(34px * var(--ds));height:calc(34px * var(--ds))}
 .btn.cs-sb{width:calc(48px * var(--ds));min-height:calc(44px * var(--ds))}
 .rck{width:calc(36px * var(--ds));height:calc(36px * var(--ds))}
