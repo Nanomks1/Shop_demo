@@ -336,7 +336,7 @@ function tgAdd(g) {
   if (!can('tags')) return toast('للمدير فقط');
   ask('وسم جديد: ' + TG[g], [{ k: 't', l: 'الاسم' }]).then(v => {
     const t = v && v.t.trim();
-    if (t && !S.tags[g].includes(t)) upd(() => { S.tags[g].push(t); if (g == 'brand' && typeof autoBc == 'function') autoBc(t); });
+    if (t && !S.tags[g].includes(t)) upd(() => { S.tags[g].push(t); if (typeof tagSort == 'function') tagSort(S.tags[g], g); if (g == 'brand' && typeof autoBc == 'function') autoBc(t); });
   });
 }
 
