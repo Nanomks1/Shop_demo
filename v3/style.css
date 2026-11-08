@@ -305,3 +305,47 @@ nav button.on .ic.ci{opacity:1;transform:scale(1.1)}
 .btn.cs-sb{width:48px;min-height:44px;margin:0;padding:0;font-size:1.25rem}
 .cs-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.cs-acts .btn{flex:1 1 40%;margin:0}
 .cs-nt{font-size:.76rem;margin-top:2px}
+/* ---------- التحكم الذكي في حجم العرض والعناصر (Display Size على طريقة أندرويد) ---------- */
+:root{--ds:1}
+.sz-card{background:var(--c);border:1.5px solid var(--b);border-radius:var(--r);padding:12px 14px;margin:8px 0}
+.sz-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.sz-head b{font-size:.96rem;font-weight:700}
+.sz-head span{font-size:.82rem;color:var(--p);font-weight:700}
+.sz-sub{font-size:.8rem;color:var(--m);margin-top:2px;margin-bottom:10px}
+.sz-ctrl{display:flex;align-items:center;gap:10px;direction:ltr}
+.sz-step{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--b);background:var(--inp);color:var(--t);font:inherit;font-size:1.25rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;padding:0}
+.sz-step:disabled{opacity:.35;cursor:default}
+.sz-track{flex:1;display:flex;align-items:center;gap:4px;height:34px;cursor:pointer}
+.sz-seg{flex:1;height:14px;background:var(--inp);border:1px solid var(--b);position:relative;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;transition:background .15s,border-color .15s}
+.sz-seg:first-child{border-radius:99px 3px 3px 99px}
+.sz-seg:last-child{border-radius:3px 99px 99px 3px}
+.sz-seg i{width:5px;height:5px;border-radius:50%;background:var(--m);opacity:.6;pointer-events:none}
+.sz-seg.fill{background:var(--p);border-color:var(--p)}
+.sz-seg.fill i{background:#fff;opacity:.85}
+.sz-seg.cur::after{content:"";position:absolute;right:-3px;top:-7px;bottom:-7px;width:4px;border-radius:4px;background:var(--p);box-shadow:0 0 0 2px var(--c);z-index:2}
+
+/* ربط أبعاد العناصر والبطاقات والأزرار بمقياس العرض (--ds) */
+header{padding:calc(7px * var(--ds)) 6px;padding-top:calc(9px * var(--ds) + env(safe-area-inset-top))}
+header .ib,header .chip{min-height:calc(38px * var(--ds));line-height:calc(38px * var(--ds))}
+.ib{min-width:calc(36px * var(--ds))}
+.btn{min-height:calc(46px * var(--ds));padding:calc(6px * var(--ds)) calc(12px * var(--ds))}
+.btn.sm,.card .sub .btn.sm,.row2 .btn.sm{min-height:calc(35px * var(--ds));padding:0 calc(9px * var(--ds))}
+input,select,textarea{min-height:calc(44px * var(--ds));padding:calc(8px * var(--ds)) calc(12px * var(--ds))}
+.card,.card.cmp,.jl-row{padding:calc(10px * var(--ds)) calc(12px * var(--ds));margin:calc(6px * var(--ds)) 0}
+.tag,.sec-tags .tag,#sc .tag{padding:calc(5px * var(--ds)) calc(11px * var(--ds))}
+#cc .tag,#cc2 .tag,#fx .tag,#rk .tag,#rp_br_tags .tag,#rp_fl_tags .tag{min-height:calc(36px * var(--ds))}
+.qpill{padding:calc(9px * var(--ds)) 4px}
+.grid .card.cs2{padding:calc(9px * var(--ds));min-height:calc(62px * var(--ds))}
+.cs2 .ic{width:calc(2.25rem * var(--ds))!important;height:calc(2.25rem * var(--ds))!important}
+.csd{width:calc(34px * var(--ds));height:calc(34px * var(--ds))}
+.btn.cs-sb{width:calc(48px * var(--ds));min-height:calc(44px * var(--ds))}
+.rck{width:calc(36px * var(--ds));height:calc(36px * var(--ds))}
+.lvb{min-height:calc(36px * var(--ds))}
+.tps,.tpi{min-height:calc(40px * var(--ds))}
+.fab-b{width:calc(48px * var(--ds));height:calc(48px * var(--ds))}
+
+/* ذكاء التخطيط: عند تكبير العرض (كبير / أكبر) تتحول الشبكات الضيقة لعمود واحد مريح بلا اقتطاع */
+[data-ds=lg] .grid{grid-template-columns:1fr}
+[data-ds=lg] .ac-grid{grid-template-columns:1fr}
+[data-ds=lg] .th-grid{grid-template-columns:1fr}
+[data-ds=lg] .cs2 .ct b,[data-ds=lg] .cs2 .ct .m{white-space:normal}

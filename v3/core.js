@@ -68,7 +68,7 @@ const nzOf = (o, fn) => { let c = NZC.get(o); if (!c || c.v !== ST.ver) { c = { 
 const DEF = {
   me: '', users: [], pin: '',
   perm: { del: 'a', price: 'a', tags: 'a', fields: 'a' },
-  cfg: { fs: 18, th: 'a:light:b:navy:b' },
+  cfg: { fs: 18, th: 'a:light:b:navy:b:100' },
   tags: {
     brand: ['Samsung', 'Xiaomi', 'Redmi', 'Realme', 'Oppo', 'Vivo', 'Tecno', 'Infinix', 'iPhone', 'Itel'],
     color: ['أسود', 'أبيض', 'أزرق', 'أحمر', 'أخضر', 'ذهبي', 'فضي', 'وردي'],
@@ -347,28 +347,30 @@ function restore(id) {
 }
 const row = (l, fn, sub) => `<button class="card row2" onclick="${fn}"><b>${esc(l)}</b><span class="m">${esc(sub || '')}</span></button>`;
 
-/* ---------- المظهر: تخصيص مستقل للنهار ولليل (5 ثيمات × 8 ألوان هوية) ---------- */
+/* ---------- المظهر: تخصيص مستقل للنهار ولليل (5 ثيمات × 8 ألوان هوية + مقياس العرض) ---------- */
 const TH_OLD = { a: 'b-a', l: 'b-l', d: 'b-d', g: 'g-l', v: 'v-d', w: 'o-l' }, FS_OLD = { 15: 16, 17: 18, 19: 20, 21: 22 };
 const TH_ACS = ['b', 't', 'g', 'v', 'r', 'o', 'i', 's'];
 const TH_L = ['light', 'warm'], TH_D = ['navy', 'slate', 'amoled'];
+const DS_VALS = [88, 94, 100, 108, 116];
 function thCfg() {
   const raw = String(TH_OLD[S.cfg.th] || S.cfg.th || '');
   if (raw.includes(':')) {
-    const [md, lt, la, dt, da] = raw.split(':');
+    const [md, lt, la, dt, da, ds] = raw.split(':');
     return {
       md: ['a', 'l', 'd'].includes(md) ? md : 'a',
       lt: TH_L.includes(lt) ? lt : 'light',
       la: TH_ACS.includes(la) ? la : 'b',
       dt: TH_D.includes(dt) ? dt : 'navy',
-      da: TH_ACS.includes(da) ? da : 'b'
+      da: TH_ACS.includes(da) ? da : 'b',
+      ds: DS_VALS.includes(+ds) ? +ds : 100
     };
   }
   const p = raw.split('-'), ac = TH_ACS.includes(p[0]) ? p[0] : 'b', md = ['a', 'l', 'd'].includes(p[1]) ? p[1] : 'a';
-  return { md, lt: ac == 'o' ? 'warm' : 'light', la: ac, dt: 'navy', da: ac };
+  return { md, lt: ac == 'o' ? 'warm' : 'light', la: ac, dt: 'navy', da: ac, ds: 100 };
 }
 function thSet(patch) {
   const c = { ...thCfg(), ...patch };
-  upd(() => { S.cfg.th = [c.md, c.lt, c.la, c.dt, c.da].join(':'); });
+  upd(() => { S.cfg.th = [c.md, c.lt, c.la, c.dt, c.da, c.ds].join(':'); });
 }
 function thGet() {
   const c = thCfg();
@@ -380,7 +382,9 @@ function thApply(de) {
   de.dataset.md = dark ? 'd' : 'l';
   de.dataset.th = dark ? c.dt : c.lt;
   de.dataset.ac = dark ? c.da : c.la;
+  de.dataset.ds = c.ds >= 108 ? 'lg' : c.ds <= 94 ? 'sm' : 'md';
   de.style.setProperty('--fs', (FS_OLD[S.cfg.fs] || S.cfg.fs || 18) + 'px');
+  de.style.setProperty('--ds', (c.ds / 100).toFixed(2));
   try { const m = document.querySelector('meta[name=color-scheme]'); if (m) m.content = dark ? 'dark' : 'only light'; } catch (e) { }
 }
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (thCfg().md == 'a') render(); }); } catch (e) { }
