@@ -19,7 +19,7 @@ const fd = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); re
 const IC={home:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',tool:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',sl:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',back:'<path d="M5 12h14M12 5l7 7-7 7"/>'};
 Object.assign(IC,{lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M8 7v10M12 7v10M16 7v10"/>',mobile:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',box:'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12M3.3 7l8.7 5 8.7-5"/>',plug:'<path d="M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>',check:'<path d="M20 6 9 17l-5-5"/>',bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/>',tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',send:'<path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/>',cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>'});
 Object.assign(IC,{search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'});
-const ic = n => (typeof CI != 'undefined' && CI[n]) ? `<svg class="ic ci" viewBox="0 0 100 100" aria-hidden="true">${CI[n]}</svg>` : `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
+const ic = n => (typeof CI != 'undefined' && CI[n]) ? `<svg class="ic ci" viewBox="0 0 100 100" aria-hidden="true"${typeof CIH != 'undefined' && CIH[n] ? ` style="--hue:${CIH[n]}"` : ''}>${CI[n]}</svg>` : `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
 const I = n => ic(n).replace('class="ic', 'class="ic s');
 
 /* ---------- أيقونات SVG إضافية حديثة (بدون إيموجي) ---------- */
@@ -349,8 +349,8 @@ const row = (l, fn, sub) => `<button class="card row2" onclick="${fn}"><b>${esc(
 
 /* ---------- المظهر: تخصيص مستقل للنهار ولليل (5 ثيمات × 8 ألوان هوية + مقياس العرض) ---------- */
 const TH_OLD = { a: 'b-a', l: 'b-l', d: 'b-d', g: 'g-l', v: 'v-d', w: 'o-l' }, FS_OLD = { 15: 16, 17: 18, 19: 20, 21: 22 };
-const TH_ACS = ['b', 't', 'g', 'v', 'r', 'o', 'i', 's'];
-const TH_L = ['light', 'warm'], TH_D = ['navy', 'slate', 'amoled'];
+const TH_ACS = ['b', 't', 'g', 'v', 'r', 'o', 'i', 's', 'c'];
+const TH_L = ['light', 'warm', 'soft'], TH_D = ['navy', 'slate', 'amoled', 'softd'];
 const DS_VALS = [88, 94, 100, 108, 116];
 function thCfg() {
   const raw = String(TH_OLD[S.cfg.th] || S.cfg.th || '');
@@ -382,6 +382,7 @@ function thApply(de) {
   de.dataset.md = dark ? 'd' : 'l';
   de.dataset.th = dark ? c.dt : c.lt;
   de.dataset.ac = dark ? c.da : c.la;
+  de.dataset.ics = ['duo', 'line', 'hue'].includes(S.cfg.ics) ? S.cfg.ics : 'duo';
   de.dataset.ds = c.ds >= 108 ? 'lg' : c.ds <= 94 ? 'sm' : 'md';
   de.style.setProperty('--fs', (FS_OLD[S.cfg.fs] || S.cfg.fs || 18) + 'px');
   de.style.setProperty('--ds', (c.ds / 100).toFixed(2));

@@ -10,7 +10,9 @@ const SECS = [
   ['case', 'البوشيط', 'ccase'],
   ['acc', 'الإكسسوارات', 'cacc'],
   ['tp', 'التعبئة', 'ctopup'],
-  ['req', 'طلبات الزبائن', 'creq']
+  ['req', 'طلبات الزبائن', 'creq'],
+  ['usd', 'شراء مستعمل', 'cused'],
+  ['dbt', 'الديون', 'cdebt']
 ];
 function secSub(k) {
   if (k == 'glass') return S.gg.length + ' مجموعة';
@@ -24,12 +26,14 @@ function secSub(k) {
     const n = (S.req || []).length;
     return n ? n + ' طلب مسجّل' : 'سأل ولم نجد';
   }
+  if (k == 'usd') { const n = (S.used || []).length; return n ? n + ' عملية شراء' : 'سجل المشتريات'; }
+  if (k == 'dbt') { const n = (S.debt || []).filter(d => !d.paid).length; return n ? n + ' دين مفتوح' : 'بلا ديون'; }
   const L = S.items.filter(i => i.sec == k);
   if (k == 'phones') { const pcs = L.reduce((a, i) => a + (+i.cnt || 0), 0); return L.length + ' صنف · ' + pcs + ' قطعة'; }
   if (k == 'case') { const pcs = L.reduce((a, i) => a + (typeof csTot == 'function' ? csTot(i) : 0), 0); return L.length + ' موديل · ' + pcs + ' قطعة'; }
   return L.length + ' صنف';
 }
-const secGo = k => k == 'tp' ? "go('tp')" : k == 'req' ? "go('req')" : `go('sec',{k:'${k}'})`;
+const secGo = k => ['tp', 'req', 'usd', 'dbt'].includes(k) ? `go('${k}')` : `go('sec',{k:'${k}'})`;
 
 /* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري (بدون تكرار) ---------- */
 let SC = '', SQ_T = 0;   // نطاق البحث الحالي + مؤقت تهدئة الكتابة
@@ -110,7 +114,9 @@ VW.home = () => {
       + `<div id="sc" class="sec-tags nowrap">${scopeChips()}</div></div><div id="res"></div>`
       + '<div id="hm">' + homeQuickBar() + scan
       + '<h3>الأقسام</h3>'
-      + `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`
+      + (S.cfg.hl == 'grid'
+        ? `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`
+        : `<div class="hl">${SECS.map(([k, n, i]) => `<button class="hr" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`)
       + more + '</div>',
     a: () => sq(Q, 1)
   };
@@ -216,11 +222,12 @@ const THA = [
   ['r', 'وردي ياقوتي', '#e11d48', 'بارز'],
   ['o', 'عنبري نحاسي', '#d97706', 'دافئ'],
   ['i', 'نيلي عميق', '#4f46e5', 'عصري'],
-  ['s', 'صخري محايد', '#475569', 'كلاسيكي']
+  ['s', 'صخري محايد', '#475569', 'كلاسيكي'],
+  ['c', 'طوبي دافئ', '#c2603f', 'ناعم']
 ];
 const THMD = [['a', 'تلقائي (يتبع الهاتف)'], ['l', 'نهاري دائماً'], ['d', 'ليلي دائماً']];
-const TH_LB_L = [['light', 'نهاري ناصع', 'أبيض نقي لضوء المحل'], ['warm', 'نهاري دافئ', 'عاجي مريح للعين']];
-const TH_LB_D = [['navy', 'كحلي LCD', 'واضح وعالي التباين'], ['slate', 'فحمي Slate', 'رمادي داكن هادئ'], ['amoled', 'أسود AMOLED', 'أسود 100% لتوفير البطارية']];
+const TH_LB_L = [['light', 'نهاري ناصع', 'أبيض نقي لضوء المحل'], ['warm', 'نهاري دافئ', 'عاجي مريح للعين'], ['soft', 'دافئ ناعم', 'بطاقات بظل ناعم']];
+const TH_LB_D = [['navy', 'كحلي LCD', 'واضح وعالي التباين'], ['slate', 'فحمي Slate', 'رمادي داكن هادئ'], ['amoled', 'أسود AMOLED', 'أسود 100% لتوفير البطارية'], ['softd', 'داكن ناعم', 'سطوح مرتفعة بظل']];
 const FS_STEPS = [[15, 'أصغر'], [16, 'صغير'], [18, 'عادي (افتراضي)'], [20, 'كبير'], [22, 'أكبر'], [24, 'كبير جداً']];
 const DS_STEPS = [[88, 'مضغوط جداً'], [94, 'مضغوط'], [100, 'عادي (افتراضي)'], [108, 'كبير'], [116, 'أكبر (مريح للنظر)']];
 
@@ -248,8 +255,12 @@ VW.st_look = () => {
       + ((fs != 18 || c.ds != 100) ? `<button class="btn s sm" style="width:100%;margin-bottom:6px" onclick="S.cfg.fs=18;thSet({ds:100})">إرجاع الحجم الافتراضي (الخط والعرض)</button>` : '')
       + '<h3>الوضع العام</h3>'
       + `<div class="sec-tags">${THMD.map(([k, n]) => `<button class="tag ${c.md == k ? 'on' : ''}" onclick="thSet({md:'${k}'})">${n}</button>`).join('')}</div>`
-      + (c.md != 'd' ? `<h3>مظهر النهار ${c.md == 'a' ? '(يُفعَّل نهاراً)' : ''}</h3><div class="card"><label style="margin-top:0">خلفية النهار</label><div class="th-grid two">${TH_LB_L.map(([k, n, d]) => `<button type="button" class="ac-btn col ${c.lt == k ? 'on' : ''}" onclick="thSet({lt:'${k}'})"><b>${n}</b><small class="m">${d}</small></button>`).join('')}</div><label>لون الأزرار والتمييز في النهار</label>${acGrid(c.la, 'la')}</div>` : '')
-      + (c.md != 'l' ? `<h3>مظهر الليل ${c.md == 'a' ? '(يُفعَّل ليلاً)' : ''}</h3><div class="card"><label style="margin-top:0">خلفية الليل</label><div class="th-grid">${TH_LB_D.map(([k, n, d]) => `<button type="button" class="ac-btn col ${c.dt == k ? 'on' : ''}" onclick="thSet({dt:'${k}'})"><b>${n}</b><small class="m">${d}</small></button>`).join('')}</div><label>لون الأزرار والتمييز في الليل</label>${acGrid(c.da, 'da')}</div>` : '')
+      + (c.md != 'd' ? `<h3>مظهر النهار ${c.md == 'a' ? '(يُفعَّل نهاراً)' : ''}</h3><div class="card"><label style="margin-top:0">خلفية النهار</label><div class="th-grid">${TH_LB_L.map(([k, n, d]) => `<button type="button" class="ac-btn col ${c.lt == k ? 'on' : ''}" onclick="thSet({lt:'${k}'${k == 'soft' && c.lt != 'soft' ? ',la:\'c\'' : ''}})"><b>${n}</b><small class="m">${d}</small></button>`).join('')}</div><label>لون الأزرار والتمييز في النهار</label>${acGrid(c.la, 'la')}</div>` : '')
+      + (c.md != 'l' ? `<h3>مظهر الليل ${c.md == 'a' ? '(يُفعَّل ليلاً)' : ''}</h3><div class="card"><label style="margin-top:0">خلفية الليل</label><div class="th-grid two">${TH_LB_D.map(([k, n, d]) => `<button type="button" class="ac-btn col ${c.dt == k ? 'on' : ''}" onclick="thSet({dt:'${k}'})"><b>${n}</b><small class="m">${d}</small></button>`).join('')}</div><label>لون الأزرار والتمييز في الليل</label>${acGrid(c.da, 'da')}</div>` : '')
+      + '<h3>عرض الأقسام في الرئيسية (لهذا الجهاز)</h3>'
+      + `<div class="sec-tags">${[['list', 'قائمة'], ['grid', 'شبكة']].map(([k, n]) => `<button class="tag ${(S.cfg.hl == 'grid' ? 'grid' : 'list') == k ? 'on' : ''}" onclick="upd(()=>S.cfg.hl='${k}')">${n}</button>`).join('')}</div>`
+      + '<h3>أسلوب الأيقونات (لهذا الجهاز)</h3>'
+      + `<div class="sec-tags">${[['duo', 'ثنائي اللون'], ['line', 'خطّي'], ['hue', 'ألوان هادئة']].map(([k, n]) => `<button class="tag ${(['line', 'hue'].includes(S.cfg.ics) ? S.cfg.ics : 'duo') == k ? 'on' : ''}" onclick="upd(()=>S.cfg.ics='${k}')">${n}</button>`).join('')}</div>`
       + '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
       + `<button class="card row2" onclick="fabReset();upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة السريعة في الرئيسية</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
       + (fabOn ? `<button class="card row2" onclick="fabLockToggle()"><b>تثبيت الزر العائم في مكانه (منع السحب)</b><span class="m">${fabLocked() ? 'مُثبَّت' : 'قابل للسحب'}</span></button>` : '')

@@ -3,14 +3,20 @@
 :root{
   --bg:#eef2f6;--c:#ffffff;--t:#0f172a;--m:#475569;--b:#c5d0de;--inp:#f8fafc;
   --p:#2563eb;--ab:rgba(37,99,235,.15);--onp:#ffffff;--rs:#b45309;--fs:18px;--r:10px;
+  --bl:color-mix(in srgb,var(--b) 55%,var(--c));--sh:0 1px 2px rgba(15,23,42,.05),0 6px 18px rgba(15,23,42,.07);
+  --fb:var(--inp);--fbd:var(--bl);--fbf:var(--c);--rb:12px;--rt:10px;--rc:14px;--rf:11px;
   color-scheme:only light;
 }
-/* الثيمات الـ 5 (نهاري ناصع · نهاري دافئ · كحلي LCD · فحمي Slate · أسود AMOLED) */
+/* الثيمات الـ 7 (نهاري ناصع · نهاري دافئ · كحلي LCD · فحمي Slate · أسود AMOLED) */
 [data-th=light]{--bg:#eef2f6;--c:#ffffff;--t:#0f172a;--m:#475569;--b:#c5d0de;--inp:#f8fafc;--rs:#b45309;color-scheme:only light}
 [data-th=warm]{--bg:#f4f0e8;--c:#fdfbf7;--t:#1c1917;--m:#57534e;--b:#cfc3b0;--inp:#f7f4ed;--rs:#b45309;color-scheme:only light}
 [data-th=navy],[data-md=d]{--bg:#0b1220;--c:#131d31;--t:#f8fafc;--m:#b4c2d8;--b:#33496e;--inp:#0e1726;--rs:#fbbf24;color-scheme:dark}
 [data-th=slate]{--bg:#12151c;--c:#1b202b;--t:#f1f5f9;--m:#b0bccb;--b:#384254;--inp:#151922;--rs:#fbbf24;color-scheme:dark}
 [data-th=amoled]{--bg:#000000;--c:#0c1017;--t:#f8fafc;--m:#aeb9c8;--b:#2d3848;--inp:#070a0f;--rs:#fbbf24;color-scheme:dark}
+[data-md=d]{--sh:0 8px 22px rgba(0,0,0,.4)}
+/* ثيم «دافئ ناعم» (نهاري) و«داكن ناعم» (ليلي): ظل ناعم وحقول معبّأة وأزرار كبسولة */
+[data-th=soft]{--bg:#f4f2ee;--c:#ffffff;--t:#1f1d1a;--m:#6f6a61;--b:#d8d3c8;--inp:#f1efea;--rs:#b45309;--bl:#e6e3dc;--sh:0 1px 2px rgba(60,40,20,.05),0 8px 22px rgba(60,40,20,.08);--fb:#f1efea;--fbd:transparent;--fbf:#ffffff;--rb:999px;--rt:999px;--rc:18px;--rf:14px;color-scheme:only light}
+[data-th=softd]{--bg:#0f1115;--c:#181b22;--t:#eceff5;--m:#9aa3b5;--b:#2f3646;--inp:#1f2430;--rs:#fbbf24;--bl:#2a2f3b;--sh:0 10px 28px rgba(0,0,0,.45);--fb:#1f2430;--fbd:#2f3646;--fbf:#232938;--rb:14px;--rt:12px;--rc:16px;--rf:12px;color-scheme:dark}
 
 /* ألوان الهوية الـ 8 (لكل من النهار والليل بشكل مستقل) */
 [data-ac=b]{--p:#2563eb;--ab:rgba(37,99,235,.16);--onp:#ffffff}
@@ -21,6 +27,8 @@
 [data-ac=o]{--p:#d97706;--ab:rgba(217,119,6,.16);--onp:#ffffff}
 [data-ac=i]{--p:#4f46e5;--ab:rgba(79,70,229,.16);--onp:#ffffff}
 [data-ac=s]{--p:#475569;--ab:rgba(71,85,105,.18);--onp:#ffffff}
+[data-ac=c]{--p:#c2603f;--ab:rgba(194,96,63,.16);--onp:#ffffff}
+[data-md=d][data-ac=c]{--p:#e3906c;--ab:rgba(227,144,108,.2);--onp:#2a140b}
 [data-md=d][data-ac=s]{--p:#64748b;--ab:rgba(148,163,184,.2);--onp:#ffffff}
 [data-md=d] .btn.del{color:#f87171}
 
@@ -349,3 +357,60 @@ input,select,textarea{min-height:calc(44px * var(--ds));padding:calc(8px * var(-
 [data-ds=lg] .ac-grid{grid-template-columns:1fr}
 [data-ds=lg] .th-grid{grid-template-columns:1fr}
 [data-ds=lg] .cs2 .ct b,[data-ds=lg] .cs2 .ct .m{white-space:normal}
+
+/* ============================================================
+   طبقة التصميم v4 — بطاقات وحقول وأزرار ناعمة + نظام الأيقونات + قائمة الأقسام
+   (كل القيم من متغيرات الثيم: --bl --sh --fb --fbd --fbf --rb --rt --rc --rf)
+   ============================================================ */
+header{border-bottom:1px solid var(--bl)}
+nav{border-top:1px solid var(--bl)}
+.card,.qpill,.bkb,.sz-card{border:1px solid var(--bl);border-radius:var(--rc);box-shadow:var(--sh)}
+.card.sel{border-color:var(--p);background:var(--ab);box-shadow:0 0 0 1px var(--p)}
+.card.cmp,.jl-row{border-radius:var(--rc)}
+.ib,.chip{border:1px solid var(--bl);border-radius:var(--rb)}
+.btn,.btn.sm{border-radius:var(--rb)}
+.btn.s{border:1px solid var(--bl);box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.btn:not(.s):not(.d):not(.del){box-shadow:0 4px 14px var(--ab)}
+input,select,textarea{border:1px solid var(--fbd);border-radius:var(--rf);background:var(--fb)}
+#sh input,#sh select,#sh textarea,.card input,.card select,.card textarea{background:var(--fb);border-color:var(--fbd)}
+input:focus,select:focus,textarea:focus,#sh input:focus,#sh select:focus,#sh textarea:focus,.card input:focus,.card select:focus,.card textarea:focus{outline:0;border-color:var(--p)!important;box-shadow:0 0 0 3px var(--ab);background:var(--fbf)}
+.tag,#sh .tag{border:1px solid var(--fbd);border-radius:var(--rt);background:var(--fb)}
+.tag.on,#sh .tag.on{background:var(--p);border-color:var(--p);color:var(--onp);box-shadow:none}
+.tag.on b{color:inherit}
+.ac-btn{border:1px solid var(--bl);border-radius:var(--rf)}
+.ac-btn.on{border-color:var(--p)}
+#sh{border-radius:22px 22px 0 0;border-top:1px solid var(--bl)}
+.btn.cs-sb{width:calc(44px * var(--ds));border-radius:50%;padding:0}
+.cs-vr .cn{font-size:1.15rem}
+.cs-chip{border:1px solid var(--fbd);border-radius:var(--rt)}
+.cs-chip button{border-radius:50%}
+
+/* ---- نظام الأيقونات: الأسلوب من html[data-ics] (افتراضي: ثنائي اللون) ---- */
+svg.ci{--f:var(--p);--tile:color-mix(in srgb,var(--f) 14%,var(--c))}
+[data-md=d] svg.ci{--tile:color-mix(in srgb,var(--f) 22%,var(--c))}
+html[data-ics=hue] svg.ci{--f:var(--hue,var(--p))}
+html[data-ics=hue][data-md=d] svg.ci{--f:color-mix(in srgb,var(--hue,var(--p)) 45%,#fff)}
+.ci .it,.ci .id,.ci .ih{fill:var(--tile)}
+.ci .ip{fill:var(--f)}
+.ci .is{fill:var(--f);fill-opacity:.3}
+.ci .iL,.ci .iM,.ci .iD{fill:none;stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round}
+.ci .iL{stroke:var(--f)}
+.ci .iM{stroke:var(--f);stroke-opacity:.5}
+.ci .iD{stroke:var(--tile)}
+html[data-ics=line] .ci .ip{fill:none;stroke:var(--f);stroke-width:4.5;stroke-linejoin:round}
+html[data-ics=line] .ci .is{fill:none;fill-opacity:1;stroke:var(--f);stroke-opacity:.5;stroke-width:4.5;stroke-linejoin:round}
+html[data-ics=line] .ci .id{fill:var(--f)}
+html[data-ics=line] .ci .iD{stroke:var(--f)}
+
+/* ---- أقسام الرئيسية: قائمة (افتراضي) أو شبكة ---- */
+.hl{background:var(--c);border:1px solid var(--bl);border-radius:var(--rc);box-shadow:var(--sh);overflow:hidden;margin:0 0 10px}
+.hr{display:flex;align-items:center;gap:12px;width:100%;padding:calc(9px * var(--ds)) calc(12px * var(--ds));background:none;border:0;border-top:1px solid var(--bl);color:var(--t);font:inherit;text-align:start;cursor:pointer;transition:background-color .12s ease}
+.hr:first-child{border-top:0}
+.hr:active{background:var(--ab)}
+.hr .ic{width:calc(42px * var(--ds));height:calc(42px * var(--ds))}
+.hr .ct{flex:1;min-width:0;display:flex;flex-direction:column}
+.hr .ct b{font-weight:600;font-size:.98rem;overflow-wrap:anywhere}
+.hr .ct .m{font-size:.8rem;overflow-wrap:anywhere}
+.hr::after{content:"";flex:none;width:.5rem;height:.5rem;border-left:2px solid var(--m);border-bottom:2px solid var(--m);transform:rotate(45deg);opacity:.7}
+.grid .card.cs2{flex-direction:column;align-items:flex-start;gap:8px;min-height:calc(104px * var(--ds));padding:calc(12px * var(--ds))}
+.cs2 .ct b,.cs2 .ct .m{white-space:normal}
