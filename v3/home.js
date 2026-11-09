@@ -144,7 +144,7 @@ const STX = [
 ];
 const stItems = () => {
   const o = [];
-  MG.forEach(([k, t]) => MORE.filter(x => x.g == k).forEach(x => o.push({ l: x.l, fn: x.fn, p: t, kw: x.d || '' })));
+  MG.forEach(([k, t]) => MORE.filter(x => x.g == k && (!x.ao || isAdmin())).forEach(x => o.push({ l: x.l, fn: x.fn, p: t, kw: x.d || '' })));
   Object.values(CATS).forEach(c => c[1].forEach(([l, fn]) => o.push({ l, fn, p: c[0], kw: '' })));
   STX.forEach(([l, fn, p, kw]) => o.push({ l, fn, p, kw }));
   return o;
@@ -164,7 +164,7 @@ VW.st = () => ({
 });
 VW.st_grp = () => {
   const g = V.g || 'shop', info = MG.find(x => x[0] == g) || MG[0];
-  const L = MORE.filter(x => x.g == g).sort((a, b) => (a.o || 50) - (b.o || 50));
+  const L = MORE.filter(x => x.g == g && (!x.ao || isAdmin())).sort((a, b) => (a.o || 50) - (b.o || 50));
   const R = x => {
     const sub = x.n ? x.n() : '';
     return `<button class="card st-card" onclick="${x.fn}"><div class="st-txt"><b>${esc(x.l)}</b>${x.d ? `<div class="m">${esc(x.d)}</div>` : ''}</div>${sub ? `<span class="m" style="white-space:nowrap">${esc(sub)}</span>` : ''}<span class="st-arr">${ic('back')}</span></button>`;
@@ -180,7 +180,7 @@ MORE.push(
   { g: 'look', o: 5, l: 'المظهر والعرض', d: 'الثيم والألوان، حجم الخط والعرض، أسلوب الأيقونات وعرض الأقسام والزر العائم (لهذا الجهاز)', fn: "go('st_look')", n: () => 'خط ' + (FS_OLD[S.cfg.fs] || S.cfg.fs || 18) + ' · ' + thCfg().ds + '%' },
   { g: 'usr', o: 10, l: 'المستخدمون والصلاحيات', d: 'إضافة موظفين وتحديد ما يستطيعون فعله', fn: "go('st_users')" },
   { g: 'usr', o: 30, l: 'القفل التلقائي', d: 'يقفل التطبيق بعد مدة بلا استعمال أو عند الخروج منه (لهذا الجهاز)', fn: 'lkEd()', n: () => lkTxt(lkSecs()) },
-  { g: 'data', o: 20, l: 'النسخ الاحتياطي والاستعادة', d: 'حفظ نسخة من البيانات أو استعادتها', fn: "go('st_bk')" },
+  { g: 'data', o: 20, l: 'النسخ الاحتياطي والاستعادة', d: 'حفظ نسخة من البيانات أو استعادتها', fn: "go('st_bk')", ao: 1 },
   { g: 'sec', o: 60, l: 'كل الوسوم (قائمة كاملة)', d: 'كل القوائم (ماركات، ألوان، سعات...) في مكان واحد', fn: "go('st_tags')" }
 );
 

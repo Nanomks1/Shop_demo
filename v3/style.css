@@ -436,3 +436,15 @@ html[data-ics=line] .ci .iD{stroke:var(--f)}
 .sug-i:active{background:var(--ab)}
 #ov{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%)}
 #sh{max-height:calc(var(--vvh,100dvh) * .94)}
+
+/* ===== v68: بطاقة الموديل بدوائر الألوان + حقول موحدة ===== */
+.csd.pc{cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;transition:box-shadow .12s ease,opacity .12s ease}
+.csd.pc.z{opacity:.45}
+.csd.pc.sel{outline:3px solid var(--p);outline-offset:2px}
+.phsel{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--b)}
+.phsel .csd{width:22px;height:22px}
+.pcrow{display:flex;gap:8px;align-items:flex-end}
+.pcrow label{margin-top:8px;min-width:0}
+.pcrow .pcp{flex:2}.pcrow .pcn{flex:1}
+#cc>div,#cc2>div{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr))}
+#cc .tag,#cc2 .tag{flex:none;width:100%;white-space:normal;overflow-wrap:anywhere}

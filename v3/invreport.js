@@ -9,7 +9,10 @@ function buyP(id) { const i = find(id); qty(i.brand + ' ' + i.name, 1, n => { i.
 /* كل سطر: [القسم, النص, الحالة r/y, دالة «تم الشراء»] */
 function invLines(notes = true) {
   const L = [];
-  ph().filter(i => phSt(i) != 'g').forEach(i => L.push(['الهواتف الناقصة', [i.brand, i.name, i.color, i.cap].filter(Boolean).join(' ') + ' — ' + av(i) + (rsQ(i) ? ' (محجوز ' + rsQ(i) + ')' : ''), phSt(i), `buyP('${i.id}')`]));
+  phGroupsOf(ph()).filter(g => phGSt(g) != 'g').forEach(g => {
+    const lo = g.items.slice().sort((x, y) => av(x) - av(y))[0], cl = g.items.length > 1 ? ' (' + g.items.map(x => (x.color || 'عام') + ' ' + av(x)).join('، ') + ')' : g.items[0].color ? ' (' + g.items[0].color + ')' : '';
+    L.push(['الهواتف الناقصة', [g.brand, g.name, g.ram, g.cap, g.cond == 'مستعمل' && 'مستعمل'].filter(Boolean).join(' ') + ' — ' + g.tot + (g.rs ? ' (محجوز ' + g.rs + ')' : '') + cl, phGSt(g), `buyP('${lo.id}')`]);
+  });
   S.gg.forEach(g => {
     const hasAny = S.tags.glass.some(t => gitem(g.id, t));
     S.tags.glass.forEach((t, idx) => {
@@ -30,7 +33,7 @@ function invLines(notes = true) {
 
 /* ============================ البحث الموحّد وعرض القسم ============================ */
 SRCH.push(
-  { k: 'phones', l: 'هواتف', run: n => S.items.filter(i => i.sec == 'phones' && nzOf(i, nzText).includes(n)).slice(0, 30).map(phCard) },
+  { k: 'phones', l: 'هواتف', run: n => { const ks = new Set(S.items.filter(i => i.sec == 'phones' && nzOf(i, nzText).includes(n)).slice(0, 30).map(phKey)); return phGroupsOf(ph().filter(i => ks.has(phKey(i)))).map(phGCard); } },
   { k: 'glass', l: 'أنتي كاس', run: n => S.gg.filter(g => g.models.some(m => nz(((g.br || {})[m] || '') + m).includes(n))).slice(0, 15).map(glB) },
   { k: 'case', l: 'بوشيط', run: n => S.items.filter(i => i.sec == 'case' && nzOf(i, nzText).includes(n)).slice(0, 30).map(csCard) },
   { k: 'acc', l: 'إكسسوارات', run: n => S.items.filter(i => i.sec == 'acc' && nzOf(i, nzText).includes(n)).slice(0, 30).map(acCard) }

@@ -44,7 +44,7 @@
   window.rcQuick = (fnName, arg) => {
     if (fnName == 'buyP') {
       const i = find(arg); if (!i) return;
-      const add = Math.max(1, phLim(i) + 1 - av(i));
+      const add = Math.max(1, phLim(i) + 1 - phGroup(i).tot);
       commit('تم الشراء (+' + add + '): ' + i.brand + ' ' + i.name, () => { i.cnt += add; touch(i, 1); });
       if (typeof reqChk == 'function') reqChk(i.brand + ' ' + i.name);
     } else if (fnName == 'buyC') {
