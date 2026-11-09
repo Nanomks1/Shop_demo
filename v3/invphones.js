@@ -67,10 +67,12 @@ function phDots(g, cmp) {
 }
 function phGCard(g) {
   const s = phGSt(g), cmp = isCmp('phones') && V.v == 'sec', f0 = g.items[0], sel = g.items.find(x => x.id == PHS);
-  const t = [g.ram, g.cap, g.cond != 'جديد' && g.cond, g.items.length > 1 && g.cnt + ' قطعة'].filter(Boolean).map(esc).join(' · ');
+  const t = [g.ram, g.cap].filter(Boolean).map(x => `<span class="phk">${esc(x)}</span>`).join('')
+    + (g.cond != 'جديد' ? `<span class="phk c">${esc(g.cond)}</span>` : '')
+    + (g.items.length > 1 ? `<span class="phk n"><small>عدد الهواتف</small><b>${g.cnt}</b></span>` : '');
   const rsB = g.rs ? `<span class="rs"> · محجوز ${g.rs}</span>` : '';
-  const bar = sel ? `<div class="phsel"><span class="csd" style="background:${csBg(sel.color)};color:${csInk(sel.color)}"></span><b style="flex:1;min-width:0">${esc(sel.color || 'عام')}</b><button class="btn s sm" onclick="phC('${sel.id}',-1)">− بيع</button><span class="cn">${sel.cnt}</span><button class="btn sm" onclick="phC('${sel.id}',1)">+ إضافة</button><button class="tag" style="margin:0" onclick="phOpen('${sel.id}')">⋯</button></div>` : '';
-  return cardH(`<div class="row2" style="gap:8px;flex-wrap:wrap"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phGO('${f0.id}')"><b>${esc(g.brand + ' ' + g.name)}</b>${t || rsB ? `<div class="m">${t}${rsB}</div>` : ''}</div>${g.price ? `<span class="cmp-pr">${esc(fmtPr(g.price))}</span>` : ''}<div class="cs-sws">${phDots(g, cmp)}</div></div>${bar}`, colOf(f0), 'cmp');
+  const bar = sel ? `<div class="phsel"><span class="csd" style="background:${csBg(sel.color)};color:${csInk(sel.color)}"></span><b style="flex:1;min-width:0">${esc(sel.color || 'عام')}</b><button class="btn s sm sell" onclick="phC('${sel.id}',-1)">− بيع</button><span class="cn">${sel.cnt}</span><button class="btn sm" onclick="phC('${sel.id}',1)">+ إضافة</button><button class="tag" style="margin:0" onclick="phOpen('${sel.id}')">⋯</button></div>` : '';
+  return cardH(`<div class="row2" style="gap:8px;flex-wrap:wrap"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phGO('${f0.id}')"><b>${esc(g.brand + ' ' + g.name)}</b>${t || rsB ? `<div class="phkr">${t}${rsB}</div>` : ''}</div>${g.price ? `<span class="cmp-pr">${esc(fmtPr(g.price))}</span>` : ''}<div class="cs-sws">${phDots(g, cmp)}</div></div>${bar}`, colOf(f0), 'cmp');
 }
 /* نافذة الموديل: كل الألوان − / + ثم الحد والإضافة */
 function phGO(id) { if (!find(id)) return; phGR(id); sheetOpen(() => { }); }
