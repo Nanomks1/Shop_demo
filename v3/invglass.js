@@ -116,7 +116,7 @@ const clrM = n => S.items.forEach(i => { if (i.sec == 'glass' && i.lv) delete i.
 let GS = {};
 function glAdd() {
   GS = {}; fsInit([['brand', 'الماركة']], {});
-  $('sh').innerHTML = `<div class="bar"></div><h3>موديل جديد</h3>${invModelDatalist()}<div id="cc"></div><label>اسم الموديل<input id="gn" list="dl_mnames" placeholder="مثال: A15"></label><button class="btn" onclick="glNext()">التالي</button>`;
+  $('sh').innerHTML = `<div class="bar"></div><h3>موديل جديد</h3>${invModelDatalist()}<div id="cc"></div><label>اسم الموديل<input id="gn" data-sug="mn" placeholder="مثال: A15"></label><button class="btn" onclick="glNext()">التالي</button>`;
   sheetOpen(() => { }); chipsR();
 }
 function glNext() {
@@ -142,7 +142,7 @@ function glNew() {
 }
 function glM(gid) {
   const g = S.gg.find(x => x.id == gid); fsInit([['brand', 'الماركة (اختياري)']], {});
-  $('sh').innerHTML = `<div class="bar"></div><h3>موديل مطابق</h3>${invModelDatalist()}<div id="cc"></div><label>الاسم<input id="gmn" list="dl_mnames"></label><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({n:$('gmn').value.trim(),b:FS.v.brand||''})">حفظ</button></div>`;
+  $('sh').innerHTML = `<div class="bar"></div><h3>موديل مطابق</h3>${invModelDatalist()}<div id="cc"></div><label>الاسم<input id="gmn" data-sug="mn"></label><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="finish({n:$('gmn').value.trim(),b:FS.v.brand||''})">حفظ</button></div>`;
   sheetOpen(v => {
     if (!v || !v.n) return; const n = v.n, o = gOf(n); if (o && o.id == gid) return toast('موجود في المجموعة');
     const add = () => { clrM(n); g.models.push(n); if (v.b) { g.br = g.br || {}; g.br[n] = v.b; } };

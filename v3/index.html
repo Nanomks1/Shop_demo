@@ -2,14 +2,19 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-visual">
 <meta name="theme-color" content="#0b1220">
+<script>
+/* خلفية الصفحة تتبع الثيم من أول لحظة (قبل تحميل بقية الملفات) فلا يظهر وميض أبيض ليلاً */
+(function(){try{var s=JSON.parse(localStorage.getItem('shop3')||'{}'),p=String(((s.cfg||{}).th)||'').split(':'),md=p[0],d=document.documentElement,
+dk=md=='d'||(md!='l'&&matchMedia('(prefers-color-scheme: dark)').matches);d.dataset.md=dk?'d':'l';d.dataset.th=dk?(p[3]||'navy'):(p[1]||'light')}catch(e){}})();
+</script>
 <meta name="color-scheme" content="only light">
-<link rel="manifest" href="manifest.json?v=66">
-<link rel="icon" href="icon-192.png?v=66">
-<link rel="apple-touch-icon" href="icon-192.png?v=66">
+<link rel="manifest" href="manifest.json?v=67">
+<link rel="icon" href="icon-192.png?v=67">
+<link rel="apple-touch-icon" href="icon-192.png?v=67">
 <title>محل عزيز</title>
-<link rel="stylesheet" href="style.css?v=66">
+<link rel="stylesheet" href="style.css?v=67">
 </head>
 <body>
 <header>
@@ -24,30 +29,30 @@
 <nav id="nv"></nav>
 <div id="ts" class="toast" hidden></div>
 <div id="ov" hidden><div id="sh"></div></div>
-<script src="core.js?v=66"></script>
-<script src="icons.js?v=66"></script>
-<script src="topup.js?v=66"></script>
-<script src="invbase.js?v=66"></script>
-<script src="invphones.js?v=66"></script>
-<script src="invglass.js?v=66"></script>
-<script src="invpochette.js?v=66"></script>
-<script src="invacc.js?v=66"></script>
-<script src="invreport.js?v=66"></script>
-<script src="invround.js?v=66"></script>
-<script src="barcode.js?v=66"></script>
-<script src="invset.js?v=66"></script>
-<script src="repair.js?v=66"></script>
-<script src="report.js?v=66"></script>
-<script src="sync.js?v=66"></script>
-<script src="extra.js?v=66"></script>
-<script src="home.js?v=66"></script>
-<script src="users.js?v=66"></script>
-<script src="backup.js?v=66"></script>
-<script src="app.js?v=66"></script>
+<script src="core.js?v=67"></script>
+<script src="icons.js?v=67"></script>
+<script src="topup.js?v=67"></script>
+<script src="invbase.js?v=67"></script>
+<script src="invphones.js?v=67"></script>
+<script src="invglass.js?v=67"></script>
+<script src="invpochette.js?v=67"></script>
+<script src="invacc.js?v=67"></script>
+<script src="invreport.js?v=67"></script>
+<script src="invround.js?v=67"></script>
+<script src="barcode.js?v=67"></script>
+<script src="invset.js?v=67"></script>
+<script src="repair.js?v=67"></script>
+<script src="report.js?v=67"></script>
+<script src="sync.js?v=67"></script>
+<script src="extra.js?v=67"></script>
+<script src="home.js?v=67"></script>
+<script src="users.js?v=67"></script>
+<script src="backup.js?v=67"></script>
+<script src="app.js?v=67"></script>
 <script>
 if("serviceWorker" in navigator){
   const had=!!navigator.serviceWorker.controller;
-  navigator.serviceWorker.register("sw.js?v=66").then(r=>{
+  navigator.serviceWorker.register("sw.js?v=67").then(r=>{
     r.update().catch(()=>{});
     document.addEventListener("visibilitychange",()=>{if(!document.hidden)r.update().catch(()=>{});});
   }).catch(()=>{});

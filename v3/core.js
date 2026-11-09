@@ -53,8 +53,7 @@ const LM = [
   ['low', 'هاتف: «قارب النفاد» عند عدد ≤ (الحد العام)'],
   ['gmin', 'أنتي كاس: «قارب النفاد» عند مجموع ≤ (الحد العام)'],
   ['cl', 'بوشيط: «قارب النفاد» عند مجموع ≤ (الحد العام)'],
-  ['stale', 'الجولة: يُعتبر الصنف غير مؤكد بعد (أيام)'],
-  ['alk', 'قفل التطبيق والمدير تلقائياً بعد (دقائق بلا استعمال)']
+  ['stale', 'الجولة: يُعتبر الصنف غير مؤكد بعد (أيام)']
 ];
 
 /* ---------- البحث: توحيد الكتابة (عربي/إنجليزي/أرقام) ---------- */
@@ -234,11 +233,16 @@ function toast(msg, undo, ms) {
 
 /* ---------- التنقل وزر الرجوع ---------- */
 function go(v, p) {
+  sugClose();
   V = { v, ...p }; Q = ''; QP = 0; history.pushState({ V }, ''); render();
   scrollTo(0, 0);
 }
 addEventListener('popstate', e => {
   const s = e.state || {};
+  if ($('lk') || $('lg')) { history.pushState({ V, sh: SH ? 1 : 0 }, ''); return; }   // شاشة القفل: الرجوع لا يغلق شيئاً تحتها
+  if (SH && SHD && Date.now() - SHARM > 2500) {   // في النافذة كتابة: أول رجوع للتنبيه فقط
+    SHARM = Date.now(); toast('اضغط رجوع مرة أخرى لإغلاق النافذة (ما كتبته محفوظ كمسودة)'); history.pushState({ V, sh: 1 }, ''); return;
+  }
   if (SH) { hideSheet(); return; }
   if (s.root) {   // وصلنا لأسفل المكدّس: اضغط مرتين للخروج
     if (Date.now() - ARM < 2500) { history.back(); return; }
@@ -249,13 +253,71 @@ addEventListener('popstate', e => {
 function startHistory() { history.replaceState({ root: 1 }, ''); history.pushState({ V }, ''); }
 
 /* ---------- النافذة السفلية ---------- */
-function sheetOpen(res) { SH = true; SHR = { res, val: null }; $('ov').hidden = false; history.pushState({ V, sh: 1 }, ''); }
+function sheetOpen(res) { SH = true; SHR = { res, val: null }; $('ov').hidden = false; history.pushState({ V, sh: 1 }, ''); SHD = 0; SHE = draftFields().every(e => !e.value); draftRestore(); }
 function hideSheet() {
   HK.hide.forEach(f => { try { f(); } catch (e) { } });
+  sugClose(); clearTimeout(DRT);
   $('ov').hidden = true; SH = false;
   const r = SHR; SHR = null; r && r.res(r.val);
 }
-const finish = v => { if (!SHR) return; SHR.val = v; history.back(); };
+const finish = v => { if (!SHR) return; SHR.val = v; draftClear(); history.back(); };
+
+/* ---------- مسودة النافذة: ما كتبته لا يضيع إن أُغلقت النافذة بالخطأ أو انقطع التطبيق ---------- */
+let SHD = 0, SHE = 0, SHARM = 0, DRT = 0;   // SHD: كُتب شيء · SHE: فُتحت فارغة (إدخال جديد) · SHARM: تنبيه الرجوع
+const DRK = 'shopDraft';
+const draftFields = () => [...($('sh') ? $('sh').querySelectorAll('input[id],textarea[id]') : [])].filter(e => !['hidden', 'password', 'file', 'checkbox', 'radio', 'button', 'range'].includes(e.type));
+const draftKey = F => (V && V.v || '') + '|' + F.map(e => e.id).sort().join(',');
+function draftSave() {
+  if (!SH || !SHE) return;   // نحفظ مسودة نماذج الإدخال الجديد فقط، لا نماذج تعديل عنصر موجود
+  const F = draftFields(), vals = {};
+  F.forEach(e => { if (e.value) vals[e.id] = e.value; });
+  try { if (Object.keys(vals).length) localStorage.setItem(DRK, JSON.stringify({ k: draftKey(F), t: Date.now(), v: vals })); else localStorage.removeItem(DRK); } catch (e) { }
+}
+function draftClear() { clearTimeout(DRT); SHD = 0; try { localStorage.removeItem(DRK); } catch (e) { } }
+function draftRestore() {
+  try {
+    const F = draftFields(); if (!F.length || !SHE) return;
+    const d = JSON.parse(localStorage.getItem(DRK) || 'null');
+    if (!d || d.k != draftKey(F) || Date.now() - d.t > 1800000) return;
+    let n = 0; F.forEach(e => { if (d.v[e.id]) { e.value = d.v[e.id]; n++; } });
+    if (n) { SHD = 1; SHE = 1; toast('استُعيد ما كتبته سابقاً في هذه النافذة'); }
+  } catch (e) { }
+}
+document.addEventListener('input', e => {
+  if (!SH || !e.target.closest || !e.target.closest('#sh')) return;
+  SHD = 1; clearTimeout(DRT); DRT = setTimeout(draftSave, 400);
+}, true);
+
+/* ---------- اقتراحات داخل التطبيق (بدل قائمة المتصفح الأصلية): تظهر تحت الحقل بلون الثيم ولا تغطي لوحة المفاتيح ---------- */
+const SUG = {};   // اسم المصدر ← دالة ترجع مصفوفة نصوص (يُستعمل في الحقل: data-sug="اسم")
+function sugClose() { document.querySelectorAll('.sug').forEach(e => e.remove()); }
+function sugShow(inp) {
+  sugClose();
+  const f = SUG[inp.dataset.sug]; if (!f) return;
+  const q = inp.value.trim(), n = x => typeof nz == 'function' ? nz(x) : String(x).toLowerCase();
+  let L = []; try { L = f(); } catch (e) { }
+  L = [...new Set(L)].filter(x => x && x != q && (!q || n(x).includes(n(q)))).slice(0, 8);
+  if (!L.length) return;
+  const box = document.createElement('div'); box.className = 'sug';
+  box.innerHTML = L.map(x => `<button type="button" tabindex="-1" class="sug-i">${esc(x)}</button>`).join('');
+  box.addEventListener('mousedown', ev => ev.preventDefault());   // لا يفقد الحقل التركيز عند اللمس
+  box.addEventListener('click', ev => {
+    const b = ev.target.closest('.sug-i'); if (!b) return;
+    inp.value = b.textContent; sugClose(); inp.dispatchEvent(new Event('input', { bubbles: true })); inp.focus();
+  });
+  (inp.closest('label') || inp).after(box);
+  box.scrollIntoView({ block: 'nearest' });
+}
+document.addEventListener('focusin', e => { const t = e.target; if (t.dataset && t.dataset.sug) { t.setAttribute('autocomplete', 'off'); sugShow(t); } });
+document.addEventListener('input', e => { const t = e.target; if (t.dataset && t.dataset.sug) sugShow(t); });
+document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.sug) setTimeout(sugClose, 300); });
+
+/* ---------- لوحة المفاتيح: النافذة السفلية تتبع المنطقة المرئية فلا تغطيها اللوحة ولا يحدث وميض ---------- */
+(() => {
+  const vv = window.visualViewport, r = document.documentElement; if (!vv) return;
+  const f = () => { r.style.setProperty('--vvh', vv.height + 'px'); r.style.setProperty('--vvt', vv.offsetTop + 'px'); };
+  vv.addEventListener('resize', f); vv.addEventListener('scroll', f); f();
+})();
 
 /* ---------- لوحة الأرقام (مع التبديل إلى لوحة الحروف) ---------- */
 function pinPadHtml (id, ph = 'أدخل الرمز', onEnter = '') {

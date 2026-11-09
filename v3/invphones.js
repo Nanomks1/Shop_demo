@@ -139,7 +139,7 @@ function phForm(rec) {
   $('sh').innerHTML = `<div class="bar"></div><h3>${ed ? 'تعديل هاتف' : 'هاتف جديد'}</h3>`
     + invModelDatalist()
     + `<div id="cc"></div>`
-    + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:2;margin-top:8px">الموديل<input id="pm" list="dl_mnames" value="${esc(rec.name || '')}" placeholder="مثال: A07"></label><label style="flex:1;margin-top:8px">العدد<input id="pcnt" type="number" value="${rec.cnt ?? 1}"></label></div>`
+    + `<div class="row2" style="gap:8px;align-items:flex-end"><label style="flex:2;margin-top:8px">الموديل<input id="pm" data-sug="mn" value="${esc(rec.name || '')}" placeholder="مثال: A07"></label><label style="flex:1;margin-top:8px">العدد<input id="pcnt" type="number" value="${rec.cnt ?? 1}"></label></div>`
     + `<label${hh('phones', 'price')}>سعر البيع (درهم)<input id="pp" type="tel" value="${esc(rec.price || '')}" placeholder="${esc(rec._costPh || 'مثال: 1350')}" ${ed && !can('price') ? 'disabled' : ''}></label>`
     + `<div id="cc2"></div>`
     + `<label${hh('phones', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="pimei" value="${esc(rec.imei || '')}" placeholder="امسح الباركود أو اكتب الرقم" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('pimei')">${I('scan')} مسح</button></div></label>`

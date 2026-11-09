@@ -428,3 +428,11 @@ html[data-ics=line] .ci .iD{stroke:var(--f)}
 .sec-tags .tag.on::before{display:none}
 /* التاسع (طوبي دافئ) لا يبقى وحيداً في الصف */
 .ac-grid>.ac-btn:last-child:nth-child(odd){grid-column:1/-1}
+
+/* ---- اقتراحات داخل التطبيق + نافذة تتبع المنطقة المرئية فوق لوحة المفاتيح ---- */
+.sug{margin:4px 0 8px;border:1px solid var(--bl);border-radius:var(--rf);background:var(--c);box-shadow:var(--sh);max-height:min(34dvh,240px);overflow-y:auto;overscroll-behavior:contain}
+.sug-i{display:block;width:100%;min-height:44px;text-align:start;padding:calc(.6rem * var(--ds)) .9rem;background:none;border:0;border-top:1px solid var(--bl);border-radius:0;color:var(--t);font:inherit;cursor:pointer;box-shadow:none}
+.sug-i:first-child{border-top:0}
+.sug-i:active{background:var(--ab)}
+#ov{top:var(--vvt,0px);bottom:auto;height:var(--vvh,100%)}
+#sh{max-height:calc(var(--vvh,100dvh) * .94)}

@@ -144,7 +144,7 @@ function csClrNeed(id) {
 /* ---------- الإضافة: ابحث أولاً، ثم اللون والعدد ---------- */
 function csAdd() {
   CQ = ''; CSD = {};
-  $('sh').innerHTML = `<div class="bar"></div><h3>إضافة بوشيط</h3>${invModelDatalist()}<label>ابحث أولاً: موديل الهاتف<input list="dl_mnames" oninput="csF(this.value)"></label><div id="pr"></div><button class="btn s" onclick="finish(null)">إلغاء</button>`;
+  $('sh').innerHTML = `<div class="bar"></div><h3>إضافة بوشيط</h3>${invModelDatalist()}<label>ابحث أولاً: موديل الهاتف<input data-sug="mn" oninput="csF(this.value)"></label><div id="pr"></div><button class="btn s" onclick="finish(null)">إلغاء</button>`;
   sheetOpen(csClosed); csF('');
 }
 function csF(q) {
