@@ -208,6 +208,7 @@ function phUpR(id) {
     const mk = Math.max(0, g.models.indexOf(mName));
     h += `<div class="card"><b>${I('shield')} أنتي كاس مطابق: ${esc(g.models.join(' / '))}</b>`
       + S.tags.glass.map((ty, j) => {
+        if (!gHas(g, mName, ty)) return '';
         const it = gitem(g.id, ty) || { stock: {} }, lv = (it.lv || {})[mName], ex = lv === undefined && (it.stock || {})[mName] !== undefined;
         return `<div class="gm"><div class="row2"><b style="flex:1">${esc(ty)}${it.price ? ` <span class="cmp-pr">(${esc(fmtPr(it.price))})</span>` : ''}</b>`
           + (ex ? `<button class="btn s sm" onclick="glC('${g.id}',${j},${mk},-1);phUpR('${id}')">−1</button><span class="cn">${it.stock[mName]}</span>`
@@ -253,10 +254,11 @@ function phForm(rec) {
   PR = rec; const ed = !!rec.id;
   fsInit([['brand', 'الماركة'], ['color', 'اللون', () => shown('phones', 'color')], ['ram', 'RAM', () => shown('phones', 'ram')], ['cap', 'السعة', () => shown('phones', 'cap')]],
     { brand: rec.brand || '', color: rec.color || '', ram: rec.ram || '', cap: rec.cap || '', cond: rec.cond || 'جديد' }, 'phones', rec, shown('phones', 'cond'));
+  FS.sugC = colSugPh;
   $('sh').innerHTML = `<div class="bar"></div><h3>${ed ? 'تعديل هاتف' : 'هاتف جديد'}</h3>`
     + invModelDatalist()
     + `<div id="cc"></div>`
-    + `<label style="margin-top:8px">الموديل<input id="pm" data-sug="mn" value="${esc(rec.name || '')}" placeholder="مثال: A07"></label>`
+    + `<label style="margin-top:8px">الموديل<input id="pm" data-sug="mn" oninput="colRef()" onchange="colRef()" value="${esc(rec.name || '')}" placeholder="مثال: A07"></label>`
     + `<div class="pcrow"><label class="pcp"${hh('phones', 'price')}>سعر البيع (درهم)<input id="pp" type="tel" value="${esc(rec.price || '')}" placeholder="${esc(rec._costPh || 'مثال: 1350')}" ${ed && !can('price') ? 'disabled' : ''}></label><label class="pcn">العدد<input id="pcnt" type="number" value="${rec.cnt ?? 1}"></label></div>`
     + `<div id="cc2"></div>`
     + `<label${hh('phones', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="pimei" value="${esc(rec.imei || '')}" placeholder="امسح الباركود أو اكتب الرقم" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('pimei')">${I('scan')} مسح</button></div></label>`
@@ -342,7 +344,7 @@ function tagFix() {
     if (out.length === a.length) return;
     S.tags[g] = out; ch = 1;
     S.items.forEach(i => { if (map[i[g]] !== undefined) i[g] = map[i[g]]; if (g == 'color' && Array.isArray(i.v)) i.v.forEach(x => { if (map[x.c] !== undefined) x.c = map[x.c]; }); });
-    if (g == 'brand') ['bcol', 'bl'].forEach(c => { const o = S.cfg && S.cfg[c]; if (!o) return; Object.keys(map).forEach(x => { if (o[x] !== undefined) { if (o[map[x]] === undefined) o[map[x]] = o[x]; delete o[x]; } }); });
+    if (g == 'brand') ['bcol', 'bl', 'nsb'].forEach(c => { const o = S.cfg && S.cfg[c]; if (!o) return; Object.keys(map).forEach(x => { if (o[x] !== undefined) { if (o[map[x]] === undefined) o[map[x]] = o[x]; delete o[x]; } }); });
   });
   return ch;
 }
