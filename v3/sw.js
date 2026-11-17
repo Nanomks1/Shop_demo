@@ -1,4 +1,4 @@
-const CACHE = 'aziz-shop-v3-71';
+const CACHE = 'aziz-shop-v3-72';
 const ASSETS = [
   './',
   './index.html',
@@ -38,7 +38,9 @@ self.addEventListener('activate', e => {
   );
 });
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) return;
+  if (e.request.method !== 'GET') return;
+  const u = e.request.url, same = u.startsWith(self.location.origin), font = u.includes('fonts.googleapis.com') || u.includes('fonts.gstatic.com');
+  if (!same && !font) return;
   e.respondWith(
     fetch(e.request).then(res => {
       if (res && res.status === 200) {
@@ -46,6 +48,6 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, clone));
       }
       return res;
-    }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match('./index.html')))
+    }).catch(() => caches.match(e.request, { ignoreSearch: same }).then(r => r || (same ? caches.match('./index.html') : new Response('', { status: 408 }))))
   );
 });

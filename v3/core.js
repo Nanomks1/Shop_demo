@@ -4,7 +4,6 @@
    VW (الشاشات) · HK (خطّافات الحفظ/الإغلاق) · HOME (أزرار الرئيسية)
    MORE (قائمة المزيد) · SRCH (مصادر البحث) · LM (حدود قابلة للتعديل)
    ============================================================ */
-
 /* ---------- أدوات عامة ---------- */
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -14,14 +13,12 @@ const vib = (ms = 25) => { try { if (navigator.vibrate) navigator.vibrate(ms); }
 const dg = s => String(s ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 const waNum = t => { const d = dg(t).replace(/\D/g, ''); if (d.startsWith('00')) return d.slice(2); if (d.startsWith('2120')) return '212' + d.slice(4); if (d[0] == '0') return '212' + d.slice(1); if (d.length == 9 && /^[567]/.test(d)) return '212' + d; return d; };
 const fd = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
-
 /* الأيقونات */
 const IC={home:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',tool:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',sl:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',back:'<path d="M5 12h14M12 5l7 7-7 7"/>'};
 Object.assign(IC,{lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M8 7v10M12 7v10M16 7v10"/>',mobile:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',box:'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12M3.3 7l8.7 5 8.7-5"/>',plug:'<path d="M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>',check:'<path d="M20 6 9 17l-5-5"/>',bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/>',tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',send:'<path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/>',cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>'});
 Object.assign(IC,{search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'});
 const ic = n => (typeof CI != 'undefined' && CI[n]) ? `<svg class="ic ci" viewBox="0 0 100 100" aria-hidden="true"${typeof CIH != 'undefined' && CIH[n] ? ` style="--hue:${CIH[n]}"` : ''}>${CI[n]}</svg>` : `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
 const I = n => ic(n).replace('class="ic', 'class="ic s');
-
 /* ---------- أيقونات SVG إضافية حديثة (بدون إيموجي) ---------- */
 Object.assign(IC, {
   plus: '<path d="M12 5v14M5 12h14"/>',
@@ -33,9 +30,12 @@ Object.assign(IC, {
   trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
   alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   keyboard: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/>',
-  hash: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>'
+  hash: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
+  close: '<path d="M18 6 6 18M6 6l12 12"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
+  bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>'
 });
-
 /* ---------- السجلات (تسجّل فيها الملفات الأخرى بدل تعديل بعضها) ---------- */
 const VW = {};                                  // الشاشات: VW.name = () => ({t:'العنوان', h:'html', a:()=>{}})
 const HK = { save: [], saved: [], hide: [], render: [] };   // save: قبل الحفظ · saved: بعده · hide: عند إغلاق النافذة
@@ -43,7 +43,6 @@ const HOME = { top: [], tools: [], after: [] }; // دوال تعيد html لأز
 const MORE = [];                                // عناصر قائمة المزيد: {g, l, fn, n, o}
 const SRCH = [];                                // مصادر البحث: {k, l, run(n) -> [html]}
 const ST = { ver: 0, dirty: 0 };                // ver: يتغير مع كل حفظ (ذاكرة البحث) · dirty: يحتاج مزامنة
-
 /* ---------- الثوابت ---------- */
 const TG = { brand: 'الماركات', color: 'الألوان', cap: 'السعات', ram: 'RAM', gender: 'الجنس', kind: 'نوع الإكسسوار', conn: 'الموصل', tier: 'الفئات السعرية', glass: 'أنواع الزجاج', pw: 'القدرة (واط)', fault: 'أعطال الصيانة' };
 const PL = { del: 'الحذف', price: 'تعديل الأسعار', tags: 'إدارة الوسوم', fields: 'إدارة الحقول' };
@@ -55,19 +54,17 @@ const LM = [
   ['cl', 'بوشيط: «قارب النفاد» عند مجموع ≤ (الحد العام)'],
   ['stale', 'الجولة: يُعتبر الصنف غير مؤكد بعد (أيام)']
 ];
-
 /* ---------- البحث: توحيد الكتابة (عربي/إنجليزي/أرقام) ---------- */
 const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g','كابل':'cable','كابلو':'cable','كابلات':'cable','câble':'cable','شاحن':'charger','شارجور':'charger','شارجر':'charger','شارجيور':'charger','chargeur':'charger','سماعة':'headset','سماعات':'headset','ecouteur':'headset','écouteur':'headset','اكوتور':'headset','ايربودز':'airpods','بوشيط':'pochette','بوشيت':'pochette','جراب':'pochette','انتي كاس':'glass','انتيكاس':'glass','زجاج':'glass','verre':'glass','فلاشة':'usb','افيشور':'شاشة','ميموار':'memorycard','باتري':'بطارية','تيربو':'charger','يو اس بي':'usb','جالاكسي':'galaxy','جلاكسي':'galaxy','لايتنينغ':'lightning'};
 const KS=Object.keys(AL).sort((a,b)=>b.length-a.length);
 const nz=s=>{s=String(s||'').toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/[\u064B-\u0652]/g,'');for(const k of KS)s=s.split(k).join(AL[k]);return s.replace(/[\s\-_]/g,'')};
 const NZC = new WeakMap();   // ذاكرة مؤقتة خارج البيانات (لا تُحفظ ولا تُزامَن)
 const nzOf = (o, fn) => { let c = NZC.get(o); if (!c || c.v !== ST.ver) { c = { v: ST.ver, s: nz(fn(o)) }; NZC.set(o, c); } return c.s; };
-
 /* ---------- الحالة ---------- */
 const DEF = {
   me: '', users: [], pin: '',
   perm: { del: 'a', price: 'a', tags: 'a', fields: 'a' },
-  cfg: { fs: 18, th: 'a:light:b:navy:b:100' },
+  cfg: { fs: 18, th: 'a:warm:ibm:lcd:0:100' },
   tags: {
     brand: ['Samsung', 'Xiaomi', 'Redmi', 'Realme', 'Oppo', 'Vivo', 'Tecno', 'Infinix', 'iPhone', 'Itel'],
     color: ['أسود', 'أبيض', 'أزرق', 'أحمر', 'أخضر', 'ذهبي', 'فضي', 'وردي'],
@@ -92,7 +89,6 @@ function load(chk) {
 }
 let S = load(1);
 let V = { v: 'home' }, Q = '', QP = 0, SH = false, SHR = null, ARM = 0, TT;
-
 /* ---------- مخازن IndexedDB (الصور + النسخة التلقائية) ---------- */
 function kvStore(db, store) {
   let p = null;
@@ -119,7 +115,6 @@ function kvStore(db, store) {
   };
 }
 const MEDIA = kvStore('AzizShopMedia', 'imgs'), AUTOBK = kvStore('AzizShopAutoBackup', 'bk');
-
 /* خزنة الصور: الصورة تعيش في IndexedDB، والسجل في الذاكرة وlocalStorage يحمل الوسم 'idb:المعرّف' فقط */
 const IMG = {};
 const putImg = (id, d) => { if (!id || !d) return; IMG[id] = d; MEDIA.put(id, d).catch(e => errLog('حفظ صورة: ' + (e && e.message || e))); };
@@ -159,7 +154,6 @@ function imgInit() {
     if (ch) render();
   }).catch(e => errLog('قراءة الصور: ' + (e && e.message || e)));
 }
-
 /* ---------- الحفظ ---------- */
 function save() {
   try {
@@ -182,14 +176,12 @@ function stWarn(n) {
     toast('المساحة ' + Math.round(n / 5e4) + '% من الحد: خذ نسخة احتياطية وأرشف الصيانات القديمة', null, 9000);
   } catch (e) { }
 }
-
 /* ---------- الأخطاء ---------- */
 const errLog = m => { try { const a = JSON.parse(localStorage.getItem('shopErr') || '[]'); a.unshift(new Date().toLocaleString('ar-MA') + ' — ' + String(m).slice(0, 160)); localStorage.setItem('shopErr', JSON.stringify(a.slice(0, 8))); } catch (e) { } };
 let ERT = 0;
 const errUi = m => { errLog(m); if (Date.now() - ERT < 4000) return; ERT = Date.now(); toast(/quota|storage/i.test(m) ? 'المساحة ممتلئة: خذ نسخة احتياطية الآن' : 'حدث خطأ غير متوقع، بياناتك محفوظة'); };
 addEventListener('error', e => errUi(e.message || e));
 addEventListener('unhandledrejection', e => errUi((e.reason && e.reason.message) || e.reason));
-
 /* ---------- الرموز السرية (SHA-256 مملّحة؛ القديمة تُقبل ثم تُحدَّث تلقائياً) ---------- */
 const hsL=s=>{let h=5381;for(const c of String(s))h=(h*33^c.charCodeAt(0))>>>0;return h.toString(36)};
 const SHK=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
@@ -208,7 +200,6 @@ _hc=s;_hr='h2:'+Array.from(m,v=>v.toString(16).padStart(2,'0')).join('');return 
 /* hv: يتحقق من الرمز (جديد أو قديم) وإن كان قديماً يحدّثه إلى الجديد في كل مكان خُزّن فيه */
 const hv=(p,st)=>{if(!st)return false;p=String(p??'');if(st===hs(p))return true;
 if(st===hsL(p)){const n=hs(p);let ch=0;if(S.pin===st){S.pin=n;ch=1}if(S.cfg&&S.cfg.lk===st){S.cfg.lk=n;ch=1}(S.users||[]).forEach(u=>{if(u.pin===st){u.pin=n;ch=1}});if(ch)save();return true}return false};
-
 /* ---------- الصلاحيات ---------- */
 const admOk = () => { try { return sessionStorage.getItem('admOk') == '1'; } catch (e) { return false; } };
 const admSet = v => { try { v ? sessionStorage.setItem('admOk', '1') : sessionStorage.removeItem('admOk'); } catch (e) { } };
@@ -221,7 +212,6 @@ const needAdm = f => function (...a) {
     if (hv(v.p, S.pin)) f.apply(null, a); else toast('الرمز خاطئ');
   });
 };
-
 /* ---------- الإشعار ---------- */
 function toast(msg, undo, ms) {
   const t = $('ts');
@@ -230,7 +220,6 @@ function toast(msg, undo, ms) {
   if (undo) $('tu').onclick = () => { undo(); save(); render(); t.hidden = true; };
   clearTimeout(TT); TT = setTimeout(() => t.hidden = true, ms || 6000);
 }
-
 /* ---------- التنقل وزر الرجوع ---------- */
 function go(v, p) {
   sugClose();
@@ -251,7 +240,6 @@ addEventListener('popstate', e => {
   V = s.V || { v: 'home' }; Q = ''; QP = 0; render();
 });
 function startHistory() { history.replaceState({ root: 1 }, ''); history.pushState({ V }, ''); }
-
 /* ---------- النافذة السفلية ---------- */
 function sheetOpen(res) { SH = true; SHR = { res, val: null }; $('ov').hidden = false; history.pushState({ V, sh: 1 }, ''); SHD = 0; SHE = draftFields().every(e => !e.value); draftRestore(); }
 function hideSheet() {
@@ -261,7 +249,6 @@ function hideSheet() {
   const r = SHR; SHR = null; r && r.res(r.val);
 }
 const finish = v => { if (!SHR) return; SHR.val = v; draftClear(); history.back(); };
-
 /* ---------- مسودة النافذة: ما كتبته لا يضيع إن أُغلقت النافذة بالخطأ أو انقطع التطبيق ---------- */
 let SHD = 0, SHE = 0, SHARM = 0, DRT = 0;   // SHD: كُتب شيء · SHE: فُتحت فارغة (إدخال جديد) · SHARM: تنبيه الرجوع
 const DRK = 'shopDraft';
@@ -287,7 +274,6 @@ document.addEventListener('input', e => {
   if (!SH || !e.target.closest || !e.target.closest('#sh')) return;
   SHD = 1; clearTimeout(DRT); DRT = setTimeout(draftSave, 400);
 }, true);
-
 /* ---------- اقتراحات داخل التطبيق (بدل قائمة المتصفح الأصلية): تظهر تحت الحقل بلون الثيم ولا تغطي لوحة المفاتيح ---------- */
 const SUG = {};   // اسم المصدر ← دالة ترجع مصفوفة نصوص (يُستعمل في الحقل: data-sug="اسم")
 function sugClose() { document.querySelectorAll('.sug').forEach(e => e.remove()); }
@@ -311,7 +297,6 @@ function sugShow(inp) {
 document.addEventListener('focusin', e => { const t = e.target; if (t.dataset && t.dataset.sug) { t.setAttribute('autocomplete', 'off'); sugShow(t); } });
 document.addEventListener('input', e => { const t = e.target; if (t.dataset && t.dataset.sug) sugShow(t); });
 document.addEventListener('focusout', e => { if (e.target.dataset && e.target.dataset.sug) setTimeout(sugClose, 300); });
-
 /* ---------- لوحة المفاتيح: النافذة السفلية تتبع المنطقة المرئية فلا تغطيها اللوحة ولا يحدث وميض ---------- */
 (() => {
   const vv = window.visualViewport, r = document.documentElement, vk = navigator.virtualKeyboard;
@@ -330,7 +315,6 @@ document.addEventListener('focusout', e => { if (e.target.dataset && e.target.da
   const f = () => { r.style.setProperty('--vvh', vv.height + 'px'); r.style.setProperty('--vvt', vv.offsetTop + 'px'); };
   vv.addEventListener('resize', f); vv.addEventListener('scroll', f); f();
 })();
-
 /* ---------- لوحة الأرقام (مع التبديل إلى لوحة الحروف) ---------- */
 function pinPadHtml (id, ph = 'أدخل الرمز', onEnter = '') {
   return `<div class="pin-wrap" id="${id}_wrap"><input id="${id}" type="hidden" value="" autocomplete="off" ${onEnter ? `onkeydown="if(event.key==='Enter')${onEnter}"` : ''}><div id="${id}_pad"><div id="${id}_dots" class="pin-dots" data-ph="${esc(ph)}"><span class="pin-ph">${esc(ph)}</span></div><div class="pin-grid">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" class="pkb" onclick="pkTap('${id}','${n}')">${n}</button>`).join('')}<button type="button" class="pkb fn" onclick="pkTap('${id}','C')">مسح</button><button type="button" class="pkb" onclick="pkTap('${id}','0')">0</button><button type="button" class="pkb fn" onclick="pkTap('${id}','B')">⌫</button></div></div><button type="button" id="${id}_sw" class="pin-sw" onclick="pkMode('${id}')">${I('keyboard')} الرمز فيه حروف؟ اضغط هنا للكتابة</button></div>`;
@@ -357,7 +341,6 @@ function pkMode (id) {
     el.type = 'hidden'; pad.hidden = false; sw.innerHTML = I('keyboard') + ' الرمز فيه حروف؟ اضغط هنا للكتابة'; pkTap(id, '');
   }
 }
-
 /* ---------- نماذج الإدخال والتأكيد ---------- */
 function ask(title, F, ok = 'حفظ', danger) {
   return new Promise(res => {
@@ -379,7 +362,6 @@ function sure(msg, ok = 'نعم', danger = true) {
     sheetOpen(res);
   }).then(v => !!v);
 }
-
 /* ---------- التعديل مع التراجع والحذف والاسترجاع ---------- */
 function upd(fn) { fn(); save(); render(); }
 const snap = () => JSON.stringify({ items: S.items, req: S.req, tags: S.tags, cfg: S.cfg, gg: S.gg, guide: S.guide, ag: S.ag, debt: S.debt, tp: S.tp, fields: S.fields, used: (S.used || []).map(u => ({ ...u, img: u.img ? 1 : 0 })), rp: S.rp.map(r => ({ ...r, img: r.img ? 1 : 0 })) });
@@ -420,50 +402,47 @@ function restore(id) {
   S[t.coll] = S[t.coll] || []; S[t.coll].push(t.obj); save(); render();
 }
 const row = (l, fn, sub) => `<button class="card row2" onclick="${fn}"><b>${esc(l)}</b><span class="m">${esc(sub || '')}</span></button>`;
-
-/* ---------- المظهر: تخصيص مستقل للنهار ولليل (5 ثيمات × 8 ألوان هوية + مقياس العرض) ---------- */
+/* ---------- المظهر: 4 ثيمات متقنة (نهاري دافئ / نهاري بارز / ليلي LCD / ليلي AMOLED) + الخط + مقياس العرض ---------- */
 const TH_OLD = { a: 'b-a', l: 'b-l', d: 'b-d', g: 'g-l', v: 'v-d', w: 'o-l' }, FS_OLD = { 15: 16, 17: 18, 19: 20, 21: 22 };
-const TH_ACS = ['b', 't', 'g', 'v', 'r', 'o', 'i', 's', 'c'];
-const TH_L = ['light', 'warm', 'soft'], TH_D = ['navy', 'slate', 'amoled', 'softd'];
+const TH_L = ['warm', 'light'], TH_D = ['lcd', 'amoled'], TH_FNS = ['ibm', 'rubik', 'baloo', 'sys'];
 const DS_VALS = [88, 94, 100, 108, 116];
 function thCfg() {
   const raw = String(TH_OLD[S.cfg.th] || S.cfg.th || '');
   if (raw.includes(':')) {
-    const [md, lt, la, dt, da, ds] = raw.split(':');
+    const [md, lt, fn, dt, , ds] = raw.split(':');
     return {
       md: ['a', 'l', 'd'].includes(md) ? md : 'a',
-      lt: TH_L.includes(lt) ? lt : 'light',
-      la: TH_ACS.includes(la) ? la : 'b',
-      dt: TH_D.includes(dt) ? dt : 'navy',
-      da: TH_ACS.includes(da) ? da : 'b',
+      lt: lt === 'light' ? 'light' : 'warm',
+      fn: TH_FNS.includes(fn) ? fn : 'ibm',
+      dt: dt === 'amoled' ? 'amoled' : 'lcd',
       ds: DS_VALS.includes(+ds) ? +ds : 100
     };
   }
-  const p = raw.split('-'), ac = TH_ACS.includes(p[0]) ? p[0] : 'b', md = ['a', 'l', 'd'].includes(p[1]) ? p[1] : 'a';
-  return { md, lt: ac == 'o' ? 'warm' : 'light', la: ac, dt: 'navy', da: ac, ds: 100 };
+  const p = raw.split('-'), md = ['a', 'l', 'd'].includes(p[1]) ? p[1] : 'a';
+  return { md, lt: 'warm', fn: 'ibm', dt: 'lcd', ds: 100 };
 }
 function thSet(patch) {
   const c = { ...thCfg(), ...patch };
-  upd(() => { S.cfg.th = [c.md, c.lt, c.la, c.dt, c.da, c.ds].join(':'); });
+  upd(() => { S.cfg.th = [c.md, c.lt, c.fn, c.dt, '0', c.ds].join(':'); });
 }
 function thGet() {
   const c = thCfg();
-  return [c.md == 'd' ? c.da : c.la, c.md];
+  return [c.md == 'd' ? c.dt : c.lt, c.md];
 }
 function thApply(de) {
   const c = thCfg(); let dark = c.md == 'd';
   if (c.md == 'a') { try { dark = matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { } }
   de.dataset.md = dark ? 'd' : 'l';
   de.dataset.th = dark ? c.dt : c.lt;
-  de.dataset.ac = dark ? c.da : c.la;
-  de.dataset.ics = ['duo', 'line', 'hue'].includes(S.cfg.ics) ? S.cfg.ics : 'duo';
+  de.dataset.fn = c.fn;
+  delete de.dataset.ac;
+  de.dataset.ics = 'duo';
   de.dataset.ds = c.ds >= 108 ? 'lg' : c.ds <= 94 ? 'sm' : 'md';
   de.style.setProperty('--fs', (FS_OLD[S.cfg.fs] || S.cfg.fs || 18) + 'px');
   de.style.setProperty('--ds', (c.ds / 100).toFixed(2));
   try { const m = document.querySelector('meta[name=color-scheme]'); if (m) m.content = dark ? 'dark' : 'only light'; } catch (e) { }
 }
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (thCfg().md == 'a') render(); }); } catch (e) { }
-
 /* ---------- الرسم ---------- */
 const NV = [['home', 'chome', 'الرئيسية'], ['rp', 'crepair', 'الصيانة'], ['rep', 'creport', 'التقرير'], ['st', 'cmore', 'المزيد']];
 function render() {
