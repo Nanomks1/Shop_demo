@@ -1,22 +1,20 @@
 /* ============================================================
    report.js — التقرير اليومي: شاشة التقرير، نص الواتساب، وإعدادات التقرير.
-   يعتمد على invLines() من invreport.js و stkL() من invphones.js، و dh/rqTel/rqWA من repair.js.
+   يعتمد على invLines() من invreport.js و stkL() من invphones.js، و dh/rqTel/rqWA/rpPartLines من repair.js.
    ============================================================ */
 (() => {
   const RTABS = [['all', 'الشامل'], ['topup', 'التعبئة'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['pochette', 'البوشيط'], ['acc', 'الإكسسوارات']];
   const RSEC = { topup: ['التعبئة', '📶 التعبئة'], phones: ['الهواتف الناقصة', '📱 الهواتف'], glass: ['الأنتي كاس', '🛡️ الأنتي كاس'], pochette: ['البوشيط', '🅿️ البوشيط'], acc: ['الإكسسوارات', '🔌 الإكسسوارات'] };
-  const SCOL = { topup: '#0891b2', phones: '#2563eb', glass: '#0d9488', pochette: '#db2777', acc: '#7c3aed', req: '#64748b' };
+  const SCOL = { topup: '#0891b2', phones: '#2563eb', glass: '#0d9488', pochette: '#db2777', acc: '#7c3aed', rpp: '#d97706', req: '#64748b' };
   const RD = { lv: 'a', tt: 'تقرير محل عزيز', dt: 1, st: 1, pr: 0, rq: 1, pn: 1, em: 0, ft: '', hs: [], rr: 0, rd: 0, rm: 1, nd: [], rh: 16, qb: 0 };
   const rcf = () => ({ ...RD, ...(S.cfg.rc || {}) });
   const okEdit = () => isAdmin() || !S.users.length;
   const rSecs = m => m == 'all' ? ['topup', 'phones', 'glass', 'pochette', 'acc'] : [m];
   window.reportSectionFilter = 'all'; window.RLV = null;
-
   window.rcSet = o => { if (!okEdit()) return toast('للمدير فقط'); upd(() => { S.cfg.rc = { ...(S.cfg.rc || {}), ...o }; }); };
   window.rcHide = k => { const h = rcf().hs.slice(), i = h.indexOf(k); i < 0 ? h.push(k) : h.splice(i, 1); rcSet({ hs: h }); };
   window.rcTt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عنوان التقرير', [{ k: 't', l: 'العنوان (فارغ = بدون عنوان)', v: rcf().tt }]).then(v => { if (v) rcSet({ tt: v.t.trim() }); }); };
   window.rcFt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عبارة آخر التقرير', [{ k: 't', l: 'مثال: شكراً — فارغ = بدون عبارة', v: rcf().ft }]).then(v => { if (v) rcSet({ ft: v.t.trim() }); }); };
-
   /* إدخال كمية مخصصة يدوياً (#) للأنتي كاس ومجموعات الإكسسوارات من التقرير */
   window.rcManual = (fnName, arg) => {
     if (fnName == 'agBuy' && typeof agCnt == 'function') return agCnt(arg);
@@ -39,7 +37,6 @@
     }
     if (typeof window[fnName] == 'function') window[fnName](arg);
   };
-
   /* الشراء السريع بضغطة واحدة من التقرير (عند تفعيل خيار qb في إعدادات التقرير) */
   window.rcQuick = (fnName, arg) => {
     if (fnName == 'buyP') {
@@ -79,7 +76,6 @@
     } else if (fnName == 'buyG' && typeof buyG == 'function') buyG(arg);
     else if (fnName == 'agBuy' && typeof agBuy == 'function') agBuy(arg);
   };
-
   const lines = () => { const c = rcf(); let L = invLines(!!c.pn).concat(typeof tpLines == 'function' ? tpLines() : []); if ((window.RLV || c.lv) == 'r') L = L.filter(x => x[2] == 'r'); return L; };
   const secs = m => rSecs(m).filter(k => !rcf().hs.includes(k));
   const dstr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); };
@@ -106,6 +102,10 @@
       const ls = L.filter(x => x[0] == RSEC[k][0]).sort((a, b) => (a[2] == 'r' ? 0 : 1) - (b[2] == 'r' ? 0 : 1));
       out.push({ k, t: RSEC[k][1], ls: ls.map(x => ({ r: x[2] == 'r', s: k == 'topup' ? x[1] : fmtT(x), x })) });
     });
+    if (mode == 'all' && typeof rpPartLines == 'function') {
+      const pl = rpPartLines();
+      if (pl.length) out.push({ k: 'rpp', t: '🔧 قطع غيار للصيانة', ls: pl.map(p => ({ r: 1, s: p.s, id: p.id })) });
+    }
     if (c.rq && mode == 'all') out.push({ k: 'req', t: 'طلبات الزبائن', ls: S.req.map(q => ({ r: 0, s: q.t, id: q.id })) });
     return out;
   };
@@ -131,10 +131,9 @@
     if (c.ft) { o.push(''); o.push(c.ft); }
     return o.map(bd).join('\n');
   };
-
   /* ---------- شاشة التقرير ---------- */
-  const nwCnt = h => h.replace(/((?:—\s*)?العدد\s*[0-9٠-٩]+)\s*$/, '<span style="white-space:nowrap">$1</span>');
-  const SECI = { topup: 'ctopup', phones: 'cphone', glass: 'cglass', pochette: 'ccase', acc: 'cacc' };
+  const nwCnt = h => h.replace(/((?:—\s*)?العدد\s*[0-9٠-٩]+)\s*$/, '<span class="nw">$1</span>');
+  const SECI = { topup: 'ctopup', phones: 'cphone', glass: 'cglass', pochette: 'ccase', acc: 'cacc', rpp: 'crepair' };
   const secT = b => (SECI[b.k] ? I(SECI[b.k]) + ' ' : '') + esc(String(b.t).replace(/^[^\u0600-\u06FFA-Za-z0-9]+/, ''));
   const rrow = l => {
     const c = rcf(), act = l.x[3] || '';
@@ -152,22 +151,24 @@
     const tabs = RTABS.filter(([k]) => k == 'all' || !c.hs.includes(k));
     if (!tabs.some(([k]) => k == f)) window.reportSectionFilter = 'all';
     const F = window.reportSectionFilter, B = blocks(F);
-    const AL = invLines(!!c.pn).concat(typeof tpLines == 'function' ? tpLines() : []).filter(x => secs('all').some(k => RSEC[k][0] == x[0])), red = AL.filter(x => x[2] == 'r').length, yel = AL.length - red, sl = sentLine();
+    const rppCnt = typeof rpPartLines == 'function' ? rpPartLines().length : 0;
+    const AL = invLines(!!c.pn).concat(typeof tpLines == 'function' ? tpLines() : []).filter(x => secs('all').some(k => RSEC[k][0] == x[0])), red = AL.filter(x => x[2] == 'r').length + rppCnt, yel = AL.length - (red - rppCnt), sl = sentLine();
     let h = `<div class="qbar rsum"><div class="qpill al"><div class="qn">${red}</div><div class="ql">نافد</div></div><div class="qpill wn"><div class="qn">${yel}</div><div class="ql">قارب النفاد</div></div><div class="qpill ${S.req.length ? 'rp' : 'ok'}"><div class="qn">${S.req.length}</div><div class="ql">طلبات الزبائن</div></div></div>`
       + `<div class="rsent ${sl[1] ? 'w' : ''}">${esc(sl[0])}</div>`;
-    if (c.rr) { const x = rpLine(); if (x) h += `<div class="card row2">${I('tool')}<span style="flex:1">${esc(x)}</span><button class="btn s sm" onclick="go('rp')">افتح</button></div>`; }
-    if (c.rd) { const x = dbLine(); if (x) h += `<div class="card row2">${I('wallet')}<span style="flex:1">${esc(x)}</span><button class="btn s sm" onclick="go('dbt')">افتح</button></div>`; }
+    if (c.rr) { const x = rpLine(); if (x) h += `<div class="card row2">${I('tool')}<span class="f1">${esc(x)}</span><button class="btn s sm" onclick="go('rp')">افتح</button></div>`; }
+    if (c.rd) { const x = dbLine(); if (x) h += `<div class="card row2">${I('wallet')}<span class="f1">${esc(x)}</span><button class="btn s sm" onclick="go('dbt')">افتح</button></div>`; }
     h += `<div class="sec-panel">`
       + `<div class="sec-tags">${tabs.map(([k, l]) => `<button class="tag ${F === k ? 'on' : ''}" onclick="reportSectionFilter='${k}';render()">${l}</button>`).join('')}</div>`
       + `<div class="sec-toolbar"><div class="seg-group"><button type="button" class="seg-btn ${lv == 'a' ? 'on' : ''}" onclick="RLV='a';render()">نافد وقارب</button><button type="button" class="seg-btn ${lv == 'r' ? 'on' : ''}" onclick="RLV='r';render()">نافد فقط</button></div><button type="button" class="tool-pill" onclick="go('st_rep')">${I('sl')} تخصيص</button></div>`
       + `</div>`;
-    { const stl = rnd().length; if (stl) h += `<div class="card row2"><span style="flex:1">${I('alert')} ${stl} صنف لم يُؤكَّد منذ أكثر من ${lim('stale')} أيام</span><button class="btn sm" onclick="go('jl')">افتح الجولة</button></div>`; }
+    { const stl = rnd().length; if (stl) h += `<div class="card row2"><span class="f1">${I('alert')} ${stl} صنف لم يُؤكَّد منذ أكثر من ${lim('stale')} أيام</span><button class="btn sm" onclick="go('jl')">افتح الجولة</button></div>`; }
     B.forEach(b => {
       let x = '';
       if (b.k == 'req') x = b.ls.map(l => {
         const ph = typeof rqTel == 'function' ? rqTel(l.s) : '';
-        return `<div class="rrow col"><div class="row2"><span class="rt">${esc(l.s)}</span><button class="btn s sm" onclick="rqD('${l.id}')">مسح</button></div>${ph ? `<div class="sub"><a href="tel:${esc(ph)}" class="btn s sm" style="text-decoration:none;display:inline-flex;align-items:center">${I('phone')} اتصال</a><button class="btn sm" onclick="rqWA('${l.id}')">${I('send')} إبلاغ واتساب</button></div>` : ''}</div>`;
+        return `<div class="rrow col"><div class="row2"><span class="rt">${esc(l.s)}</span><button class="btn s sm" onclick="rqD('${l.id}')">مسح</button></div>${ph ? `<div class="sub"><a href="tel:${esc(ph)}" class="btn s sm rp-icb">${I('phone')} اتصال</a><button class="btn sm" onclick="rqWA('${l.id}')">${I('send')} إبلاغ واتساب</button></div>` : ''}</div>`;
       }).join('');
+      else if (b.k == 'rpp') x = b.ls.map(l => `<div class="rrow r"><span class="dotl" style="background:${DT.r}"></span><span class="rt" onclick="rpOpen('${l.id}')">${esc(l.s)}</span><button class="rck" title="وصلت القطعة" onclick="rpPartDone('${l.id}')">${I('check')}</button></div>`).join('');
       else {
         const ex = EXP['r_' + b.k], L = !ex && b.ls.length > 6 ? b.ls.slice(0, 5) : b.ls;
         x = L.map(rrow).join('') + (b.ls.length > 6 ? `<button class="tag" style="width:100%;justify-content:center;margin:6px 0 0" onclick="toggleExp('r_${b.k}')">${ex ? 'طيّ ▴' : 'عرض الباقي (+' + (b.ls.length - 5) + ') ▾'}</button>` : '');
@@ -181,7 +182,6 @@
       + `<div class="rbar"><button class="btn" onclick="rcSend()">${I('send')} إرسال بالواتساب</button><button class="btn s" onclick="rcCopy()">نسخ</button></div>`;
     return { t: 'التقرير اليومي', h };
   };
-
   /* ---------- إعدادات التقرير ---------- */
   const yn = v => v ? 'نعم' : 'لا', tog = (l, k) => row(l, 'rcSet({' + k + ':' + (rcf()[k] ? 0 : 1) + '})', yn(rcf()[k]));
   window.rcRh = () => { if (!okEdit()) return toast('للمدير فقط'); ask('ساعة بدء التذكير', [{ k: 'h', l: 'من 0 إلى 23 (مثال: 16)', v: String(rcf().rh) }]).then(v => { const h = v && parseInt(v.h, 10); if (h >= 0 && h <= 23) rcSet({ rh: h }); }); };
@@ -212,7 +212,7 @@
   HOME.top.push(() => {
     const c = rcf(), d = new Date();
     if (!c.rm || (typeof noRem == 'function' && noRem()) || sentToday() || c.nd.includes(d.getDay()) || d.getHours() < c.rh || S.cfg.rx == d.toDateString()) return '';
-    return `<div class="card row2">${I('alert')}<span style="flex:1">لم يُرسل تقرير اليوم بعد</span><button class="btn sm" onclick="go('rep')">افتح التقرير</button><button class="btn s sm" aria-label="لا تقرير اليوم" onclick="rcSkip()">✕</button></div>`;
+    return `<div class="card row2">${I('alert')}<span class="f1">لم يُرسل تقرير اليوم بعد</span><button class="btn sm" onclick="go('rep')">افتح التقرير</button><button class="btn s sm" aria-label="لا تقرير اليوم" onclick="rcSkip()">✕</button></div>`;
   });
   MORE.push({ g: 'rep', o: 10, l: 'إعدادات التقرير', d: 'ما يظهر في التقرير ونص الواتساب، الشراء السريع، وتذكير الإرسال', fn: "go('st_rep')" });
 })();
