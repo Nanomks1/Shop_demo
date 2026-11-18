@@ -12,6 +12,7 @@ const mval = (i, m) => { const l = (i.lv || {})[m]; return l !== undefined ? lvN
 /* أنواع الزجاج لكل موديل: g.ty[موديل] = [أنواع]. غير موجود = يُباع بكل الأنواع (بيانات قديمة) */
 const gHas = (g, m, ty) => { const a = g.ty && g.ty[m]; return !ty || !a || a.includes(ty); };
 const gMods = (g, ty) => g.models.filter(m => gHas(g, m, ty));
+const glModsH = ms => ms.map(m => `<bdi>${esc(m)}</bdi>`).join(' / ');
 const gShow = (g, ty) => gMods(g, ty).length > 0;
 const gFirstTy = g => S.tags.glass.find(t => gShow(g, t)) || S.tags.glass[0];
 const gTot = (i, g) => gMods(g, i && i.ty).reduce((a, m) => a + mval(i || {}, m), 0);
@@ -64,7 +65,7 @@ function glView() {
 function glRow(g, i, j, k, m, single) {
   const lv = (i.lv || {})[m], ex = lv === undefined && (i.stock || {})[m] !== undefined, T = GT(), br = (g.br || {})[m];
   const dots = [['a', `<bdi class="ltr">${T.a}+</bdi>`], ['b', `<bdi class="ltr">${T.b}+</bdi>`], ['c', `<bdi class="ltr">${T.c}+</bdi>`], ['y', 'قليل'], ['r', 'نفد']].map(([l, t]) => `<button class="lvb ${lv == l ? 'on' : ''}" style="--lc:${LC[l]};--lt:${l == 'c' ? '#14532d' : '#fff'}" onclick="glLv('${g.id}',${j},${k},'${l}')">${t}</button>`).join('');
-  const hd2 = ex ? `<button class="btn s sm" onclick="glC('${g.id}',${j},${k},-1)">−</button><span class="cn">${i.stock[m]}</span><button class="btn sm" onclick="glC('${g.id}',${j},${k},1)">+</button>` : `<button class="tag" style="margin:0;padding:3px 9px;font-size:.76rem" onclick="glEx('${g.id}',${j},${k})">${lv !== undefined && !single ? `<bdi class="ltr">≈${lvN(lv)}</bdi> · ` : ''}عدد دقيق</button>`;
+  const hd2 = ex ? `<button class="btn s sm" onclick="glC('${g.id}',${j},${k},-1)">−</button><span class="cn">${i.stock[m]}</span><button class="btn sm" onclick="glC('${g.id}',${j},${k},1)">+</button>` : `<button class="tag" style="margin:0;padding:3px 9px;font-size:.76rem" onclick="glEx('${g.id}',${j},${k})">${lv !== undefined && lv != 'r' && !single ? `<bdi class="ltr">≈${lvN(lv)}</bdi> · ` : ''}أدخل العدد</button>`;
   if (single && !ex) {
     return `<div class="lvs" style="margin-top:6px">${dots}<button class="lvb" style="--lc:var(--b);--lt:var(--t);flex:0 0 auto;padding:0 10px;opacity:.9" onclick="glEx('${g.id}',${j},${k})">#</button></div>`;
   }
@@ -76,7 +77,7 @@ function glCard(g, j) {
   const ex = EXP['g_' + g.id], limM = !ex && L.length > 4 ? L.slice(0, 3) : L;
   const more = L.length > 4 ? `<button class="tag" style="width:100%;justify-content:center;margin-top:4px" onclick="toggleExp('g_${g.id}')">${ex ? 'طيّ القائمة ▴' : 'عرض باقي الموديلات (+' + (L.length - 3) + ') ▾'}</button>` : '';
   const single = L.length === 1, br0 = single ? (g.br || {})[L[0][0]] : '';
-  return cardH(`<div class="row2" style="gap:6px"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="glOpen('${g.id}',${j})"><b><bdi>${esc(L.map(x => x[0]).join(' / '))}</bdi>${br0 ? ` <span class="m" style="font-weight:500">· <bdi>${esc(br0)}</bdi></span>` : ''}</b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · الحد: <bdi class="ltr">${min - 1}</bdi>${i.min != null ? ' (خاص)' : ''}</div></div>${i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : ''}<button class="tag" style="margin:0;padding:4px 9px" onclick="glOpen('${g.id}',${j})" aria-label="خيارات المجموعة">⋯</button></div>`
+  return cardH(`<div class="row2" style="gap:6px"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="glOpen('${g.id}',${j})"><b>${glModsH(L.map(x => x[0]))}${br0 ? ` <span class="m" style="font-weight:500">· <bdi>${esc(br0)}</bdi></span>` : ''}</b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · الحد: <bdi class="ltr">${min - 1}</bdi>${i.min != null ? ' (خاص)' : ''}</div></div>${i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : ''}<button class="tag" style="margin:0;padding:4px 9px" onclick="glOpen('${g.id}',${j})" aria-label="خيارات المجموعة">⋯</button></div>`
     + limM.map(([m, k]) => glRow(g, i, j, k, m, single)).join('') + more, colG(g), 'cmp');
 }
 /* نافذة خيارات مجموعة الأنتي كاس */
@@ -84,7 +85,7 @@ function glOpen(gid, j) {
   const g = S.gg.find(x => x.id == gid); if (!g) return;
   const ty = S.tags.glass[j], i = gitem(gid, ty) || {}, min = gLim(i, ty), vm = gMods(g, ty);
   const goAct = fn => { finish(null); setTimeout(fn, 380); };
-  $('sh').innerHTML = `<div class="bar"></div><h3><bdi>${esc(vm.join(' / '))}</bdi></h3>`
+  $('sh').innerHTML = `<div class="bar"></div><h3>${glModsH(vm)}</h3>`
     + `<p class="m">نوع الزجاج: ${esc(ty)}${i.price ? ' · السعر: ' + esc(fmtPr(i.price)) : ''} · «قارب» عند ${min - 1} فأقل</p>`
     + `<div class="cs-acts">`
     + `<button class="btn s" onclick="finish(1)">+ موديل مطابق</button>`
@@ -102,7 +103,7 @@ function glOpen(gid, j) {
   });
 }
 function glB(g) {   // بطاقة نتيجة البحث: كل أنواع الزجاج للمجموعة مع السعر الواضح
-  return cardH(`<b>زجاج يطابق: <bdi>${esc(g.models.join(' / '))}</bdi></b>` + S.tags.glass.filter(t => gShow(g, t)).map(t => {
+  return cardH(`<b>زجاج يطابق: ${glModsH(g.models)}</b>` + S.tags.glass.filter(t => gShow(g, t)).map(t => {
     const i = gitem(g.id, t), s = i ? gSt(i, g, t) : 'r', pr = i && i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : '';
     return `<div class="row2" style="margin-top:4px"><span class="dotl" style="background:${DT[s]}"></span><span style="flex:1">${esc(t)}</span>${pr}<span class="m"><bdi class="ltr">${i ? (gEst(i, g) ? '≈' : '') + gTot(i, g) : 0}</bdi></span></div>`;
   }).join(''), colG(g));
@@ -204,7 +205,7 @@ function glRm(gid) {
     });
   });
 }
-const gl2 = i => { const g = S.gg.find(x => x.id == i.gid); return g ? `<div class="card"><b>زجاج ${esc(i.ty)}: <bdi>${esc(gMods(g, i.ty).join(' / '))}</bdi></b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · آخر تأكيد قبل ${Math.floor((Date.now() - cfTime(i)) / 864e5)} يوم</div></div>` : ''; };
+const gl2 = i => { const g = S.gg.find(x => x.id == i.gid); return g ? `<div class="card"><b>زجاج <bdi>${esc(i.ty)}</bdi>: ${glModsH(gMods(g, i.ty))}</b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · آخر تأكيد ${agoTxt(cfTime(i))}</div></div>` : ''; };
 function buyG(id) {
   let i = find(id);
   const g = i ? S.gg.find(x => x.id == i.gid) : S.gg.find(x => x.id == id);

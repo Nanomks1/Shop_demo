@@ -2,17 +2,15 @@
    invset.js — إعدادات المخزون: الخانات، حدود الأنتي كاس، الألوان، أنواع الإكسسوار، الخانات المخصصة، إدارة الوسوم
    يُحمَّل بعد barcode.js وقبل repair.js.
    ============================================================ */
-
 /* ============================ الإعدادات الخاصة بالمخزون ============================ */
 VW.st_fld = () => ({
   t: 'الحقول في النماذج',
   h: (can('fields') ? '<p class="m">الأزرق = ظاهر. اضغط لإخفاء الحقل أو إظهاره.</p>' : '<p class="m">التعديل للمدير فقط.</p>')
     + Object.keys(FLD).map(s => `<h3>${FLDN[s] || s}</h3><div>${FLD[s].map(([k, l]) => `<button class="tag ${hd(s, k) ? '' : 'on'}" onclick="fTog('${s}','${k}')">${l}</button>`).join('')}</div>`).join('')
 });
-
 const tg = (l, g) => [l, "go('st_tg',{g:'" + g + "'})", () => S.tags[g].length];
 const CATS = {   // ملف الصيانة يضيف CATS.rp
-  ph: ['الهواتف', [tg('الماركات', 'brand'), tg('الألوان', 'color'), tg('السعات', 'cap'), tg('RAM', 'ram'), ['حدود الهواتف حسب فئة السعر (أزرار / اقتصادية / متوسطة / عالية)', "go('st_pt')", () => ptCfg().map(x => x[2]).join(' / ')], ['الحد العام (عند عدم وجود سعر): «قارب النفاد» عند عدد', "limEd('low')", () => lim('low') + ' فأقل'], ['ألوان الماركات وحدودها', "go('st_br')"]], 'phones'],
+  ph: ['الهواتف', [tg('الماركات', 'brand'), tg('الألوان', 'color'), tg('السعات', 'cap'), tg('RAM', 'ram'), ['حدود الهواتف حسب فئة السعر', "go('st_pt')", () => ptCfg().map(x => x[0].split(' ')[0] + ' ' + x[2]).join(' · ')], ['الحد العام (عند عدم وجود سعر): «قارب النفاد» عند عدد', "limEd('low')", () => lim('low') + ' فأقل'], ['ألوان الماركات وحدودها', "go('st_br')"]], 'phones'],
   gl: ['الأنتي كاس', [tg('أنواع الزجاج', 'glass'), ['حد «قارب النفاد» لكل نوع زجاج', "go('st_gl')", () => (lim('gmin') - 1) + ' فأقل'], ['كم تُحسب المستويات (غامق / أخضر / فاتح / قليل)', "go('st_gl2')"], ['ماركات قائمة الأنتي كاس (إخفاء الهواتف الصغيرة)', "go('st_glb')", () => S.tags.brand.filter(b => !glBrHid(b)).length + ' / ' + S.tags.brand.length]], null],
   cs: ['البوشيط', [tg('الألوان', 'color'), ['الحد العام لكل لون: «قارب النفاد» عند', "limEd('cl')", () => lim('cl') + ' فأقل']], 'case'],
   ac: ['الإكسسوارات', [tg('الأنواع', 'kind'), tg('الموصلات', 'conn'), tg('الفئات السعرية', 'tier'), tg('القدرات (واط)', 'pw'), ['الحد العام للقطع بعدد: «قليل» عند', "limEd('acl')", () => lim('acl') + ' فأقل'], ['الحد العام للمجموعات (كابل/شاحن) عند', "limEd('agl')", () => lim('agl') + ' فأقل'], ['إعداد كل نوع (الخاصيات، العرض، الحد)', "go('st_ak')"]], 'acc']
@@ -24,7 +22,6 @@ MORE.push(
   { g: 'look', o: 20, l: 'تلوين البطاقات', fn: "go('st_col')" }, { g: 'look', o: 30, l: 'الحقول في النماذج', fn: "go('st_fld')" },
   { g: 'look', o: 40, l: 'الخانات المخصصة', fn: "go('st_fx')", n: () => S.fields.length || '' }
 );
-
 /* حدود الأنتي كاس */
 function glTyEd(j) {
   if (!isAdmin()) return toast('للمدير فقط'); const t = S.tags.glass[j], c = (S.cfg.gtl || {})[t];
@@ -43,7 +40,6 @@ function glbTog(j) {
 }
 VW.st_gl2 = () => ({ t: 'مستويات الأنتي كاس', h: '<p class="m">عندما تختار مستوى تقريبياً (غامق / أخضر / فاتح / قليل) بدل عدد دقيق، يحسب التطبيق كل مستوى كعدد القطع الظاهر هنا ليحكم على مجموع المجموعة. غيّرها فقط إن اختلفت تقديراتك.</p>'
   + ['gA', 'gB', 'gC', 'gY'].map(k => row((LM.find(x => x[0] == k) || [, k])[1].replace('أنتي كاس: ', ''), "limEd('" + k + "')", lim(k))).join('') });
-
 /* الألوان */
 let CE = {};
 window.cePv = () => { const p = $('cpv'); if (p) p.style.borderInlineStartColor = CE.c || 'transparent'; };
@@ -61,7 +57,6 @@ function brEd(j) { const b = S.tags.brand[j]; ceOpen({ t: 'b', n: b, c: BC(b), l
 function cmEd(s) { ceOpen({ t: 's', n: SN3[s], m: CM(s), c: SCOL(s), mo: s == 'acc' ? [['s', 'لون واحد للقسم'], ['o', 'بدون']] : [['b', 'حسب الماركة'], ['s', 'لون واحد للقسم'], ['o', 'بدون']] }, v => { if (!v) return; upd(() => { S.cfg.cm = S.cfg.cm || {}; S.cfg.cm[s] = v.m; S.cfg.scol = S.cfg.scol || {}; S.cfg.scol[s] = v.c; }); }); }
 VW.st_col = () => ({ t: 'الألوان', h: '<p class="m">ألوان خفيفة على خلفية البطاقات للتمييز بسرعة.</p>' + ['phones', 'glass', 'case', 'acc'].map(s => { const m = CM(s), c = m == 's' ? SCOL(s) : ''; return `<button class="card row2" onclick="cmEd('${s}')"><b>${SN3[s]}</b><span class="m">${MN[m]}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') + row('ألوان الماركات وحدودها', "go('st_br')") });
 VW.st_br = () => ({ t: 'ألوان الماركات', h: '<p class="m">اللون + حد «قارب على النفاد» لكل ماركة (اختياري، يتقدم على فئة السعر).</p>' + S.tags.brand.map((b, j) => { const c = BC(b), l = (S.cfg.bl || {})[b]; return `<button class="card row2" onclick="brEd(${j})"><b>${esc(b)}</b><span class="m">${l != null ? 'حد ' + l + ' فأقل' : ''}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') });
-
 /* إعداد كل نوع إكسسوار: صفحة مستقلة (ما يظهر + خاصيات + العرض + الحد) */
 const akProps = k => S.fields.filter(f => f.sec == 'acc' && (f.kinds || []).includes(k));
 function akTog(j, key) {
@@ -104,7 +99,6 @@ VW.st_ak = () => ({
   h: '<p class="m">اضغط على نوع لضبط ما يظهر عند إضافته، وخاصياته (كالسعة)، وطريقة عرضه، وحده.</p>' + (can('tags') ? '<button class="btn" onclick="tgAdd(\'kind\')">+ نوع جديد</button>' : '')
     + S.tags.kind.map((k, j) => { const c = kc(k), g = gkc(k); return row(k, "go('st_akk',{kj:" + j + "})", [g.g && 'مجموعات', c.conn && 'موصل', c.tier && 'فئة', g.w && 'واط', ...akProps(k).map(f => f.name)].filter(Boolean).join(' · ')); }).join('')
 });
-
 /* إدارة الخانات المخصصة */
 let FE = {};
 VW.st_fx = () => ({ t: 'الخانات المخصصة', h: '<p class="m">خانة إضافية بخيارات تظهر في نموذج القسم وعلى البطاقة وتدخل في البحث.</p>' + (can('fields') ? '<button class="btn" onclick="feEd(null)">+ إضافة خانة</button>' : '') + Object.keys(SECN).filter(s => !V.fs || V.fs == s).map(s => `<h3>${SECN[s]}</h3>` + (S.fields.filter(f => f.sec == s).map(f => `<button class="card row2" onclick="feEd('${f.id}')"><b style="flex:1">${esc(f.name)}</b><span class="m">${f.kinds && f.kinds.length ? esc(f.kinds.join('، ')) : 'الكل'} · ${f.multi ? 'عدة قيم' : 'قيمة'} · ${f.opts.length}</span></button>`).join('') || '<p class="m">لا شيء</p>')).join('') });
@@ -131,7 +125,6 @@ function feEd(id, kj) {
     });
   });
 }
-
 /* ============================ إدارة الوسوم الموحدة (بدون تكرار + حماية الزجاج والسلة) ============================ */
 function tgCount(g, val) {
   let n = 0;
@@ -256,4 +249,3 @@ VW.st_tg = () => {
       + (ed ? `<button class="btn" onclick="tgAdd('${g}')">+ إضافة</button>` : '')
   };
 };
-

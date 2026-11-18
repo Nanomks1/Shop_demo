@@ -123,7 +123,7 @@ function ptEd(j) {
 function phCard(i) {
   const s = phSt(i), cmp = isCmp('phones') && V.v == 'sec';
   const fxParts = S.fields.filter(f => f.sec == 'phones').map(f => fxVal(i, f).length ? f.name + ': ' + fxVal(i, f).join('، ') : '').filter(Boolean);
-  const t = [i.color, i.ram, i.cap, i.cond && i.cond != 'جديد' && i.cond, ...(cmp ? [] : fxParts)].filter(Boolean).map(esc).join(' · ');
+  const t = [i.color, i.ram, i.cap, i.cond && i.cond != 'جديد' && i.cond, ...(cmp ? [] : fxParts)].filter(Boolean).map(x => `<bdi>${esc(x)}</bdi>`).join(' · ');
   const rsBadge = rsQ(i) ? `<span class="rs"> · محجوز ${rsQ(i)}</span>` : '';
   const extra = !cmp ? (i.note ? `<div class="cs-nt m">${esc(i.note)}</div>` : '') + (i.imei ? `<div class="cs-nt m">IMEI: <bdi>${esc(i.imei)}</bdi></div>` : '') : '';
   return cardH(`<div class="row2" style="gap:6px"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phOpen('${i.id}')"><b><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b>${t || rsBadge ? `<div class="m">${t}${rsBadge}</div>` : ''}${extra}</div>${i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : ''}<button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button></div>`, colOf(i), 'cmp');
@@ -174,7 +174,7 @@ function phView() {
   else if (V.f == 2) a = a.filter(g => g.cond == 'مستعمل');
   else if (V.pb) a = a.filter(g => g.brand == V.pb);
   const pg = pgSlice('ph', a);
-  const tagsHtml = `<button class="tag ${!V.f && !V.pb ? 'on' : ''}" onclick="V.f=0;V.pb='';render()">الكل (${G.length} موديل · ${totPcs} قطعة)</button>`
+  const tagsHtml = `<button class="tag ${!V.f && !V.pb ? 'on' : ''}" onclick="V.f=0;V.pb='';render()">الكل (${G.length} · ${arCnt(totPcs, 'قطعة', 'قطعتان', 'قطع')})</button>`
     + `<button class="tag ${V.f == 1 ? 'on' : ''}" onclick="V.f=1;V.pb='';render()">يحتاج شراء (${lowCnt})</button>`
     + brChips
     + (usedG.length ? `<button class="tag ${V.f == 2 ? 'on' : ''}" onclick="V.f=2;V.pb='';render()">مستعمل (${usedPcs})</button>` : '');

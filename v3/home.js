@@ -2,7 +2,7 @@
    home.js — الرئيسية، البحث الموحّد، المزيد والإعدادات، الأيقونة العائمة
    يُحمَّل بعد extra.js وقبل users.js.
    ============================================================ */
-/* ---------- الأقسام الـ 6 (مع إجمالي القطع وحالة التعبئة وطلبات الزبائن) ---------- */
+/* ---------- الأقسام الـ 8 (مع إجمالي القطع وحالة التعبئة وطلبات الزبائن) ---------- */
 const SECS = [
   ['phones', 'الهواتف', 'cphone'],
   ['glass', 'الأنتي كاس', 'cglass'],
@@ -14,7 +14,7 @@ const SECS = [
   ['dbt', 'الديون', 'cdebt']
 ];
 function secSub(k) {
-  if (k == 'glass') return S.gg.length + ' مجموعة';
+  if (k == 'glass') return arCnt(S.gg.length, 'مجموعة', 'مجموعتان', 'مجموعات', 'مجموعة');
   if (k == 'tp') {
     const L = typeof tpLines == 'function' ? tpLines() : [];
     if (!L.length) return 'متوفر بالكامل ✓';
@@ -23,14 +23,14 @@ function secSub(k) {
   }
   if (k == 'req') {
     const n = (S.req || []).length;
-    return n ? n + ' طلب مسجّل' : 'سأل ولم نجد';
+    return n ? arCnt(n, 'طلب مسجّل', 'طلبان مسجّلان', 'طلبات مسجّلة', 'طلباً مسجّلاً') : 'سأل ولم نجد';
   }
-  if (k == 'usd') { const n = (S.used || []).length; return n ? n + ' عملية شراء' : 'سجل المشتريات'; }
-  if (k == 'dbt') { const n = (S.debt || []).filter(d => !d.paid).length; return n ? n + ' دين مفتوح' : 'بلا ديون'; }
+  if (k == 'usd') { const n = (S.used || []).length; return n ? arCnt(n, 'عملية شراء', 'عمليتا شراء', 'عمليات شراء', 'عملية شراء') : 'سجل المشتريات'; }
+  if (k == 'dbt') { const n = (S.debt || []).filter(d => !d.paid).length; return n ? arCnt(n, 'دين مفتوح', 'دينان مفتوحان', 'ديون مفتوحة', 'ديناً مفتوحاً') : 'بلا ديون'; }
   const L = S.items.filter(i => i.sec == k);
-  if (k == 'phones') { const pcs = L.reduce((a, i) => a + (+i.cnt || 0), 0); return L.length + ' صنف · ' + pcs + ' قطعة'; }
-  if (k == 'case') { const pcs = L.reduce((a, i) => a + (typeof csTot == 'function' ? csTot(i) : 0), 0); return L.length + ' موديل · ' + pcs + ' قطعة'; }
-  return L.length + ' صنف';
+  if (k == 'phones') { const pcs = L.reduce((a, i) => a + (+i.cnt || 0), 0); return arCnt(L.length, 'صنف', 'صنفان', 'أصناف', 'صنفاً') + ' · ' + arCnt(pcs, 'قطعة', 'قطعتان', 'قطع', 'قطعة'); }
+  if (k == 'case') { const pcs = L.reduce((a, i) => a + (typeof csTot == 'function' ? csTot(i) : 0), 0); return arCnt(L.length, 'موديل', 'موديلان', 'موديلات', 'موديلاً') + ' · ' + arCnt(pcs, 'قطعة', 'قطعتان', 'قطع', 'قطعة'); }
+  return arCnt(L.length, 'صنف', 'صنفان', 'أصناف', 'صنفاً');
 }
 const secGo = k => ['tp', 'req', 'usd', 'dbt'].includes(k) ? `go('${k}')` : `go('sec',{k:'${k}'})`;
 /* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري (بدون تكرار) ---------- */
@@ -172,7 +172,12 @@ VW.st_grp = () => {
   };
 };
 MORE.push(
-  { g: 'look', o: 5, l: 'المظهر والعرض', d: 'الثيم (النهار والليل)، الخطوط، حجم الخط والعرض، والزر العائم (لهذا الجهاز)', fn: "go('st_look')", n: () => ({ ibm: 'IBM Plex', rubik: 'Rubik', baloo: 'Baloo 2', sys: 'النظام' }[thCfg().fn] || 'IBM Plex') + ' · ' + (FS_OLD[S.cfg.fs] || S.cfg.fs || 18) + ' · ' + thCfg().ds + '%' },
+  { g: 'look', o: 5, l: 'المظهر والعرض', d: 'الثيم (النهار والليل)، الخطوط، حجم الخط والعرض، والزر العائم (لهذا الجهاز)', fn: "go('st_look')", n: () => {
+    const c = thCfg(), fs = FS_OLD[S.cfg.fs] || S.cfg.fs || 18;
+    const fLbl = (FS_STEPS.find(x => x[0] == fs) || [, 'عادي'])[1].split(' ')[0];
+    const dLbl = (DS_STEPS.find(x => x[0] == c.ds) || [, 'عادي'])[1].split(' ')[0];
+    return ({ ibm: 'IBM Plex', rubik: 'Rubik', baloo: 'Baloo 2', sys: 'النظام' }[c.fn] || 'IBM Plex') + ' · خط ' + fLbl + ' · عرض ' + dLbl;
+  } },
   { g: 'usr', o: 10, l: 'المستخدمون والصلاحيات', d: 'إضافة موظفين وتحديد ما يستطيعون فعله', fn: "go('st_users')" },
   { g: 'usr', o: 30, l: 'القفل التلقائي', d: 'يقفل التطبيق بعد مدة بلا استعمال أو عند الخروج منه (لهذا الجهاز)', fn: 'lkEd()', n: () => lkTxt(lkSecs()) },
   { g: 'data', o: 20, l: 'النسخ الاحتياطي والاستعادة', d: 'حفظ نسخة من البيانات أو استعادتها', fn: "go('st_bk')", ao: 1 },
@@ -204,7 +209,7 @@ MORE.push(
     else if (!MG.some(m => m[0] == x.g)) { x.g = 'shop'; x.o = 99; x.adv = 1; }
   });
 })();
-/* ---------- المظهر: 4 ثيمات متقنة، 3 خطوط عربية، حجم الخط وحجم العرض، والأيقونة العائمة ---------- */
+/* ---------- المظهر: 4 ثيمات متقنة، 3 خطوط عربية، حجم الخط وحجم العرض الذكي، والأيقونة العائمة ---------- */
 const THMD = [['a', 'تلقائي (يتبع الهاتف)'], ['l', 'نهاري دائماً'], ['d', 'ليلي دائماً']];
 const TH_LB_L = [
   ['warm', 'نهاري هادئ (دافئ)', 'عاجي مريح للعين مع أخضر زمردي', '#0d7a5f'],
@@ -220,10 +225,11 @@ const TH_FN_OPTS = [
   ['baloo', 'Baloo Bhaijaan 2', 'حروف ناعمة وعناوين بارزة'],
   ['sys', 'خط الهاتف الأصلي', 'الخط الافتراضي للنظام']
 ];
-const FS_STEPS = [[15, 'أصغر'], [16, 'صغير'], [18, 'عادي (افتراضي)'], [20, 'كبير'], [22, 'أكبر'], [24, 'كبير جداً']];
-const DS_STEPS = [[88, 'مضغوط جداً'], [94, 'مضغوط'], [100, 'عادي (افتراضي)'], [108, 'كبير'], [116, 'أكبر (مريح للنظر)']];
+const FS_STEPS = [[15, 'أصغر'], [16, 'صغير'], [17, 'متوسط'], [18, 'عادي (افتراضي)'], [19, 'واضح'], [20, 'كبير'], [21, 'أكبر']];
+const DS_STEPS = [[90, 'مضغوط'], [95, 'مدمج'], [100, 'عادي (افتراضي)'], [105, 'مريح'], [110, 'واسع']];
 function szSliderHtml(title, sub, steps, curVal, onPick) {
   let idx = steps.findIndex(s => s[0] == curVal);
+  if (idx < 0) idx = steps.findIndex(s => s[0] == 18 || s[0] == 100);
   if (idx < 0) idx = 2;
   const prev = idx > 0 ? steps[idx - 1][0] : null;
   const next = idx < steps.length - 1 ? steps[idx + 1][0] : null;
@@ -238,21 +244,22 @@ VW.st_look = () => {
   const fabOn = S.cfg.fab !== 0, c = thCfg(), fs = FS_OLD[S.cfg.fs] || S.cfg.fs || 18;
   return {
     t: 'المظهر والعرض',
-    h: '<h3>نوع الخط (لهذا الجهاز فقط)</h3>'
+    h: '<p class="m">تُطبَّق إعدادات المظهر والخط وحجم العرض على هذا الجهاز فقط.</p>'
+      + '<h3>نوع الخط</h3>'
       + `<div class="th-grid two">${TH_FN_OPTS.map(([k, n, d]) => `<button type="button" class="ac-btn col ${c.fn == k ? 'on' : ''}" onclick="thSet({fn:'${k}'})"><b>${n}</b><small class="m">${d}</small></button>`).join('')}</div>`
-      + '<h3>الوضع والثيمات الأربع (لهذا الجهاز)</h3>'
+      + '<h3>الوضع والثيمات الأربع</h3>'
       + `<div class="sec-tags">${THMD.map(([k, n]) => `<button class="tag ${c.md == k ? 'on' : ''}" onclick="thSet({md:'${k}'})">${n}</button>`).join('')}</div>`
       + (c.md != 'd' ? `<h3>ثيم النهار ${c.md == 'a' ? '(يُفعَّل نهاراً)' : ''}</h3><div class="th-grid two">${TH_LB_L.map(([k, n, d, col]) => `<button type="button" class="ac-btn col ${c.lt == k ? 'on' : ''}" onclick="thSet({lt:'${k}'})"><div class="row2" style="width:100%"><span class="ac-dot" style="background:${col}"></span><b>${n}</b></div><small class="m">${d}</small></button>`).join('')}</div>` : '')
       + (c.md != 'l' ? `<h3>ثيم الليل ${c.md == 'a' ? '(يُفعَّل ليلاً)' : ''}</h3><div class="th-grid two">${TH_LB_D.map(([k, n, d, col]) => `<button type="button" class="ac-btn col ${c.dt == k ? 'on' : ''}" onclick="thSet({dt:'${k}'})"><div class="row2" style="width:100%"><span class="ac-dot" style="background:${col}"></span><b>${n}</b></div><small class="m">${d}</small></button>`).join('')}</div>` : '')
-      + '<h3>حجم الخط وحجم العرض (لهذا الجهاز)</h3>'
-      + szSliderHtml('حجم الخط (Font size)', 'تكبير أو تصغير النصوص والأرقام فقط', FS_STEPS, fs, v => `upd(()=>S.cfg.fs=${v})`)
-      + szSliderHtml('حجم العرض (Display size)', 'تكبير أو تصغير الأزرار والبطاقات والمدخلات وكل عناصر الشاشة', DS_STEPS, c.ds, v => `thSet({ds:${v}})`)
+      + '<h3>حجم الخط وحجم العرض</h3>'
+      + szSliderHtml('حجم الخط', 'تدرّج ناعم ودقيق لتكبير أو تصغير النصوص والأرقام', FS_STEPS, fs, v => `upd(()=>S.cfg.fs=${v})`)
+      + szSliderHtml('حجم العرض', 'ضبط حجم الأزرار والبطاقات والمدخلات والمسافات', DS_STEPS, c.ds, v => `thSet({ds:${v}})`)
       + ((fs != 18 || c.ds != 100) ? `<button class="btn s sm" style="width:100%;margin-bottom:6px" onclick="S.cfg.fs=18;thSet({ds:100})">إرجاع الحجم الافتراضي (الخط والعرض)</button>` : '')
-      + '<h3>عرض الأقسام في الرئيسية (لهذا الجهاز)</h3>'
+      + '<h3>عرض الأقسام في الرئيسية</h3>'
       + `<div class="sec-tags">${[['list', 'قائمة'], ['grid', 'شبكة']].map(([k, n]) => `<button class="tag ${(S.cfg.hl == 'grid' ? 'grid' : 'list') == k ? 'on' : ''}" onclick="upd(()=>S.cfg.hl='${k}')">${n}</button>`).join('')}</div>`
-      + '<h3>الأيقونة العائمة السريعة (لهذا الجهاز)</h3>'
-      + `<button class="card row2" onclick="fabReset();upd(()=>S.cfg.fab=${fabOn ? 0 : 1})"><b>زر عائم للإضافة السريعة في الرئيسية</b><span class="m">${fabOn ? 'مُفعَّل' : 'مُعطَّل'}</span></button>`
-      + (fabOn ? `<button class="card row2" onclick="fabLockToggle()"><b>تثبيت الزر العائم في مكانه (منع السحب)</b><span class="m">${fabLocked() ? 'مُثبَّت' : 'قابل للسحب'}</span></button>` : '')
+      + '<h3>الأيقونة العائمة السريعة</h3>'
+      + swRow('زر عائم للإضافة السريعة في الرئيسية', `fabReset();upd(()=>S.cfg.fab=${fabOn ? 0 : 1})`, fabOn)
+      + (fabOn ? swRow('تثبيت الزر العائم في مكانه (منع السحب)', 'fabLockToggle()', fabLocked()) : '')
   };
 };
 /* ---------- الأيقونة العائمة الذكية (FAB — في الرئيسية فقط) ---------- */

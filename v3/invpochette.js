@@ -3,7 +3,6 @@
    كل لون دائرة بعدده، وحدّها يلوَّن بالحالة (أحمر نفد / برتقالي قارب).
    يُحمَّل بعد invglass.js.
    ============================================================ */
-
 /* ---------- ألوان الدوائر (الأسماء تُطابَق بعد التطبيع nz) ---------- */
 const CS_HEX = Object.fromEntries(Object.entries({
   'أسود': '#0a0a0a', 'black': '#0a0a0a', 'noir': '#0a0a0a',
@@ -41,7 +40,6 @@ function csInk(c) {
   const n = parseInt(m[1], 16);
   return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? '#111827' : '#fff';
 }
-
 /* ---------- البيانات: كل نوع = لون واحد {id, g:'', c, n} ----------
    تحويل تلقائي مرة واحدة للبيانات القديمة (رجالي/نسائي): تُدمج الأعداد في اللون نفسه. */
 function csN(i) {
@@ -68,10 +66,9 @@ const csSt = i => {
 };
 const csChipCls = (i, x) => { const s = csVSt(i, x); return s == 'r' ? 'low' : s == 'y' ? 'warn' : ''; };
 const csGSummaryTxt = i => (csN(i).v || []).map(x => `${x.c || 'عام'} ${x.n}`).join(' · ') || 'لا ألوان';
-
 /* ---------- العرض: دوائر الألوان ---------- */
 function csDot(x, st, txt) {
-  const ring = st == 'r' ? `;box-shadow:0 0 0 3px ${DT.r}` : st == 'y' ? `;box-shadow:0 0 0 3px ${DT.y}` : '';
+  const ring = st == 'r' ? `;box-shadow:0 0 0 2px var(--c),0 0 0 4.5px ${DT.r}` : st == 'y' ? `;box-shadow:0 0 0 2px var(--c),0 0 0 4.5px ${DT.y}` : '';
   return `<span class="csd" style="background:${csBg(x.c)};color:${csInk(x.c)}${ring}">${txt}</span>`;
 }
 /* شريط الدوائر: الضغط عليه يفتح نافذة الموديل. cmp = بدون أسماء للألوان المعروفة */
@@ -91,7 +88,7 @@ function csView() {
   let a = srt(allCs, 'case', i => i.name, csTot, i => i.at);
   if (V.cf) a = a.filter(i => csSt(i) != 'g');
   const pg = pgSlice('cs', a);
-  const tagsHtml = `<button class="tag ${!V.cf ? 'on' : ''}" onclick="V.cf=0;render()">الكل (${allCs.length} موديل · ${totPcs} قطعة)</button>`
+  const tagsHtml = `<button class="tag ${!V.cf ? 'on' : ''}" onclick="V.cf=0;render()">الكل (${allCs.length} · ${arCnt(totPcs, 'قطعة', 'قطعتان', 'قطع')})</button>`
     + `<button class="tag ${V.cf ? 'on' : ''}" onclick="V.cf=1;render()">يحتاج شراء (${lowCnt})</button>`;
   return {
     t: 'البوشيط',
@@ -100,7 +97,6 @@ function csView() {
       + (pg.items.map(csCard).join('') + pg.more || emptyBox('لا توجد موديلات بوشيط في هذا الفلتر', 'اضغط على «+ إضافة موديل بوشيط» في الأعلى لإضافة أول موديل'))
   };
 }
-
 /* ---------- نافذة الموديل: − / + لكل لون ---------- */
 let CQ = '', CSCODE = '', CSD = {}, CSUP = 0;   // CSUP = موديل زادت كميته أثناء النافذة (لفحص طلبات الزبائن عند الإغلاق)
 function csClosed() { const id = CSUP; CSUP = 0; const i = id && find(id); if (i) reqChk('بوشيط ' + i.name, 1); }
@@ -120,7 +116,7 @@ function csSheetR(id) {
     + (i.rem ? `<div class="m" style="margin-top:6px"><span class="dotl" style="background:${DT.g}"></span> باقي: ${esc(i.rem)}</div>` : '')
     + `<div class="cs-acts"><button class="btn s" onclick="csAddView('${i.id}')">+ لون</button><button class="btn s" onclick="csGo('csLimEd','${i.id}')">الحد والسعر</button><button class="btn s" onclick="csGo('csQuickNote','${i.id}')">باقي / خاصنا</button>`
     + (S.fields.some(f => f.sec == 'case') ? `<button class="btn s" onclick="csGo('csFx','${i.id}')">خانات</button>` : '')
-    + `<button class="btn s" onclick="csGo('csDel','${i.id}')">حذف الموديل</button></div>`
+    + `<button class="btn s del" onclick="csGo('csDel','${i.id}')">حذف الموديل</button></div>`
     + `<div class="acts"><button class="btn" onclick="finish(null)">تم</button></div>`;
 }
 function csC(id, vid, d) {
@@ -140,7 +136,6 @@ function csClrNeed(id) {
   const i = find(id); if (!i || !i.need) return;
   commit('تم مسح تنبيه «خاصنا»', () => { i.need = ''; i.by = S.me; });
 }
-
 /* ---------- الإضافة: ابحث أولاً، ثم اللون والعدد ---------- */
 function csAdd() {
   CQ = ''; CSD = {};
@@ -186,7 +181,6 @@ function csAddOk(more) {
   toast('تمت الإضافة');
   if (more) csAddView(i.id); else finish(null);
 }
-
 /* ---------- الحد والسعر والملاحظات والخانات ---------- */
 function csFx(id) {
   const i = find(id); fsInit([], {}, 'case', i);
@@ -211,7 +205,6 @@ function csQuickNote(id) {
   const i = find(id);
   ask('بوشيط ' + i.name, [{ k: 'rem', l: 'شنو باقي عندنا فالمحل؟ (مثال: غير الأسود)', v: i.rem || '' }, { k: 'need', l: 'شنو خاص يجيب المعلم؟ (مثال: فضي / كحلي)', v: i.need || '' }]).then(v => { if (v) commit('تم التحديث', () => { i.rem = v.rem.trim(); i.need = v.need.trim(); i.by = S.me; }); });
 }
-
 /* ---------- الشراء: يُضاف العدد للألوان الناقصة (أو لكل الألوان إن لم يوجد ناقص) ---------- */
 function csBuyApply(i, n) {
   csN(i); i.v = i.v || [];
@@ -224,6 +217,5 @@ function buyC(id) {
   const bad = (csN(i).v || []).filter(x => csVSt(i, x) != 'g'), lbl = bad.length ? bad.map(x => x.c || 'عام').join(' + ') : 'كل الألوان';
   qty(`بوشيط ${i.name} (${lbl})`, 3, n => { csBuyApply(i, n); reqChk('بوشيط ' + i.name, 1); });
 }
-
 /* تحويل البيانات القديمة عند الإقلاع (يُحفظ مع أول حفظ عادي) */
 S.items.forEach(i => { if (i.sec == 'case') csN(i); });

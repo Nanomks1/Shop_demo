@@ -132,10 +132,27 @@
     return o.map(bd).join('\n');
   };
   /* ---------- شاشة التقرير ---------- */
-  const nwCnt = h => h.replace(/((?:—\s*)?العدد\s*)(≈?[0-9٠-٩]+)\s*$/, '<span class="nw">$1<bdi class="ltr">$2</bdi></span>');
+  const fmtRtHtml = raw => {
+    const segs = String(raw || '').split(' — ');
+    return segs.map((seg, idx) => {
+      if (idx > 0 && /^(?:العدد\s*≈?[0-9٠-٩]+|نفد|قارب النفاد|باقي\s+[0-9٠-٩]+)$/.test(seg.trim())) {
+        const h = esc(seg).replace(/(≈?[0-9٠-٩]+)/, '<bdi class="ltr">$1</bdi>');
+        return `<span class="nw">${h}</span>`;
+      }
+      if (idx === 0 && seg.includes(': ')) {
+        const cIdx = seg.indexOf(': '), head = seg.slice(0, cIdx), rest = seg.slice(cIdx + 2);
+        const mods = rest.split(' / ').map(m => `<bdi>${esc(m)}</bdi>`).join(' / ');
+        return `<bdi>${esc(head)}</bdi>: ${mods}`;
+      }
+      return `<bdi>${esc(seg)}</bdi>`;
+    }).join(' — ');
+  };
   const stkRowHtml = i => {
     const mdl = [i.brand, i.name].filter(Boolean).join(' '), sp = [i.ram, i.cap].filter(Boolean).join(' ');
-    return `<bdi class="ltr"><b>${esc(mdl)}</b></bdi>${sp ? ` · <bdi class="ltr">${esc(sp)}</bdi>` : ''}${i.color ? ` · <span class="m">${esc(i.color)}</span>` : ''}`;
+    const parts = [`<bdi><b>${esc(mdl)}</b></bdi>`];
+    if (sp) parts.push(`<bdi>${esc(sp)}</bdi>`);
+    if (i.color) parts.push(`<bdi class="m">${esc(i.color)}</bdi>`);
+    return parts.join(' · ');
   };
   const SECI = { topup: 'ctopup', phones: 'cphone', glass: 'cglass', pochette: 'ccase', acc: 'cacc', rpp: 'crepair' };
   const secT = b => (SECI[b.k] ? I(SECI[b.k]) + ' ' : '') + esc(String(b.t).replace(/^[^\u0600-\u06FFA-Za-z0-9]+/, ''));
@@ -148,7 +165,7 @@
     const mainClick = c.qb && hasPrompt ? `rcQuick('${fn}','${arg}')` : act;
     const showNumBtn = isGrp || (c.qb && hasPrompt);
     const askBtn = showNumBtn ? `<button class="rck s" title="إدخال الكمية يدوياً" onclick="rcManual('${fn}','${arg}')">${I('hash')}</button>` : '';
-    return `<div class="rrow ${l.x[2] == 'r' ? 'r' : ''}"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span class="rt">${nwCnt(esc(l.s))}</span>${askBtn}<button class="rck" aria-label="تم الشراء" onclick="${mainClick}">${I('check')}</button></div>`;
+    return `<div class="rrow ${l.x[2] == 'r' ? 'r' : ''}"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span class="rt">${fmtRtHtml(l.s)}</span>${askBtn}<button class="rck" aria-label="تم الشراء" onclick="${mainClick}">${I('check')}</button></div>`;
   };
   VW.rep = () => {
     const c = rcf(), s = stkL(), lv = window.RLV || c.lv, f = window.reportSectionFilter;
@@ -187,7 +204,7 @@
     return { t: 'التقرير اليومي', h };
   };
   /* ---------- إعدادات التقرير ---------- */
-  const yn = v => v ? 'نعم' : 'لا', tog = (l, k) => row(l, 'rcSet({' + k + ':' + (rcf()[k] ? 0 : 1) + '})', yn(rcf()[k]));
+  const yn = v => v ? 'نعم' : 'لا', tog = (l, k) => swRow(l, 'rcSet({' + k + ':' + (rcf()[k] ? 0 : 1) + '})', !!rcf()[k]);
   window.rcRh = () => { if (!okEdit()) return toast('للمدير فقط'); ask('ساعة بدء التذكير', [{ k: 'h', l: 'من 0 إلى 23 (مثال: 16)', v: String(rcf().rh) }]).then(v => { const h = v && parseInt(v.h, 10); if (h >= 0 && h <= 23) rcSet({ rh: h }); }); };
   window.rcNd = i => { const n = rcf().nd.slice(), k = n.indexOf(i); k < 0 ? n.push(i) : n.splice(k, 1); rcSet({ nd: n }); };
   VW.st_rep = () => {
@@ -204,7 +221,7 @@
         + '<p class="m">أيام بلا تذكير:</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((n, i) => `<button class="tag ${c.nd.includes(i) ? 'on' : ''}" onclick="rcNd(${i})">${n}</button>`).join('') + '</div>'
         + '<h3>الجولة اليومية</h3>' + row('يُعتبر الصنف غير مؤكد بعد (أيام)', "limEd('stale')", lim('stale') + ' يوم')
         + '<h3>المستوى الافتراضي</h3><div style="display:flex;gap:6px;margin-bottom:10px"><button class="tag ' + (c.lv == 'a' ? 'on' : '') + '" onclick="rcSet({lv:\'a\'})">النافد وقارب النفاد</button><button class="tag ' + (c.lv == 'r' ? 'on' : '') + '" onclick="rcSet({lv:\'r\'})">النافد فقط</button></div>'
-        + '<h3>الأقسام الظاهرة في التقرير</h3>' + RTABS.filter(([k]) => k != 'all').map(([k, l]) => row(l, "rcHide('" + k + "')", yn(!c.hs.includes(k)))).join('')
+        + '<h3>الأقسام الظاهرة في التقرير</h3>' + RTABS.filter(([k]) => k != 'all').map(([k, l]) => swRow(l, "rcHide('" + k + "')", !c.hs.includes(k))).join('')
         + `<div style="margin-top:14px"><button class="btn s" onclick="rcSet({lv:'a',tt:'تقرير محل عزيز',dt:1,st:1,pr:0,rq:1,pn:1,em:0,ft:'',hs:[],rr:0,rd:0,rm:1,nd:[],rh:16,qb:0})">إرجاع الإعدادات الافتراضية</button></div>`
     };
   };

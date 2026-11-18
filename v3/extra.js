@@ -9,8 +9,7 @@ Object.assign(IC, {
   idcard: '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4M14 14h4M5 16c.6-1.2 1.7-2 3-2s2.4.8 3 2"/>'
 });
 const xn = s => parseFloat(dg(s || '').replace(/[^\d.]/g, '')) || 0;
-const xTel = t => t ? `<a href="tel:${esc(t)}">${esc(t)}</a>` : '';
-
+const xTel = t => t ? `<a href="tel:${esc(t)}" class="rp-tel-pill" onclick="event.stopPropagation()"><bdi>${esc(t)}</bdi>${I('phone')}</a>` : '';
 /* إكمال اسم الزبون من رقم هاتفه فقط (في المستعمل والديون) */
 function xCustLookup(nameId, telId, fromName) {
   const nEl = $(nameId), tEl = $(telId); if (!nEl || !tEl) return;
@@ -21,7 +20,6 @@ function xCustLookup(nameId, telId, fromName) {
     if (f) nEl.value = f.name;
   }
 }
-
 /* ---------- خزنة صور المستعمل (تشترك مع IndexedDB في core.js) ---------- */
 const uImg = u => u && u.img && u.img.startsWith('data:') ? u.img : (u && IMG[u.id] || '');
 HK.save.push(() => {
@@ -31,7 +29,6 @@ HK.save.push(() => {
     else if (!u.img && IMG[u.id]) delImg(u.id);
   });
 });
-
 /* ---------- شراء المستعمل ---------- */
 let UR = {}, UI = '', UCAMS = null;
 const isUsInInv = u => !!(u && u.inv && (!u.invId || S.items.some(x => x.id == u.invId)));
@@ -197,12 +194,12 @@ window.usFromRep = function (itemId) {
 };
 const usedCard = u => {
   const im = uImg(u), inInv = isUsInInv(u);
-  return `<div class="card"><div class="row2">${im ? `<img onclick="usZoom('${u.id}')" src="${im}" style="cursor:pointer;width:54px;height:54px;object-fit:cover;border-radius:10px">` : ''}<div style="flex:1"><b>${esc(u.dev)}</b><div class="m">البائع: ${esc(u.name)}${u.tel ? ' · ' + xTel(u.tel) : ''}</div></div>${u.price ? `<span class="cmp-pr">${esc(u.price)}</span>` : ''}</div>`
+  return `<div class="card"><div class="row2">${im ? `<img onclick="usZoom('${u.id}')" src="${im}" style="cursor:pointer;width:54px;height:54px;object-fit:cover;border-radius:10px">` : ''}<div style="flex:1"><b>${esc(u.dev)}</b><div class="m">البائع: ${esc(u.name)}</div></div>${u.tel ? xTel(u.tel) : ''}${u.price ? `<span class="cmp-pr">${esc(u.price)}</span>` : ''}</div>`
     + (u.cin ? `<div class="m" style="font-weight:600;color:var(--p)">${I('idcard')} CIN: <bdi>${esc(u.cin)}</bdi></div>` : `<div class="m" style="color:#d97706">بدون رقم بطاقة وطنية (CIN)</div>`)
     + (u.repTxt ? `<div class="m">روپريز مقابل: ${esc(u.repTxt)}${u.diff ? ' · الفرق المقبوض: <b>' + esc(u.diff) + '</b>' : ''}</div>` : '')
     + (u.imei ? `<div class="m">IMEI: <bdi>${esc(u.imei)}</bdi></div>` : '') + (u.note ? `<div class="m">${esc(u.note)}</div>` : '')
     + `<div class="m">${fd(u.at)} · ${esc(u.by || '')}${inInv ? ' · ' + I('check') + ' أُدخل للمخزون' : ''}</div>`
-    + `<div class="sub">${inInv ? '' : `<button class="btn s sm" onclick="usInv('${u.id}')">إدخال للمخزون</button>`}<button class="btn s sm" onclick="usEd('${u.id}')">تعديل</button><button class="btn s sm" onclick="usDel('${u.id}')">حذف</button></div></div>`;
+    + `<div class="sub">${inInv ? '' : `<button class="btn s sm" onclick="usInv('${u.id}')">إدخال للمخزون</button>`}<button class="btn s sm" onclick="usEd('${u.id}')">تعديل</button><button class="btn s sm del" onclick="usDel('${u.id}')">حذف</button></div></div>`;
 };
 const usMatch = (u, n) => nz([u.dev, u.name, u.cin, u.tel, u.imei, u.note, u.repTxt].join(' ')).includes(n);
 function usListHtml() {
@@ -219,10 +216,8 @@ VW.usd = () => ({
     + `<div id="usl">${usListHtml()}</div>`
 });
 function usF() { if ($('usl')) $('usl').innerHTML = usListHtml(); }
-
 /* ---------- الديون (مع التجميع وتذكير الواتساب والربط الحي مع الصيانة) ---------- */
 const dRem = d => Math.max(0, xn(d.amt) - (d.pays || []).reduce((a, p) => a + xn(p[1]), 0));
-
 window.dbtCustOpen = function (tel, name) {
   const ph = waNum(tel), nm = nz(name || '');
   return (S.debt || []).filter(d => {
@@ -233,7 +228,6 @@ window.dbtCustOpen = function (tel, name) {
   });
 };
 function dbtSameCust(d) { return dbtCustOpen(d.tel, d.name); }
-
 function dbtForm(rec) {
   const p = ask('دين جديد', [
     { k: 'name', l: 'اسم الزبون', v: rec.name || '' },
@@ -328,11 +322,16 @@ function dbtDel(id) { const d = S.debt.find(x => x.id == id); if (d) del('debt',
 const dbtCard = d => {
   const rem = dRem(d), open = !d.paid, same = open ? dbtSameCust(d) : [];
   const totSame = same.length > 1 ? same.reduce((s, x) => s + dRem(x), 0) : 0;
-  return `<div class="card ${open ? '' : 'rp-ok'}"><div class="row2"><b style="flex:1">${esc(d.name)}</b><span class="cmp-pr">${open ? rem + ' درهم' : '✓ مسدَّد'}</span></div>`
-    + (totSame ? `<div class="rs" style="font-size:.85rem;margin:2px 0">إجمالي ديون هذا الزبون: ${totSame} درهم (${same.length} ديون)</div>` : '')
-    + (d.tel ? `<div class="m">${xTel(d.tel)}</div>` : '') + (d.why ? `<div class="m">${esc(d.why)}</div>` : '')
-    + `<div class="m">${fd(d.at)} · ${esc(d.by || '')}${(d.pays || []).length ? ' · دفعات: ' + d.pays.length : ''}${open && rem < xn(d.amt) ? ' · من أصل ' + esc(d.amt) : ''}${d.paid ? ' · سُدِّد ' + fd(d.paid) : ''}</div>`
-    + `<div class="sub">${open ? `<button class="btn sm" onclick="dbtPay('${d.id}')">تسجيل دفعة</button>${same.length > 1 ? `<button class="btn s sm" onclick="dbtPayAll('${d.id}')">دفعة من الإجمالي</button>` : ''}<button class="btn s sm" onclick="dbtWA('${d.id}')">${I('send')} تذكير واتساب</button>` : ''}<button class="btn s sm" onclick="dbtMore('${d.id}')">+ دين جديد له</button><button class="btn s sm" onclick="dbtDel('${d.id}')">حذف</button></div></div>`;
+  const meta = [`<bdi>${fd(d.at)}</bdi>`];
+  if (d.by) meta.push(`<bdi>${esc(d.by)}</bdi>`);
+  if ((d.pays || []).length) meta.push(`<span class="nw">دفعات: ${d.pays.length}</span>`);
+  if (open && rem < xn(d.amt)) meta.push(`<span class="nw">من أصل ${esc(d.amt)} درهم</span>`);
+  if (d.paid) meta.push(`<span class="nw">سُدِّد <bdi>${fd(d.paid)}</bdi></span>`);
+  return `<div class="card ${open ? '' : 'rp-ok'}"><div class="row2" style="flex-wrap:wrap"><b style="flex:1">${esc(d.name)}</b>${d.tel ? xTel(d.tel) : ''}<span class="cmp-pr">${open ? rem + ' درهم' : '✓ مسدَّد'}</span></div>`
+    + (totSame ? `<div class="rs" style="font-size:.85rem;margin:2px 0">إجمالي ديون هذا الزبون: ${totSame} درهم (${arCnt(same.length, 'دين', 'دينان', 'ديون', 'ديناً')})</div>` : '')
+    + (d.why ? `<div class="m" style="margin-top:4px">${esc(d.why)}</div>` : '')
+    + `<div class="m" style="margin-top:3px">${meta.join(' · ')}</div>`
+    + `<div class="sub">${open ? `<button class="btn sm" onclick="dbtPay('${d.id}')">تسجيل دفعة</button>${same.length > 1 ? `<button class="btn s sm" onclick="dbtPayAll('${d.id}')">دفعة من الإجمالي</button>` : ''}<button class="btn s sm" onclick="dbtWA('${d.id}')">${I('send')} تذكير واتساب</button>` : ''}<button class="btn s sm" onclick="dbtMore('${d.id}')">+ دين جديد له</button><button class="btn s sm del" onclick="dbtDel('${d.id}')">حذف</button></div></div>`;
 };
 function dbtListHtml() {
   const tab = V.tab || 'o', q = nz(V.q || '');
@@ -357,7 +356,6 @@ VW.dbt = () => {
   };
 };
 function dbtF() { if ($('dbtl')) $('dbtl').innerHTML = dbtListHtml(); }
-
 /* ---------- الإحصائيات (مع تقسيم الأعطال المركبة بالفاصلة) ---------- */
 const stCnt = (arr, f) => { const m = {}; arr.forEach(x => { const k = f(x); if (k) m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
 const stBars = (L, none) => { const mx = Math.max(1, ...L.map(x => x[1])); return L.length ? L.map(([l, n]) => `<div class="brow"><span class="bl">${esc(l)}</span><div class="bt"><i style="width:${Math.round(n / mx * 100)}%"></i></div><b>${n}</b></div>`).join('') : `<p class="m">${none}</p>`; };
@@ -379,7 +377,6 @@ VW.stat = () => {
       + `<h3>الصيانات المسلَّمة آخر 7 أيام</h3><div class="card">${stBars(Out, '')}</div>`
   };
 };
-
 /* ---------- التسجيل في الرئيسية والمزيد والبحث ---------- */
 /* «شراء مستعمل» و«الديون» صارا ضمن أقسام الرئيسية (home.js) */
 MORE.push({ g: 'rep', o: 60, l: 'إحصائيات: الأعطال وطلبات الزبائن', fn: "go('stat')" });

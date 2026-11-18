@@ -41,7 +41,7 @@ const rpStInfo = r => {
   return { txt: 'مُسلَّم', cls: 'ok' };
 };
 function rpParseCall(c) {
-  const m = String(c || '').match(/^(\S+)\s+(\d{2}\/\d{2})\/(\d{4})\s+(\d{2}:\d{2})\s*(.*)$/);
+  const m = String(c || '').replace(/\u200E/g, '').match(/^(\S+)\s+(\d{2}\/\d{2})\/(\d{4})\s+(\d{2}:\d{2})\s*(.*)$/);
   if (!m) return { dt: c || '', by: '' };
   const yr = +m[3] === new Date().getFullYear() ? '' : '/' + m[3];
   return { dt: `${m[2]}${yr} ${m[4]}`, by: m[5].trim() };
@@ -129,24 +129,24 @@ function rc(r) {
   const telHtml = r.tel ? `<a href="tel:${esc(r.tel)}" class="rp-tel-pill" onclick="event.stopPropagation()"><bdi>${esc(r.tel)}</bdi>${I('phone')}</a>` : '';
   const whoName = r.st == 'dn' ? (r.dby || r.by) : (r.lb || r.by);
   let dateLabel = '';
-  if (r.st == 'in') dateLabel = `استلام: <bdi class="ltr">${fdS(r.t0)}</bdi>${n ? ` (منذ ${n}ي)` : ''}`;
-  else if (r.st == 'rd') dateLabel = `${r.res == 'fail' || r.res == 'ref' ? 'فُحص:' : 'جُهّز:'} <bdi class="ltr">${fdS(r.t1 || r.t0)}</bdi>${w ? ` (منذ ${w}ي)` : ''}`;
+  if (r.st == 'in') dateLabel = `استلام: <bdi class="ltr">${fdS(r.t0)}</bdi>${n ? ` (${agoTxt(r.t0)})` : ''}`;
+  else if (r.st == 'rd') dateLabel = `${r.res == 'fail' || r.res == 'ref' ? 'فُحص:' : 'جُهّز:'} <bdi class="ltr">${fdS(r.t1 || r.t0)}</bdi>${w ? ` (${agoTxt(r.t1 || r.t0)})` : ''}`;
   else if (r.st == 'dn') dateLabel = `سُلّم: <bdi class="ltr">${fdS(r.t2)}</bdi> · المقبوض: <b>${esc(dh(r.paid))}</b>`;
   let callRowHtml = '';
   if (r.st == 'rd' && (r.calls || []).length) {
     const pc = rpParseCall(r.calls[r.calls.length - 1]);
-    callRowHtml = `<div class="rp-info-row call-row"><span class="rp-info-txt">آخر تواصل: <bdi class="ltr">${esc(pc.dt)}</bdi></span><div class="rp-call-badges">${pc.by ? `<span class="rp-staff">${esc(pc.by)}</span>` : ''}<span class="rp-cnt-b">${r.calls.length} ${r.calls.length == 1 ? 'اتصال' : 'اتصالات'}</span></div></div>`;
+    callRowHtml = `<div class="rp-info-row call-row"><span class="rp-info-txt">آخر تواصل: <bdi class="ltr">${esc(pc.dt)}</bdi></span><div class="rp-call-badges">${pc.by ? `<span class="rp-staff">${esc(pc.by)}</span>` : ''}<span class="rp-cnt-b">${arCnt(r.calls.length, 'اتصال', 'اتصالان', 'اتصالات', 'اتصالاً')}</span></div></div>`;
   }
   const infoBox = `<div class="rp-info-box" onclick="rpOpen('${i}')"><div class="rp-info-row"><span class="rp-info-txt">${dateLabel}</span>${whoName ? `<span class="rp-staff">${esc(whoName)}</span>` : ''}</div>${callRowHtml}</div>`;
   let statusRow = '';
   if (r.st == 'in') {
     const locBtns = shown('rp', 'loc') ? Object.keys(LOC).map(k => `<button class="tag rp-mini ${r.loc == k ? 'on' : ''}" onclick="rLoc('${i}','${k}')">${LOC[k]}</button>`).join('') : '';
     const partBtn = shown('rp', 'need') ? (r.part ? `<button class="tag rp-mini part on" onclick="rPart('${i}')">${I('tool')} خاصو: ${esc(r.part)}</button>` : `<button class="tag rp-mini" onclick="rPart('${i}')">+ خاصو قطعة</button>`) : '';
-    const slowBadge = slow ? `<span class="rp-badge warn">متأخر ${n} أيام</span>` : '';
+    const slowBadge = slow ? `<span class="rp-badge warn">متأخر ${arCnt(n, 'يوم', 'يومين', 'أيام', 'يوماً')}</span>` : '';
     const lockInd = (r.lock || (r.pat || []).length > 1) ? `<button class="tag rp-mini" onclick="rpOpen('${i}')" title="عرض القفل">${I('lock')} القفل</button>` : '';
     if (locBtns || partBtn || slowBadge || lockInd) statusRow = `<div class="rp-tags">${locBtns}${partBtn}${lockInd}${slowBadge}</div>`;
   } else if (r.st == 'rd' && w > 15) {
-    statusRow = `<div class="rp-tags"><span class="rp-badge bad">منسي منذ ${w} يوم</span></div>`;
+    statusRow = `<div class="rp-tags"><span class="rp-badge bad">منسي منذ ${arCnt(w, 'يوم', 'يومين', 'أيام', 'يوماً')}</span></div>`;
   } else if (r.st == 'dn') {
     const tstBadge = r.tst ? `<span class="rp-badge ok">${I('check')} جُرِّب مع الزبون</span>` : '';
     const wiBadge = wi ? `<span class="rp-badge ${wi.active ? 'ok' : ''}">${I('shield')} ${esc(wi.label)}</span>` : '';
@@ -306,8 +306,7 @@ VW.rp = () => {
       }).join('')
       + `</div>`
       + rpSubFiltersHtml(tab)
-      + `<input class="rp-srch" placeholder="ابحث: تذكرة (A101)، اسم، رقم، جهاز، عطل..." value="${esc(V.q)}" oninput="V.q=this.value;V.rlim=40;rpL()">`
-      + `<div class="row2"><button class="tool-pill ${V.all ? 'on' : ''}" onclick="V.all=!V.all;V.rlim=40;render()">كل التبويبات (${S.rp.length})</button><select class="rp-dt-sel" aria-label="التاريخ" onchange="V.d=this.value;V.rlim=40;render()">${FL.map(([k, l]) => `<option value="${k}" ${(V.d || 'all') == k ? 'selected' : ''}>${k == 'all' ? 'كل التواريخ' : l}</option>`).join('')}</select></div>`
+      + `<div class="row2" style="gap:5px;margin-top:6px"><input class="rp-srch" style="margin:0;flex:1.5" placeholder="ابحث: تذكرة، اسم، هاتف..." value="${esc(V.q)}" oninput="V.q=this.value;V.rlim=40;rpL()"><select class="rp-dt-sel" style="flex:0.85;min-width:92px" aria-label="التاريخ" onchange="V.d=this.value;V.rlim=40;render()">${FL.map(([k, l]) => `<option value="${k}" ${(V.d || 'all') == k ? 'selected' : ''}>${k == 'all' ? 'كل التواريخ' : l}</option>`).join('')}</select><button class="tool-pill ${V.all ? 'on' : ''}" style="min-height:calc(37px * var(--ds))" onclick="V.all=!V.all;V.rlim=40;render()">الكل (${S.rp.length})</button></div>`
       + `${V.d == 'date' ? `<input type="date" class="rp-dt-inp" value="${V.dt || ''}" onchange="V.dt=this.value;render()">` : ''}`
       + `</div><div id="rl">${rpList()}</div>`
   };

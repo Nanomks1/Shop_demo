@@ -2,12 +2,10 @@
    barcode.js — الباركود و IMEI والبيع السريع المتتالي
    يُحمَّل بعد invround.js.
    ============================================================ */
-
 /* ============================ الباركود و IMEI والبيع السريع المتتالي ============================ */
 let BS = null, BI = 0, BCODE = '', BDP = null, BC_AC = null, BC_LAST = { c: '', t: 0 };
 const BCX = [], BCM = [];   // ملف الصيانة والمستعمل يضيفان أزراراً (BCX) ونتائج مطابقة (BCM)
 function bcStop() { clearInterval(BI); if (BS) { BS.getTracks().forEach(t => t.stop()); BS = null; } }
-
 /* نغمة صوتية قصيرة (Beep) + اهتزاز لمسي خفيف عند المسح بدون ملفات صوتية خارجية */
 function bcBeep(ok = true) {
   if (typeof vib == 'function') vib(ok ? 35 : [40, 60, 40]);
@@ -23,7 +21,6 @@ function bcBeep(ok = true) {
     o.start(); o.stop(BC_AC.currentTime + (ok ? 0.09 : 0.18));
   } catch (e) { }
 }
-
 let BDX = null;
 function loadPoly() {   // ماسح بديل (للمتصفحات التي لا تدعم المسح الأصلي مثل Brave)
   if (window.BarcodeDetectorPolyfill) return Promise.resolve(true);
@@ -87,7 +84,6 @@ async function scanIntoInput(inputId) {   // مسح داخل نموذج مفتو
 HK.hide.push(() => { stopInlineScan(); bcStop(); });
 const bcLbl = i => i.sec == 'phones' ? i.brand + ' ' + i.name : i.sec == 'case' ? i.name : acName(i);
 const isImei = c => /^\d{14,17}$/.test(c);
-
 /* اختيار سريع للون/نوع البوشيط عند البيع السريع بالباركود إذا كان له عدة ألوان متوفرة */
 function bcPickCsVar(it) {
   const avs = (it.v || []).filter(x => x.n > 0);
@@ -104,7 +100,6 @@ function bcPickCsVar(it) {
     });
   }, 180);
 }
-
 /* تنفيذ البيع السريع (-1) عند مسح باركود صنف واحد موجود */
 function bcQuickSell(it) {
   if (it.sec == 'phones') {
@@ -129,7 +124,6 @@ function bcQuickSell(it) {
   }
   return false;
 }
-
 function bcHome() {
   bcScan(c => {
     BCODE = String(c || '').trim(); const nc = nz(BCODE), r = $('res'); if (!r) return;
@@ -178,4 +172,4 @@ function bcSet(id) {
   upd(() => { if (i.sec == 'phones' && isImei(BCODE)) i.imei = i.imei ? (i.imei.includes(BCODE) ? i.imei : i.imei + ' · ' + BCODE) : BCODE; i.code = i.code || BCODE; i.by = S.me; });
   finish(null); toast('تم ربط الباركود بنجاح');
 }
-HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1;margin:0" onclick="bcHome()">${I('scan')} مسح باركود</button><button class="btn ${bcQ() ? '' : 's'} sm" style="min-height:50px" onclick="upd(()=>S.cfg.bcQuick=bcQ()?0:Date.now())" title="خصم قطعة تلقائياً عند المسح (15 دقيقة)">${I('zap')} ${bcQ() ? 'البيع السريع مفعّل' : 'بيع سريع −1'}</button></div>`);
+HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1.15;margin:0;white-space:nowrap;padding-inline:10px" onclick="bcHome()">${I('scan')} مسح باركود</button><button class="btn ${bcQ() ? '' : 's'} sm" style="flex:1;min-height:calc(45px * var(--ds));white-space:nowrap" onclick="upd(()=>S.cfg.bcQuick=bcQ()?0:Date.now())" title="خصم قطعة تلقائياً عند المسح (15 دقيقة)">${I('zap')} ${bcQ() ? 'البيع السريع مفعّل' : 'بيع سريع −1'}</button></div>`);

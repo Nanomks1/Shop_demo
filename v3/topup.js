@@ -5,12 +5,10 @@
    ============================================================ */
 (() => {
   Object.assign(IC, { topup: '<path d="M5 20v-4M10 20v-8M15 20V8M20 20V4"/>' });
-
   const OPS = [['IAM', '#2563eb'], ['ORANGE', '#ea580c'], ['INWI', '#9333ea']];
   const CARDS = [5, 10, 20, 50], PH = [1];
   const D0 = { gv: 15, bo: 30, br: 10, cl: { 5: 3, 10: 3, 20: 3, 50: 3 }, rh: 10 };
   const GREY = '#94a3b8', DC = { 5: '#0d9488', 10: '#2563eb', 20: '#7c3aed', 50: '#db2777' };
-
   const T = () => (S.tp = S.tp || []);
   const cf = () => { const c = (S.cfg && S.cfg.tp) || {}, o = { ...D0, ...c, cl: { ...D0.cl, ...(c.cl || {}) } }; o.gm = {}; CARDS.forEach(n => { o.gm[n] = (c.gm && c.gm[n] != null) ? c.gm[n] : o.gv; }); return o; };
   const okE = () => isAdmin() || !S.users.length;
@@ -22,7 +20,6 @@
   const isToday = t => !!t && new Date(t).toDateString() == new Date().toDateString();
   const pad = n => String(n).padStart(2, '0');
   const when = t => { const d = new Date(t); return isToday(t) ? 'اليوم ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : fd(t); };
-
   /* الحالة: u غير مسجَّل · g متوفر · y قارب · r نافد/منخفض */
   const stP = v => v == null ? 'u' : v <= cf().br ? 'r' : v <= cf().bo ? 'y' : 'g';
   const stC = (n, v) => v == null ? 'u' : v <= 0 ? 'r' : v <= cf().cl[n] ? 'y' : 'g';
@@ -30,7 +27,6 @@
   const tally = () => { const t = { r: 0, y: 0, g: 0, u: 0 }; each((a, b, c, s) => t[s]++); return t; };
   const phDone = () => { let n = 0; OPS.forEach(([op]) => PH.forEach(p => { const r = rec(op, 'p', p); if (r && r.val != null && isToday(r.at)) n++; })); return n; };
   const lastPh = () => T().filter(r => r.k == 'p' && r.at).sort((a, b) => b.at - a.at)[0];
-
   let svT = 0;
   function put(op, k, n, v, est, now) {
     let r = rec(op, k, n);
@@ -41,7 +37,6 @@
     else svT = setTimeout(save, 150);   // الحفظ بعد الرسم حتى لا يتأخر الضغط
   }
   const gvOf = n => Math.max(cf().gm[n], cf().cl[n] + 1);
-
   /* ---------- أسطر التقرير: [القسم, النص, الحالة, دالة «تم»] ---------- */
   window.tpLines = () => {
     const L = [];
@@ -69,7 +64,6 @@
       toast('تمت الإضافة', () => { S.tp = JSON.parse(prev); });
     });
   };
-
   /* ---------- التحديث في مكانه بلا إعادة رسم (حتى لا تُغلق لوحة المفاتيح) ---------- */
   const setT = (id, v) => { const e = $(id); if (e) e.textContent = v; };
   const lastLine = () => {
@@ -99,18 +93,17 @@
     const cur = stC(n, val(op, 'c', n)), el = $('tpi_' + op + '_c' + n); if (!cf() || cur == s) return;
     const v = s == 'g' ? gvOf(n) : s == 'y' ? Math.max(1, cf().cl[n]) : 0;
     put(op, 'c', n, v, s != 'r');
-    if (el) { el.value = s == 'r' ? '0' : ''; el.placeholder = s == 'g' ? gvOf(n) + '+' : s == 'y' ? '≈' + v : '—'; }
+    if (el) { el.value = s == 'r' ? '0' : ''; el.placeholder = s == 'y' ? '≈' + v : '—'; }
     paint();
   };
-
   /* ---------- الشاشة ---------- */
   const row1 = (op, k, n) => {
     const r = rec(op, k, n), v = val(op, k, n), id = op + '_' + k + n, ph = k == 'p', est = r && r.est, s = ph ? stP(v) : stC(n, v);
     if (ph) return `<div class="tpr" id="tpr_${id}"><span class="dotl" id="tpd_${id}"></span><span class="tpn">رصيد الهاتف</span><span class="tpt" id="tpt_${id}"></span>`
       + `<input class="tpi" id="tpi_${id}" inputmode="decimal" placeholder="—" value="${v == null ? '' : esc(v)}" oninput="tpIn('${op}','p',${n},this)" onchange="tpIn('${op}','p',${n},this,1)" onfocus="this.select()"><span class="m tpu">درهم</span></div>`;
     const B = (x, l) => `<button class="tps ${x} ${s == x ? 'on' : ''}" id="tps${x}_${id}" onclick="tpSt('${op}',${n},'${x}')">${l}</button>`;
-    return `<div class="tpr c" id="tpr_${id}" style="--dc:${DC[n]}"><span class="tpd">${n}<small>درهم</small></span>` + B('g', gvOf(n) + '+') + B('y', 'قارب') + B('r', 'نفد')
-      + `<input class="tpi" id="tpi_${id}" inputmode="numeric" placeholder="${v == null ? '—' : est ? (s == 'g' ? gvOf(n) + '+' : '≈' + v) : '—'}" value="${v == null || est ? '' : esc(v)}" oninput="tpIn('${op}','c',${n},this)" onchange="tpIn('${op}','c',${n},this,1)" onfocus="this.select()"></div>`;
+    return `<div class="tpr c" id="tpr_${id}" style="--dc:${DC[n]}"><span class="tpd">${n}<small>درهم</small></span>` + B('g', `<bdi class="ltr">${gvOf(n)}+</bdi>`) + B('y', 'قارب') + B('r', 'نفد')
+      + `<input class="tpi" id="tpi_${id}" inputmode="numeric" placeholder="${v == null ? '—' : est && s == 'y' ? '≈' + v : '—'}" value="${v == null || est ? '' : esc(v)}" oninput="tpIn('${op}','c',${n},this)" onchange="tpIn('${op}','c',${n},this,1)" onfocus="this.select()"></div>`;
   };
   VW.tp = () => {
     const t = tally(), l = lastLine();
@@ -124,7 +117,6 @@
     h += `<div class="row2" style="margin-top:12px"><button class="btn s" onclick="reportSectionFilter='topup';go('rep')">عرض في التقرير</button></div>`;
     return { t: 'التعبئة', h, a: paint };
   };
-
   /* ---------- الحدود ---------- */
   const LB = { bo: 'رصيد الهاتف: «قارب» عند ≤ (درهم)', br: 'رصيد الهاتف: «منخفض» عند ≤ (درهم)', gv: 'بطاقات: زر «متوفر» يعني أكثر من (عدد)', rh: 'ساعة بدء تذكير الصباح (0 إلى 23)' };
   window.tpLim = k => {
@@ -147,7 +139,6 @@
     };
   };
   window.okTpE = () => okE() || (toast('للمدير فقط'), false);
-
   /* ---------- الرئيسية والمزيد ---------- */
   window.tpSkip = () => sure('لن تُسجَّل أرصدة التعبئة اليوم؟ سيختفي التذكير حتى الغد.', 'نعم، لا تسجيل اليوم', false).then(ok => {
     if (!ok) return;

@@ -1,8 +1,7 @@
 /* ============================================================
-   invbase.js — أساس المخزون: مساعدات عامة، العرض المضغوط، الحجز، الألوان والفلترة، الحقول والخانات المخصصة، أزرار الوسوم
+   invbase.js — أساس المخزون: مساعدات عامة، العرض المختصر، الحجز، الألوان والفلترة، الحقول والخانات المخصصة، أزرار الوسوم
    يُحمَّل بعد topup.js وقبل invphones.js.
    ============================================================ */
-
 /* ---------- مساعدات ---------- */
 const find = id => S.items.find(i => i.id == id);
 const ph = () => S.items.filter(i => i.sec == 'phones');
@@ -26,7 +25,6 @@ LM.push(
   ['gY', 'أنتي كاس: مستوى «قليل» يُحسب كـ (قطعة)'], ['acl', 'إكسسوار بعدد: «قليل» عند عدد فأقل'],
   ['agl', 'مجموعة إكسسوار (كابل/شاحن): «قارب النفاد» عند مجموع فأقل']
 );
-
 /* قائمة إكمال تلقائي موحدة لأسماء الموديلات في المحل */
 function invModelNames() {
   const m = new Set();
@@ -37,8 +35,7 @@ function invModelNames() {
 }
 SUG.mn = invModelNames;
 function invModelDatalist() { return ''; }   // قديمة: صار الإكمال داخل التطبيق (SUG.mn)
-
-/* ---------- طيّ القوائم الطويلة + التصفح التدريجي للأقسام الكبيرة + وضع العرض المضغوط ---------- */
+/* ---------- طيّ القوائم الطويلة + التصفح التدريجي للأقسام الكبيرة + وضع العرض المختصر ---------- */
 const EXP = {}, PG = {};   // حفظ حالة فتح القوائم المطوية وعدد البطاقات المعروضة أثناء الجلسة
 function toggleExp(id) { EXP[id] = !EXP[id]; render(); }
 function pgMore(k, step = 40) { PG[k] = (PG[k] || step) + step; render(); }
@@ -55,7 +52,6 @@ function pagedHtml(arr, k, fn, step = 40) {
 const bcQ = () => !!S.cfg.bcQuick && Date.now() - S.cfg.bcQuick < 9e5;
 const isCmp = s => !!((S.cfg.cmp || {})[s]);
 function cmpTog(s) { upd(() => { S.cfg.cmp = S.cfg.cmp || {}; S.cfg.cmp[s] = S.cfg.cmp[s] ? 0 : 1; }); }
-
 /* ---------- التنبيه الذكي لـ «زبون سأل ولم نجد» عند توفر السلعة ---------- */
 function reqFind(txt) {
   const n = nz(txt); if (n.length < 2 || !(S.req && S.req.length)) return [];
@@ -85,7 +81,6 @@ function reqChk(txt, wait) {
     sheetOpen(() => { });
   }, wait ? 380 : 60);
 }
-
 /* ---------- الحجز (بعدد): المحجوز يُخصم من المتاح ---------- */
 const rsL = i => Array.isArray(i.res) ? i.res : (i.res && i.res.n ? [{ n: i.res.n, d: i.res.d || '', q: 1 }] : []);
 const rsQ = i => rsL(i).reduce((a, r) => a + (+r.q || 1), 0);
@@ -94,7 +89,6 @@ const rsHtml = i => {
   const L = rsL(i); if (!L.length) return '';
   return `<div class="rs">محجوز ${rsQ(i)} من ${i.cnt}: ${L.map(r => esc(r.n) + ((+r.q || 1) > 1 ? ' ×' + r.q : '') + (r.d ? ' · عربون ' + esc(r.d) : '')).join('، ')}${av(i) <= 0 ? ' — كل القطع محجوزة' : ''}</div>`;
 };
-
 /* ---------- الألوان والترتيب ولوحة الفلترة الموحدة ---------- */
 const PAL = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1',
   '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78716c', '#b91c1c', '#c2410c', '#a16207', '#15803d', '#0f766e', '#1d4ed8',
@@ -115,11 +109,9 @@ const brOfName = n => { const z = nz(n); return [...S.tags.brand].sort((a, b) =>
 const colOf = i => { const s = i.sec; if (!s || s == 'glass') return ''; const m = CM(s); if (m == 'o') return ''; if (m == 's') return SCOL(s); return BC(s == 'phones' ? i.brand : s == 'case' ? brOfName(i.name) : ''); };
 const colG = g => { const m = CM('glass'); if (m == 'o') return ''; if (m == 's') return SCOL('glass'); return BC(Object.values(g.br || {})[0]); };
 const cardH = (h, c, cls = '') => `<div class="card${cls ? ' ' + cls : ''}"${c ? ` style="border-inline-start:6px solid ${c}"` : ''}>${h}</div>`;
-
 const SOL = { phones: [['n', 'الماركة'], ['d', 'الأحدث'], ['l', 'الأقل']] };
 ['glass', 'case', 'acc'].forEach(s => SOL[s] = [['n', 'الاسم'], ['d', 'الأحدث'], ['l', 'الأقل']]);
 const SO = s => (S.cfg.so || {})[s] || 'n';
-
 /* شريط الأدوات المدمج + لوحة القسم الموحدة + صندوق الفراغ المتوازن */
 const sortToolbarHtml = s => {
   const canCmp = s != 'glass', cm = isCmp(s);
@@ -127,15 +119,13 @@ const sortToolbarHtml = s => {
     + SOL[s].map(([k, l]) => `<button type="button" class="seg-btn ${SO(s) == k ? 'on' : ''}" onclick="soSet('${s}','${k}')">${l}</button>`).join('')
     + `</div><div class="sec-actions">`
     + `<button type="button" class="tool-pill" onclick="go('jl',{js:'${s}',jk:'${s}',jm:'all'})">${I('check')} جرد</button>`
-    + (canCmp ? `<button type="button" class="tool-pill ${cm ? 'on' : ''}" onclick="cmpTog('${s}')">${I(cm ? 'cards' : 'rows')} ${cm ? 'مفصل' : 'مضغوط'}</button>` : '')
+    + (canCmp ? `<button type="button" class="tool-pill ${cm ? 'on' : ''}" onclick="cmpTog('${s}')">${I(cm ? 'cards' : 'rows')} ${cm ? 'مفصل' : 'مختصر'}</button>` : '')
     + `</div></div>`;
 };
 const secPanel = (s, tagsHtml) => `<div class="sec-panel"><div class="sec-tags">${tagsHtml}</div>${sortToolbarHtml(s)}</div>`;
 const emptyBox = (title, sub) => `<div class="empty-state"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
-
 function soSet(s, k) { upd(() => { S.cfg.so = S.cfg.so || {}; S.cfg.so[s] = k; }); }
 const srt = (a, s, nm, lo, at) => { const k = SO(s); return [...a].sort((x, y) => k == 'd' ? (at(y) || 0) - (at(x) || 0) : k == 'l' ? (lo(x) - lo(y)) || String(nm(x)).localeCompare(String(nm(y))) : String(nm(x)).localeCompare(String(nm(y)))); };
-
 /* ---------- إظهار/إخفاء الحقول في النماذج (يضبطه المدير) ---------- */
 const FLD = {
   phones: [['color', 'اللون'], ['ram', 'RAM'], ['cap', 'السعة'], ['cond', 'الحالة'], ['price', 'السعر'], ['imei', 'IMEI'], ['note', 'الملاحظة'], ['res', 'زر الحجز']],
@@ -146,7 +136,6 @@ const hd = (s, k) => ((S.cfg.hide || {})[s] || {})[k];
 const shown = (s, k) => !hd(s, k);
 const hh = (s, k) => hd(s, k) ? ' hidden' : '';
 function fTog(s, k) { if (!can('fields')) return toast('للمدير فقط'); upd(() => { S.cfg.hide = S.cfg.hide || {}; const h = S.cfg.hide[s] = S.cfg.hide[s] || {}; h[k] = h[k] ? 0 : 1; }); }
-
 /* ---------- الخانات المخصصة (حقول إضافية بخيارات لكل قسم) ---------- */
 const SECN = { phones: 'الهواتف', acc: 'الإكسسوارات', case: 'البوشيط', rp: 'الصيانة' };
 const fxNorm = (v, u) => { v = dg(v || '').trim(); return u && /^\d+(\.\d+)?$/.test(v) ? v + u : v; };   // 32 + GB => 32GB
@@ -154,7 +143,6 @@ const fxList = (sec, key) => S.fields.filter(f => f.sec == sec && (!f.kinds || !
 const fxVal = (i, f) => [].concat((i.x || {})[f.id] || []).filter(Boolean);
 const fxTxt = i => S.fields.map(f => fxVal(i, f).length ? f.name + ' ' + fxVal(i, f).join(' ') : '').join(' ');
 const fxShow = i => { const p = S.fields.map(f => fxVal(i, f).length ? f.name + ': ' + fxVal(i, f).join('، ') : '').filter(Boolean); return p.length ? `<div class="m">${I('tag')} ${esc(p.join(' · '))}</div>` : ''; };
-
 /* ---------- حالة النموذج المفتوح + أزرار الوسوم ---------- */
 let FS = { v: {}, add: '', defs: [], fx: {}, fxA: '', fxSec: '', cond: 0 }, PR = null;
 function fsInit(defs, v, sec, rec, cond) { FS = { v: { ...v }, add: '', defs, fx: { ...((rec && rec.x) || {}) }, fxA: '', fxSec: sec || '', cond: cond ? 1 : 0 }; }
