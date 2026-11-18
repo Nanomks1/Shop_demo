@@ -2,7 +2,6 @@
    invround.js — الجرد والجولة اليومية + كاشف الأثمنة الفوري
    يُحمَّل بعد invreport.js.
    ============================================================ */
-
 /* ============================ الجرد والجولة اليومية (مضغوط + مقسم بالرفوف + شامل/قديم) ============================ */
 function rndAll() {
   const out = [];
@@ -22,14 +21,12 @@ function rndAll() {
   });
   return out.sort((a, b) => cfTime(a) - cfTime(b));
 }
-
 /* rnd() بدون معاملات تعيد الأصناف القديمة فقط (لتنبيهات التقرير والرئيسية) */
 function rnd(allMode) {
   const ms = lim('stale') * 864e5, now = Date.now();
   const L = rndAll();
   return allMode ? L : L.filter(i => { const t = cfTime(i); return t && now - t > ms; });
 }
-
 const jlSecOf = i => i._jl == 'ag' ? 'acc' : i._jl == 'tp' ? 'tp' : i.sec;
 const jlTextOf = i => {
   if (i._jl == 'ag') return i.d.title;
@@ -37,7 +34,6 @@ const jlTextOf = i => {
   if (i.sec == 'glass') { const g = S.gg.find(x => x.id == i.gid); return (i.ty || '') + ' ' + (g ? g.models.join(' ') : ''); }
   return nzText(i);
 };
-
 /* إحصائيات سريعة للرف/القسم: عدد الأصناف + مجموع القطع الفعلية */
 function jlSecSummary(sec) {
   if (sec == 'phones') {
@@ -64,46 +60,43 @@ function jlSecSummary(sec) {
   const phCnt = ph().reduce((s, i) => s + (+i.cnt || 0), 0), csCnt = S.items.filter(i => i.sec == 'case').reduce((s, i) => s + csTot(i), 0);
   return `الهواتف: ${phCnt} قطعة · البوشيط: ${csCnt} قطعة`;
 }
-
 const itemCard = i => i._jl == 'ag' ? agCard(i.d) : i._jl == 'tp' ? jlTpCard(i.r) : i.sec == 'phones' ? phCard(i) : i.sec == 'case' ? csCard(i) : i.sec == 'acc' ? acCard(i) : i.sec == 'glass' ? gl2(i) : '';
 function jlTpCard(r) {
-  return `<div class="card"><div class="row2"><b>تعبئة ${esc(r.op)} — بطاقة ${r.n} درهم</b><span class="m">${r.val <= 0 ? 'نفد' : r.est ? '≈' + r.val : 'العدد ' + r.val}</span></div><div class="m">آخر تأكيد قبل ${Math.floor((Date.now() - cfTime(r)) / 864e5)} يوم</div><div class="sub"><button class="btn s sm" onclick="go('tp')">فتح شاشة التعبئة</button></div></div>`;
+  return `<div class="card"><div class="row2"><b>تعبئة ${esc(r.op)} — بطاقة ${r.n} درهم</b><span class="m">${r.val <= 0 ? 'نفد' : r.est ? `<bdi class="ltr">≈${r.val}</bdi>` : 'العدد ' + r.val}</span></div><div class="m">آخر تأكيد قبل ${Math.floor((Date.now() - cfTime(r)) / 864e5)} يوم</div><div class="sub"><button class="btn s sm" onclick="go('tp')">فتح شاشة التعبئة</button></div></div>`;
 }
-
 const fmtDh = p => { p = dg(p || '').trim(); return !p ? '' : /^\d+(\.\d+)?$/.test(p) ? p + ' درهم' : p; };
-
 /* سطر جرد مضغوط وسريع (تعديل فوري + زر تأكيد ✓ في نفس السطر) */
 function jlCompactRow(i) {
   const days = Math.max(0, Math.floor((Date.now() - cfTime(i)) / 864e5));
   const dBadge = `<span class="m" style="font-size:.75rem">${days ? 'قبل ' + days + 'ي' : 'مؤكد اليوم'}</span>`;
   if (i._jl == 'ag') {
     const d = i.d, e = encodeURIComponent(d.id);
-    const sub = d.tot !== null ? `المجموع ${d.est ? '≈' : ''}${d.tot}` : ALB2[d.st];
-    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[d.st]}"></span><div class="cmp-main" onclick="agCnt('${e}')"><b>${esc(d.title)}</b><div class="m">${esc(sub)} · ${dBadge}</div></div>`
+    const sub = d.tot !== null ? `المجموع <bdi class="ltr">${d.est ? '≈' : ''}${d.tot}</bdi>` : esc(ALB2[d.st]);
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[d.st]}"></span><div class="cmp-main" onclick="agCnt('${e}')"><b>${esc(d.title)}</b><div class="m">${sub} · ${dBadge}</div></div>`
       + ['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" style="margin:0;padding:4px 7px;font-size:.74rem" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('')
       + `<button class="rck" title="تأكيد كما هو" onclick="rCfAg('${e}')">${I('check')}</button></div></div>`;
   }
   if (i._jl == 'tp') {
     const r = i.r;
-    return `<div class="card cmp jl-row"><div class="row2"><div class="cmp-main" onclick="go('tp')"><b>تعبئة ${esc(r.op)} — ${r.n} درهم</b><div class="m">${r.val <= 0 ? 'نفد' : (r.est ? '≈' : 'العدد ') + r.val} · ${dBadge}</div></div>`
+    return `<div class="card cmp jl-row"><div class="row2"><div class="cmp-main" onclick="go('tp')"><b>تعبئة ${esc(r.op)} — ${r.n} درهم</b><div class="m">${r.val <= 0 ? 'نفد' : (r.est ? `<bdi class="ltr">≈${r.val}</bdi>` : 'العدد ' + r.val)} · ${dBadge}</div></div>`
       + `<button class="btn s sm" onclick="go('tp')">تعديل</button><button class="rck" title="تأكيد كما هو" onclick="rCfTp('${r.id}')">${I('check')}</button></div></div>`;
   }
   if (i.sec == 'phones') {
     const s = phSt(i), sub = [i.color, i.ram, i.cap, i.price && fmtDh(i.price)].filter(Boolean).map(esc).join(' · ');
-    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phEd('${i.id}')"><b>${esc(i.brand + ' ' + i.name)}</b><div class="m">${sub ? sub + ' · ' : ''}${dBadge}</div></div>`
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phEd('${i.id}')"><b><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b><div class="m">${sub ? sub + ' · ' : ''}${dBadge}</div></div>`
       + `<button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button>`
       + `<button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div></div>`;
   }
   if (i.sec == 'glass') {
     const g = S.gg.find(x => x.id == i.gid); if (!g) return '';
     const s = gSt(i, g, i.ty), j = Math.max(0, S.tags.glass.indexOf(i.ty));
-    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="go('sec',{k:'glass',ty:${j}})"><b>زجاج ${esc(i.ty)}: ${esc(gMods(g, i.ty).join(' / '))}</b><div class="m">المجموع ${gEst(i, g) ? '≈' : ''}${gTot(i, g)}${i.price ? ' · ' + esc(fmtDh(i.price)) : ''} · ${dBadge}</div></div>`
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="go('sec',{k:'glass',ty:${j}})"><b>زجاج ${esc(i.ty)}: <bdi>${esc(gMods(g, i.ty).join(' / '))}</bdi></b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi>${i.price ? ' · ' + esc(fmtDh(i.price)) : ''} · ${dBadge}</div></div>`
       + `<button class="btn s sm" onclick="go('sec',{k:'glass',ty:${j}})">فتح</button><button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div></div>`;
   }
   if (i.sec == 'case') {
     const s = csSt(i), gSum = typeof csGSummaryTxt == 'function' ? csGSummaryTxt(i) : 'المجموع ' + csTot(i);
     const chips = typeof csChipsHtml == 'function' ? csChipsHtml(i, true) : '';
-    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csOpen('${i.id}')"><b>بوشيط ${esc(i.name)}</b><div class="m">${esc(gSum)}${i.price ? ' · ' + esc(fmtDh(i.price)) : ''} · ${dBadge}</div></div>`
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csOpen('${i.id}')"><b>بوشيط <bdi>${esc(i.name)}</bdi></b><div class="m">${esc(gSum)}${i.price ? ' · ' + esc(fmtDh(i.price)) : ''} · ${dBadge}</div></div>`
       + `<button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div>${chips}</div>`;
   }
   if (i.sec == 'acc') {
@@ -115,7 +108,6 @@ function jlCompactRow(i) {
   }
   return '';
 }
-
 function rCf(id) { const i = find(id); if (i) { vib(25); upd(() => touch(i, 1)); } }
 function rCfAg(e) {
   const d = agD(e); if (!d) return;
@@ -132,13 +124,11 @@ function rCfTp(id) {
   vib(25);
   upd(() => { r.by = S.me; r.at = r.cf = Date.now(); });
 }
-
 const jlCurSec = () => V.js || V.jk || 'all';
 function jlFiltered() {
   const allMode = V.jm == 'all', sec = jlCurSec(), q = nz(V.jq || '');
   return rnd(allMode).filter(i => (sec == 'all' || jlSecOf(i) == sec) && (!q || nz(jlTextOf(i)).includes(q)));
 }
-
 function rCfAll() {
   const L = jlFiltered().slice(0, 40);
   if (!L.length) return;
@@ -159,7 +149,6 @@ function rCfAll() {
     });
   });
 }
-
 const JL_TABS = [['all', 'الكل'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['case', 'البوشيط'], ['acc', 'الإكسسوارات'], ['tp', 'التعبئة']];
 function jlRefreshList() {
   const L = jlFiltered(), a = L.slice(0, 40), box = $('jl_list'), btn = $('jl_cf_all');
@@ -183,9 +172,8 @@ VW.jl = () => {
 };
 HOME.after.push(() => {
   const n = rnd(false).length;
-  return `<button class="btn s" onclick="go('jl')">${I('check')} الجرد والجولة اليومية${n ? ` (${n} يحتاج تأكيداً)` : ''}</button>`;
+  return `<button class="btn s" onclick="go('jl')">${I('check')} <span>الجرد والجولة اليومية</span>${n ? `<span class="rp-cnt-b">${n} غير مؤكد</span>` : ''}</button>`;
 });
-
 /* ============================ كاشف الأثمنة الفوري الموحّد (بأيقونات SVG الملوّنة) ============================ */
 window.priceLookupHtml = function (q) {
   const n = nz(q); if (n.length < 2) return '';
@@ -199,20 +187,20 @@ window.priceLookupHtml = function (q) {
   let rows = '';
   phs.forEach(i => {
     const s = phSt(i), sub = [i.color, i.ram, i.cap, i.cond && i.cond != 'جديد' && i.cond].filter(Boolean).join('·');
-    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="phEd('${i.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cphone')} <b>${esc(i.brand + ' ' + i.name)}</b> ${sub ? `<small class="m">(${esc(sub)})</small>` : ''} <small class="m">· متاح ${av(i)}</small></span><b class="cmp-pr">${esc(i.price ? fmtDh(i.price) : 'بدون سعر')}</b></div>`;
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="phEd('${i.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cphone')} <b><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b> ${sub ? `<small class="m">(${esc(sub)})</small>` : ''} <small class="m">· متاح ${av(i)}</small></span><b class="cmp-pr">${esc(i.price ? fmtDh(i.price) : 'بدون سعر')}</b></div>`;
   });
   gls.forEach(g => {
     S.tags.glass.forEach((ty, j) => {
       if (!gShow(g, ty)) return;
       const it = gitem(g.id, ty), tot = it ? gTot(it, g) : 0, s = it ? gSt(it, g, ty) : 'r';
       if (tot > 0 || (it && it.price)) {
-        rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="glMin('${g.id}',${j})"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cglass')} زجاج <b>${esc(ty)}</b> <small class="m">(${esc(gMods(g, ty).slice(0, 3).join('/'))}) · ${it && gEst(it, g) ? '≈' : ''}${tot}</small></span><b class="cmp-pr">${esc(it && it.price ? fmtDh(it.price) : 'حدّد السعر')}</b></div>`;
+        rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="glMin('${g.id}',${j})"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cglass')} زجاج <b>${esc(ty)}</b> <small class="m">(<bdi>${esc(gMods(g, ty).slice(0, 3).join('/'))}</bdi>) · <bdi class="ltr">${it && gEst(it, g) ? '≈' : ''}${tot}</bdi></small></span><b class="cmp-pr">${esc(it && it.price ? fmtDh(it.price) : 'حدّد السعر')}</b></div>`;
       }
     });
   });
   css.forEach(c => {
     const s = csSt(c), gSum = typeof csGSummaryTxt == 'function' ? csGSummaryTxt(c) : 'المتوفر ' + csTot(c);
-    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="csLimEd('${c.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('ccase')} بوشيط <b>${esc(c.name)}</b> <small class="m">(${esc(gSum)})</small></span><b class="cmp-pr">${esc(c.price ? fmtDh(c.price) : 'حدّد السعر')}</b></div>`;
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="csLimEd('${c.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('ccase')} بوشيط <b><bdi>${esc(c.name)}</bdi></b> <small class="m">(${esc(gSum)})</small></span><b class="cmp-pr">${esc(c.price ? fmtDh(c.price) : 'حدّد السعر')}</b></div>`;
   });
   acs.forEach(a => {
     const s = acSt(a);
@@ -220,10 +208,10 @@ window.priceLookupHtml = function (q) {
   });
   gds.forEach(g => {
     const prTxt = fmtDh(g.p) + (g.p2 ? ' · أصلي: ' + fmtDh(g.p2) : '');
-    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="gdEd('${g.id}')"><span class="dotl" style="background:var(--p)"></span><span class="rt" style="font-size:.88rem">${I('crepair')} إصلاح <b>${esc(g.m)}</b> — ${esc(g.f)}${g.n ? ` <small class="m">(${esc(g.n)})</small>` : ''}</span><b class="cmp-pr">${esc(prTxt)}</b></div>`;
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="gdEd('${g.id}')"><span class="dotl" style="background:var(--p)"></span><span class="rt" style="font-size:.88rem">${I('crepair')} إصلاح <b><bdi>${esc(g.m)}</bdi></b> — ${esc(g.f)}${g.n ? ` <small class="m">(${esc(g.n)})</small>` : ''}</span><b class="cmp-pr">${esc(prTxt)}</b></div>`;
   });
   if (!rows) return '';
-  return `<div class="card" style="border-color:var(--p);background:color-mix(in srgb,var(--ab) 35%,var(--c));padding:10px 12px"><div class="row2" style="margin-bottom:4px"><b style="color:var(--p);font-size:.9rem">${I('tag')} ملخص الأثمنة والتوفر</b><span class="m" style="font-size:.76rem">اضغط على السطر للتعديل</span></div>${rows}</div>`;
+  return `<div class="card" style="border-color:var(--p);background:color-mix(in srgb,var(--ab) 35%,var(--c));padding:10px 12px"><div class="row2" style="margin-bottom:4px"><b style="color:var(--pt);font-size:.9rem">${I('tag')} ملخص الأثمنة والتوفر</b><span class="m" style="font-size:.76rem">اضغط على السطر للتعديل</span></div>${rows}</div>`;
 };
 SRCH.unshift({
   k: 'prc',

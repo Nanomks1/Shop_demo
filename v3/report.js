@@ -99,7 +99,7 @@
   const blocks = mode => {
     const c = rcf(), L = lines(), out = [];
     secs(mode).forEach(k => {
-      const ls = L.filter(x => x[0] == RSEC[k][0]).sort((a, b) => (a[2] == 'r' ? 0 : 1) - (b[2] == 'r' ? 0 : 1));
+      const ls = L.filter(x => x[0] == RSEC[k][0]).sort((a, b) => (a[2] == 'r' ? 0 : 1) - (b[2] == 'r' ? 1 : 1));
       out.push({ k, t: RSEC[k][1], ls: ls.map(x => ({ r: x[2] == 'r', s: k == 'topup' ? x[1] : fmtT(x), x })) });
     });
     if (mode == 'all' && typeof rpPartLines == 'function') {
@@ -132,7 +132,11 @@
     return o.map(bd).join('\n');
   };
   /* ---------- شاشة التقرير ---------- */
-  const nwCnt = h => h.replace(/((?:—\s*)?العدد\s*[0-9٠-٩]+)\s*$/, '<span class="nw">$1</span>');
+  const nwCnt = h => h.replace(/((?:—\s*)?العدد\s*)(≈?[0-9٠-٩]+)\s*$/, '<span class="nw">$1<bdi class="ltr">$2</bdi></span>');
+  const stkRowHtml = i => {
+    const mdl = [i.brand, i.name].filter(Boolean).join(' '), sp = [i.ram, i.cap].filter(Boolean).join(' ');
+    return `<bdi class="ltr"><b>${esc(mdl)}</b></bdi>${sp ? ` · <bdi class="ltr">${esc(sp)}</bdi>` : ''}${i.color ? ` · <span class="m">${esc(i.color)}</span>` : ''}`;
+  };
   const SECI = { topup: 'ctopup', phones: 'cphone', glass: 'cglass', pochette: 'ccase', acc: 'cacc', rpp: 'crepair' };
   const secT = b => (SECI[b.k] ? I(SECI[b.k]) + ' ' : '') + esc(String(b.t).replace(/^[^\u0600-\u06FFA-Za-z0-9]+/, ''));
   const rrow = l => {
@@ -176,7 +180,7 @@
       if (x) h += `<h3 class="sch" style="--sc:${SCOL[b.k] || '#64748b'}">${secT(b)} <span class="m">(${b.ls.length})</span></h3><div class="card rlist sx" style="--sc:${SCOL[b.k] || '#64748b'}">${x}</div>`; else if (c.em) h += `<h3>${secT(b)}</h3><p class="m">لا نقص</p>`;
     });
     if ((F == 'all' || F == 'phones') && c.st && !c.hs.includes('phones') && s.length)
-      h += '<h3>الهواتف المتوفرة</h3><div class="card rlist">' + s.map(i => `<div class="rrow"><span class="rt">${esc(stkN(i))}</span><span class="m">${i.cnt}${rsQ(i) ? ' (محجوز ' + rsQ(i) + ')' : ''}${c.pr && i.price ? ' · ' + esc(dh(i.price)) : ''}</span></div>`).join('') + '</div>';
+      h += '<h3>الهواتف المتوفرة</h3><div class="card rlist">' + s.map(i => `<div class="rrow"><span class="rt">${stkRowHtml(i)}</span><span class="phk n"><b>${i.cnt}</b></span>${rsQ(i) ? `<span class="rs">محجوز ${rsQ(i)}</span>` : ''}${c.pr && i.price ? `<span class="cmp-pr">${esc(dh(i.price))}</span>` : ''}</div>`).join('') + '</div>';
     if (!h.includes('<h3')) h += emptyBox('لا يوجد نقص في المخزون حالياً ✓', 'جميع الأصناف متوفرة فوق الحد المطلوب');
     h += `<details class="card" style="margin-top:14px"><summary><b>معاينة النص</b></summary><div style="white-space:pre-wrap;margin-top:8px;line-height:1.8">${esc(generateReportText(F))}</div></details>`
       + `<div class="rbar"><button class="btn" onclick="rcSend()">${I('send')} إرسال بالواتساب</button><button class="btn s" onclick="rcCopy()">نسخ</button></div>`;

@@ -106,7 +106,7 @@ VW.home = () => {
   return {
     t: 'محل عزيز',
     h: bk + call(HOME.top)
-      + `<div class="sec-panel" style="margin-top:4px"><div class="q-wrap"><input id="q_inp" placeholder="ابحث عن ثمن أو سلعة: هاتف، زجاج، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)"><button id="q_clr" type="button" class="q-clr" ${Q ? '' : 'hidden'} onclick="qClear()" aria-label="مسح البحث">✕</button></div>`
+      + `<div class="sec-panel" style="margin-top:4px"><div class="q-wrap"><input id="q_inp" placeholder="ابحث: هاتف، زجاج، بوشيط، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)"><button id="q_clr" type="button" class="q-clr" ${Q ? '' : 'hidden'} onclick="qClear()" aria-label="مسح البحث">✕</button></div>`
       + `<div id="sc" class="sec-tags nowrap">${scopeChips()}</div></div><div id="res"></div>`
       + '<div id="hm">' + homeQuickBar() + scan
       + '<h3>الأقسام</h3>'
@@ -129,7 +129,7 @@ const STX = [
   ['أيام بلا تذكير', "go('st_rep')", 'التقرير اليومي', 'عطلة'],
   ['عنوان التقرير وعبارة الختام', "go('st_rep')", 'التقرير اليومي', 'توقيع'],
   ['ما يظهر في التقرير', "go('st_rep')", 'التقرير اليومي', 'أسعار طلبات ديون'],
-  ['الثيم والخط (نهاري / ليلي LCD / AMOLED)', "go('st_look')", 'المظهر والقفل', 'لون داكن ليل نهار اموليد خط ibm rubik baloo'],
+  ['الثيم (فاتح / ليلي / AMOLED)', "go('st_look')", 'المظهر والقفل', 'لون داكن ليل نهار اموليد'],
   ['حجم الخط وحجم العرض (تكبير العناصر)', "go('st_look')", 'المظهر والقفل', 'كبير صغير تكبير العناصر ازرار شاشة'],
   ['الزر العائم (+)', "go('st_look')", 'المظهر والقفل', 'أيقونة إضافة'],
   ['حد «متوفر» و«قارب» لبطاقات التعبئة', "go('st_tp')", 'التعبئة', '5 10 20 50 درهم'],

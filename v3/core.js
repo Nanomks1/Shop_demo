@@ -449,7 +449,11 @@ function render() {
   let r;
   try { r = (VW[V.v] || VW.home)(); }
   catch (e) { errUi((e && e.message) || e); r = { t: 'خطأ', h: '<div class="card"><b>تعذّر عرض هذه الشاشة</b><p class="m">بياناتك سليمة. ارجع للرئيسية وحاول مجدداً.</p></div>' }; }
-  $('ti').textContent = r.t; $('bk').hidden = V.v == 'home'; $('me').textContent = S.me; $('m').innerHTML = r.h;
+  $('ti').textContent = r.t;
+  $('bk').hidden = V.v == 'home';
+  $('srb').hidden = ['home', 'rp', 'gd', 'req', 'st', 'usd', 'dbt', 'jl'].includes(V.v) || String(r.t || '').length > 9;
+  $('me').textContent = S.me;
+  $('m').innerHTML = r.h;
   const nvh = NV.map(([k, i, l]) => `<button class="${V.v.startsWith(k) ? 'on' : ''}" onclick="go('${k}')">${ic(i)}<span>${l}</span></button>`).join('');
   if ($('nv').dataset.h !== nvh) { $('nv').innerHTML = nvh; $('nv').dataset.h = nvh; }
   const de = document.documentElement;
