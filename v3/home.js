@@ -2,7 +2,7 @@
    home.js — الرئيسية، البحث الموحّد، المزيد والإعدادات، الأيقونة العائمة
    يُحمَّل بعد extra.js وقبل users.js.
    ============================================================ */
-/* ---------- الأقسام الـ 8 (مع إجمالي القطع وحالة التعبئة وطلبات الزبائن) ---------- */
+/* ---------- الأقسام الـ 8 ---------- */
 const SECS = [
   ['phones', 'الهواتف', 'cphone'],
   ['glass', 'الأنتي كاس', 'cglass'],
@@ -13,25 +13,6 @@ const SECS = [
   ['usd', 'شراء مستعمل', 'cused'],
   ['dbt', 'الديون', 'cdebt']
 ];
-function secSub(k) {
-  if (k == 'glass') return arCnt(S.gg.length, 'مجموعة', 'مجموعتان', 'مجموعات', 'مجموعة');
-  if (k == 'tp') {
-    const L = typeof tpLines == 'function' ? tpLines() : [];
-    if (!L.length) return 'متوفر بالكامل ✓';
-    const r = L.filter(x => x[2] == 'r').length, y = L.length - r;
-    return [r && r + ' نافد', y && y + ' قارب'].filter(Boolean).join(' · ');
-  }
-  if (k == 'req') {
-    const n = (S.req || []).length;
-    return n ? arCnt(n, 'طلب مسجّل', 'طلبان مسجّلان', 'طلبات مسجّلة', 'طلباً مسجّلاً') : 'سأل ولم نجد';
-  }
-  if (k == 'usd') { const n = (S.used || []).length; return n ? arCnt(n, 'عملية شراء', 'عمليتا شراء', 'عمليات شراء', 'عملية شراء') : 'سجل المشتريات'; }
-  if (k == 'dbt') { const n = (S.debt || []).filter(d => !d.paid).length; return n ? arCnt(n, 'دين مفتوح', 'دينان مفتوحان', 'ديون مفتوحة', 'ديناً مفتوحاً') : 'بلا ديون'; }
-  const L = S.items.filter(i => i.sec == k);
-  if (k == 'phones') { const pcs = L.reduce((a, i) => a + (+i.cnt || 0), 0); return arCnt(L.length, 'صنف', 'صنفان', 'أصناف', 'صنفاً') + ' · ' + arCnt(pcs, 'قطعة', 'قطعتان', 'قطع', 'قطعة'); }
-  if (k == 'case') { const pcs = L.reduce((a, i) => a + (typeof csTot == 'function' ? csTot(i) : 0), 0); return arCnt(L.length, 'موديل', 'موديلان', 'موديلات', 'موديلاً') + ' · ' + arCnt(pcs, 'قطعة', 'قطعتان', 'قطع', 'قطعة'); }
-  return arCnt(L.length, 'صنف', 'صنفان', 'أصناف', 'صنفاً');
-}
 const secGo = k => ['tp', 'req', 'usd', 'dbt'].includes(k) ? `go('${k}')` : `go('sec',{k:'${k}'})`;
 /* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري (بدون تكرار) ---------- */
 let SC = '', SQ_T = 0;   // نطاق البحث الحالي + مؤقت تهدئة الكتابة
@@ -111,8 +92,8 @@ VW.home = () => {
       + '<div id="hm">' + homeQuickBar() + scan
       + '<h3>الأقسام</h3>'
       + (S.cfg.hl == 'grid'
-        ? `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`
-        : `<div class="hl">${SECS.map(([k, n, i]) => `<button class="hr" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b><span class="m">${secSub(k)}</span></span></button>`).join('')}</div>`)
+        ? `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b></span></button>`).join('')}</div>`
+        : `<div class="hl">${SECS.map(([k, n, i]) => `<button class="hr" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b></span></button>`).join('')}</div>`)
       + more + '</div>',
     a: () => sq(Q, 1)
   };
