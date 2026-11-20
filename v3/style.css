@@ -97,11 +97,11 @@ button,input,select,textarea{touch-action:manipulation}
 .tot-b b{font-weight:800;font-size:var(--t-md)}
 .cmp-pr{font-weight:800;font-size:var(--t-md);color:var(--pt);white-space:nowrap;margin-inline:3px;direction:rtl;unicode-bidi:isolate}
 
-/* ---- الأقسام في الرئيسية (شبكة أفقية متوازنة + أيقونات حرة بلا مربع) ---- */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* ---- الأقسام في الرئيسية (أيقونة قريبة من الحافة لتوسيع مساحة النص) ---- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .grid .card{margin:0;text-align:start;padding:calc(.65rem * var(--ds));font-weight:600}
-.grid .card.sc{display:flex;align-items:center;gap:9px;text-align:start;padding:calc(.62rem * var(--ds));cursor:pointer}
-.grid .card.cs2{flex-direction:row;align-items:center;gap:9px;min-height:calc(4.1rem * var(--ds));padding:calc(.6rem * var(--ds)) calc(.68rem * var(--ds))}
+.grid .card.sc{display:flex;align-items:center;gap:5px;text-align:start;cursor:pointer}
+.grid .card.cs2{flex-direction:row;align-items:center;gap:5px;min-height:calc(4rem * var(--ds));padding-block:calc(.56rem * var(--ds));padding-inline:calc(.34rem * var(--ds)) calc(.52rem * var(--ds))}
 .cs2 .ct{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px;text-align:start}
 .cs2 .ct b{font-size:var(--t-md);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs2 .ct .m{font-size:var(--t-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -118,8 +118,8 @@ svg.ic.ci{
 .ci .du{fill:currentColor;fill-opacity:.22;stroke:none}
 .ci .st{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ci .fl{fill:currentColor;stroke:none}
-.cs2 .ic.ci{width:calc(2.35rem * var(--ds));height:calc(2.35rem * var(--ds))}
-.hr .ic.ci{width:calc(2.45rem * var(--ds));height:calc(2.45rem * var(--ds))}
+.cs2 .ic.ci{width:calc(2.15rem * var(--ds));height:calc(2.15rem * var(--ds));padding:.16em}
+.hr .ic.ci{width:calc(2.4rem * var(--ds));height:calc(2.4rem * var(--ds));padding:.2em}
 .ic.s.ci{width:1.6em;height:1.6em;padding:.18em;vertical-align:-.35em;margin-inline-end:.25em}
 nav button .ic.ci{width:2.55rem;height:1.75rem;padding:.18rem .58rem;border-radius:var(--r);background:none;color:var(--m);transition:background-color .16s ease,color .16s ease,transform .14s ease}
 nav button.on .ic.ci{background:var(--ab);color:var(--pt);transform:scale(1.04)}
