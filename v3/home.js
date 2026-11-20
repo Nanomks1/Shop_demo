@@ -101,7 +101,7 @@ VW.home = () => {
   const bk = old && !hid ? `<div class="bkb">${I('alert')}<span>لم تُحفظ نسخة خارجية منذ أسبوع</span><button class="btn sm" onclick="BKP()">حفظ</button><button class="bkx" onclick="bkHide()" aria-label="إغلاق">✕</button></div>` : '';
   const call = L => L.map(f => f()).join('');
   const T = HOME.tools.map(f => f()), A = HOME.after.map(f => f());
-  const scan = T.filter(h => h.includes('bcHome()')).join('').replace('بيع سريع −1', 'بيع سريع (خصم 1)');
+  const scan = T.filter(h => h.includes('bcHome()')).join('');
   const more = T.filter(h => !h.includes('bcHome()')).join('') + A.join('');
   return {
     t: 'محل عزيز',
@@ -149,11 +149,11 @@ function stQ(q) {
   g.style.display = n ? 'none' : '';
   if (!n) { r.innerHTML = ''; return; }
   const seen = {}, L = stItems().filter(x => { const k = x.l + x.fn; if (seen[k]) return false; seen[k] = 1; return nz(x.l + ' ' + x.kw + ' ' + x.p).includes(n); });
-  r.innerHTML = L.map(x => `<button class="card row2" onclick="${x.fn}"><b>${esc(x.l)}</b><span class="m">${esc(x.p)}</span></button>`).join('') || '<p class="m">لا نتائج</p>';
+  r.innerHTML = L.map(x => `<button class="card row2 st-row" onclick="${x.fn}"><b class="st-lbl">${esc(x.l)}</b><span class="m st-val">${esc(x.p)}</span></button>`).join('') || '<p class="m">لا نتائج</p>';
 }
 VW.st = () => ({
   t: 'المزيد',
-  h: `<input placeholder="ابحث في الإعدادات: حد، لون، حجم العرض، قفل، تقرير..." oninput="stQ(this.value)"><div id="str"></div><div id="stg">`
+  h: `<input placeholder="ابحث في الإعدادات: حد، لون، خط، قفل..." oninput="stQ(this.value)"><div id="str"></div><div id="stg">`
     + MG.map(([k, t, d, icon]) => `<button class="card st-card" onclick="go('st_grp',{g:'${k}'})"><div class="st-ic">${ic(icon)}</div><div class="st-txt"><b>${t}</b><div class="m">${d}</div></div><span class="st-arr">${ic('back')}</span></button>`).join('')
     + '</div>'
 });
@@ -162,7 +162,7 @@ VW.st_grp = () => {
   const L = MORE.filter(x => x.g == g && (!x.ao || isAdmin())).sort((a, b) => (a.o || 50) - (b.o || 50));
   const R = x => {
     const sub = x.n ? x.n() : '';
-    return `<button class="card st-card" onclick="${x.fn}"><div class="st-txt"><b>${esc(x.l)}</b>${x.d ? `<div class="m">${esc(x.d)}</div>` : ''}</div>${sub ? `<span class="m" style="white-space:nowrap">${esc(sub)}</span>` : ''}<span class="st-arr">${ic('back')}</span></button>`;
+    return `<button class="card st-card" onclick="${x.fn}"><div class="st-txt"><b>${esc(x.l)}</b>${x.d ? `<div class="m">${esc(x.d)}</div>` : ''}</div>${sub ? `<span class="m st-val">${esc(sub)}</span>` : ''}<span class="st-arr">${ic('back')}</span></button>`;
   };
   const A = L.filter(x => x.adv), B = L.filter(x => !x.adv);
   return {
@@ -172,11 +172,9 @@ VW.st_grp = () => {
   };
 };
 MORE.push(
-  { g: 'look', o: 5, l: 'المظهر والعرض', d: 'الثيم (النهار والليل)، الخطوط، حجم الخط والعرض، والزر العائم (لهذا الجهاز)', fn: "go('st_look')", n: () => {
-    const c = thCfg(), fs = FS_OLD[S.cfg.fs] || S.cfg.fs || 18;
-    const fLbl = (FS_STEPS.find(x => x[0] == fs) || [, 'عادي'])[1].split(' ')[0];
-    const dLbl = (DS_STEPS.find(x => x[0] == c.ds) || [, 'عادي'])[1].split(' ')[0];
-    return ({ ibm: 'IBM Plex', rubik: 'Rubik', baloo: 'Baloo 2', sys: 'النظام' }[c.fn] || 'IBM Plex') + ' · خط ' + fLbl + ' · عرض ' + dLbl;
+  { g: 'look', o: 5, l: 'المظهر والعرض', d: 'الثيم (النهار والليل)، الخطوط، تدريج الخط والعرض، والزر العائم (لهذا الجهاز)', fn: "go('st_look')", n: () => {
+    const c = thCfg(), fs = FS_OLD[S.cfg.fs] || +S.cfg.fs || 18;
+    return ({ ibm: 'IBM Plex', rubik: 'Rubik', baloo: 'Baloo 2', sys: 'النظام' }[c.fn] || 'IBM Plex') + ' · ' + fs + 'px · ' + c.ds + '%';
   } },
   { g: 'usr', o: 10, l: 'المستخدمون والصلاحيات', d: 'إضافة موظفين وتحديد ما يستطيعون فعله', fn: "go('st_users')" },
   { g: 'usr', o: 30, l: 'القفل التلقائي', d: 'يقفل التطبيق بعد مدة بلا استعمال أو عند الخروج منه (لهذا الجهاز)', fn: 'lkEd()', n: () => lkTxt(lkSecs()) },
@@ -209,7 +207,7 @@ MORE.push(
     else if (!MG.some(m => m[0] == x.g)) { x.g = 'shop'; x.o = 99; x.adv = 1; }
   });
 })();
-/* ---------- المظهر: 4 ثيمات متقنة، 3 خطوط عربية، حجم الخط وحجم العرض الذكي، والأيقونة العائمة ---------- */
+/* ---------- المظهر: 4 ثيمات متقنة، 3 خطوط عربية، تدريج ناعم للخط (0.5px) والعرض (2.5%) مع معاينة حية ---------- */
 const THMD = [['a', 'تلقائي (يتبع الهاتف)'], ['l', 'نهاري دائماً'], ['d', 'ليلي دائماً']];
 const TH_LB_L = [
   ['warm', 'نهاري هادئ (دافئ)', 'عاجي مريح للعين مع أخضر زمردي', '#0d7a5f'],
@@ -225,12 +223,17 @@ const TH_FN_OPTS = [
   ['baloo', 'Baloo Bhaijaan 2', 'حروف ناعمة وعناوين بارزة'],
   ['sys', 'خط الهاتف الأصلي', 'الخط الافتراضي للنظام']
 ];
-const FS_STEPS = [[15, 'أصغر'], [16, 'صغير'], [17, 'متوسط'], [18, 'عادي (افتراضي)'], [19, 'واضح'], [20, 'كبير'], [21, 'أكبر']];
-const DS_STEPS = [[90, 'مضغوط'], [95, 'مدمج'], [100, 'عادي (افتراضي)'], [105, 'مريح'], [110, 'واسع']];
+const FS_STEPS = [
+  [15.5, '15.5'], [16, '16'], [16.5, '16.5'], [17, '17'], [17.5, '17.5'],
+  [18, '18 (افتراضي)'], [18.5, '18.5'], [19, '19'], [19.5, '19.5'], [20, '20'], [20.5, '20.5']
+];
+const DS_STEPS = [
+  [90, '90%'], [92.5, '92.5%'], [95, '95%'], [97.5, '97.5%'],
+  [100, '100% (افتراضي)'], [102.5, '102.5%'], [105, '105%'], [107.5, '107.5%'], [110, '110%']
+];
 function szSliderHtml(title, sub, steps, curVal, onPick) {
   let idx = steps.findIndex(s => s[0] == curVal);
-  if (idx < 0) idx = steps.findIndex(s => s[0] == 18 || s[0] == 100);
-  if (idx < 0) idx = 2;
+  if (idx < 0) idx = steps.reduce((best, s, i) => Math.abs(s[0] - curVal) < Math.abs(steps[best][0] - curVal) ? i : best, 0);
   const prev = idx > 0 ? steps[idx - 1][0] : null;
   const next = idx < steps.length - 1 ? steps[idx + 1][0] : null;
   return `<div class="sz-card"><div class="sz-head"><b>${title}</b><span>${steps[idx][1]}</span></div><div class="sz-sub">${sub}</div>`
@@ -241,7 +244,8 @@ function szSliderHtml(title, sub, steps, curVal, onPick) {
     + `</div></div>`;
 }
 VW.st_look = () => {
-  const fabOn = S.cfg.fab !== 0, c = thCfg(), fs = FS_OLD[S.cfg.fs] || S.cfg.fs || 18;
+  const fabOn = S.cfg.fab !== 0, c = thCfg(), fs = FS_OLD[S.cfg.fs] || +S.cfg.fs || 18;
+  const miniPv = `<div class="card cmp pv-mini"><div class="ph-top"><b class="ph-nm"><bdi>Samsung A07</bdi></b><div class="ph-pr-wrap">${prBadge('1500')}<span class="dotl" style="background:${DT.y}"></span></div></div><div class="ph-bot"><div class="ph-specs">${memBadge('4GB', '64GB')}<span class="tot-b">المجموع <b>2</b></span></div><div class="cs-sws"><span class="csw"><span class="csd" style="background:#0a0a0a;color:#fff">1</span><small class="m">أسود</small></span><span class="csw"><span class="csd" style="background:#f8fafc;color:#111827">1</span><small class="m">أبيض</small></span></div></div></div>`;
   return {
     t: 'المظهر والعرض',
     h: '<p class="m">تُطبَّق إعدادات المظهر والخط وحجم العرض على هذا الجهاز فقط.</p>'
@@ -251,10 +255,11 @@ VW.st_look = () => {
       + `<div class="sec-tags">${THMD.map(([k, n]) => `<button class="tag ${c.md == k ? 'on' : ''}" onclick="thSet({md:'${k}'})">${n}</button>`).join('')}</div>`
       + (c.md != 'd' ? `<h3>ثيم النهار ${c.md == 'a' ? '(يُفعَّل نهاراً)' : ''}</h3><div class="th-grid two">${TH_LB_L.map(([k, n, d, col]) => `<button type="button" class="ac-btn col ${c.lt == k ? 'on' : ''}" onclick="thSet({lt:'${k}'})"><div class="row2" style="width:100%"><span class="ac-dot" style="background:${col}"></span><b>${n}</b></div><small class="m">${d}</small></button>`).join('')}</div>` : '')
       + (c.md != 'l' ? `<h3>ثيم الليل ${c.md == 'a' ? '(يُفعَّل ليلاً)' : ''}</h3><div class="th-grid two">${TH_LB_D.map(([k, n, d, col]) => `<button type="button" class="ac-btn col ${c.dt == k ? 'on' : ''}" onclick="thSet({dt:'${k}'})"><div class="row2" style="width:100%"><span class="ac-dot" style="background:${col}"></span><b>${n}</b></div><small class="m">${d}</small></button>`).join('')}</div>` : '')
-      + '<h3>حجم الخط وحجم العرض</h3>'
-      + szSliderHtml('حجم الخط', 'تدرّج ناعم ودقيق لتكبير أو تصغير النصوص والأرقام', FS_STEPS, fs, v => `upd(()=>S.cfg.fs=${v})`)
-      + szSliderHtml('حجم العرض', 'ضبط حجم الأزرار والبطاقات والمدخلات والمسافات', DS_STEPS, c.ds, v => `thSet({ds:${v}})`)
-      + ((fs != 18 || c.ds != 100) ? `<button class="btn s sm" style="width:100%;margin-bottom:6px" onclick="S.cfg.fs=18;thSet({ds:100})">إرجاع الحجم الافتراضي (الخط والعرض)</button>` : '')
+      + '<h3>حجم الخط وحجم العرض (معاينة حية)</h3>'
+      + miniPv
+      + szSliderHtml('حجم الخط (قفزة دقيقة 0.5px)', 'تدرّج ناعم جداً لإيجاد المقاس المناسب تماماً لعينك', FS_STEPS, fs, v => `upd(()=>S.cfg.fs=${v})`)
+      + szSliderHtml('كثافة وحجم العرض (قفزة 2.5%)', 'ضبط المسافات وارتفاع الأزرار والبطاقات', DS_STEPS, c.ds, v => `thSet({ds:${v}})`)
+      + ((fs != 18 || c.ds != 100) ? `<button class="btn s sm" style="width:100%;margin-bottom:6px" onclick="S.cfg.fs=18;thSet({ds:100})">إرجاع الحجم الافتراضي (18px · 100%)</button>` : '')
       + '<h3>عرض الأقسام في الرئيسية</h3>'
       + `<div class="sec-tags">${[['list', 'قائمة'], ['grid', 'شبكة']].map(([k, n]) => `<button class="tag ${(S.cfg.hl == 'grid' ? 'grid' : 'list') == k ? 'on' : ''}" onclick="upd(()=>S.cfg.hl='${k}')">${n}</button>`).join('')}</div>`
       + '<h3>الأيقونة العائمة السريعة</h3>'
@@ -364,5 +369,5 @@ function tgAdd(g) {
 /* ---------- المحذوفات ---------- */
 VW.st_trash = () => ({
   t: 'المحذوفات (30 يوماً)',
-  h: S.trash.map(t => `<div class="card row2"><div style="flex:1"><b>${esc(t.label)}</b><div class="m"><bdi>${fd(t.t)}</bdi></div></div><button class="btn s sm" onclick="restore('${t.id}')">استرجاع</button></div>`).join('') || emptyBox('سلة المحذوفات فارغة')
+  h: S.trash.map(t => `<div class="card row2"><div class="f1"><b>${esc(t.label)}</b><div class="m"><bdi>${fd(t.t)}</bdi></div></div><button class="btn s sm" onclick="restore('${t.id}')">استرجاع</button></div>`).join('') || emptyBox('سلة المحذوفات فارغة')
 });

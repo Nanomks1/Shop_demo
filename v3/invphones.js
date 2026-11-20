@@ -1,5 +1,5 @@
 /* ============================================================
-   invphones.js — الهواتف: البطاقة المدمجة والنافذة السفلية، اقتراح الملحقات، الإضافة، الحجز، سجل الحركات
+   invphones.js — الهواتف: البطاقة المدمجة (4 / 64 GB + 1500 DH) والنافذة السفلية، اقتراح الملحقات، الإضافة، الحجز، سجل الحركات
    يُحمَّل بعد invbase.js.
    ============================================================ */
 /* ============================ الهواتف ============================ */
@@ -65,12 +65,17 @@ function phDots(g, cmp) {
 }
 function phGCard(g) {
   const s = phGSt(g), cmp = isCmp('phones') && V.v == 'sec', f0 = g.items[0], sel = g.items.find(x => x.id == PHS);
-  const t = [g.ram, g.cap].filter(Boolean).map(x => `<span class="phk">${esc(x)}</span>`).join('')
-    + (g.cond != 'جديد' ? `<span class="phk c">${esc(g.cond)}</span>` : '')
-    + (g.items.length > 1 ? `<span class="phk n"><small>المجموع</small><b>${g.cnt}</b></span>` : '');
-  const rsB = g.rs ? `<span class="rs"> · محجوز ${g.rs}</span>` : '';
-  const bar = sel ? `<div class="phsel"><span class="csd" style="background:${csBg(sel.color)};color:${csInk(sel.color)}"></span><b style="flex:1;min-width:0">${esc(sel.color || 'عام')}</b><button class="btn s sm sell" onclick="phC('${sel.id}',-1)">− بيع</button><span class="cn">${sel.cnt}</span><button class="btn sm" onclick="phC('${sel.id}',1)">+ إضافة</button><button class="tag" style="margin:0" onclick="phOpen('${sel.id}')">⋯</button></div>` : '';
-  return cardH(`<div class="ph-top" onclick="phGO('${f0.id}')"><span class="dotl" style="background:${DT[s]}"></span><b class="ph-nm"><bdi>${esc(g.brand + ' ' + g.name)}</bdi></b>${g.price ? `<span class="cmp-pr">${esc(fmtPr(g.price))}</span>` : ''}</div><div class="ph-bot">${t || rsB ? `<div class="phkr" onclick="phGO('${f0.id}')">${t}${rsB}</div>` : ''}<div class="cs-sws">${phDots(g, cmp)}</div></div>${bar}`, colOf(f0), 'cmp');
+  const mem = memBadge(g.ram, g.cap);
+  const condB = g.cond != 'جديد' ? `<span class="phk c">${esc(g.cond)}</span>` : '';
+  const totB = g.items.length > 1 ? `<span class="tot-b">المجموع <b>${g.cnt}</b></span>` : '';
+  const rsB = g.rs ? `<span class="rs">· محجوز ${g.rs}</span>` : '';
+  const bar = sel ? `<div class="phsel"><span class="csd" style="background:${csBg(sel.color)};color:${csInk(sel.color)}"></span><b class="f1">${esc(sel.color || 'عام')}</b><button class="btn s sm sell" onclick="phC('${sel.id}',-1)">− بيع</button><span class="cn">${sel.cnt}</span><button class="btn sm" onclick="phC('${sel.id}',1)">+ إضافة</button><button class="tag" style="margin:0" onclick="phOpen('${sel.id}')">⋯</button></div>` : '';
+  return cardH(
+    `<div class="ph-top" onclick="phGO('${f0.id}')"><b class="ph-nm"><bdi>${esc(g.brand + ' ' + g.name)}</bdi></b><div class="ph-pr-wrap">${g.price ? prBadge(g.price) : ''}<span class="dotl" style="background:${DT[s]}"></span></div></div>`
+    + `<div class="ph-bot">${mem || condB || totB || rsB ? `<div class="ph-specs" onclick="phGO('${f0.id}')">${mem}${condB}${totB}${rsB}</div>` : ''}<div class="cs-sws">${phDots(g, cmp)}</div></div>`
+    + bar,
+    colOf(f0), 'cmp'
+  );
 }
 /* نافذة الموديل: كل الألوان − / + ثم الحد والإضافة */
 function phGO(id) { if (!find(id)) return; phGR(id); sheetOpen(() => { }); }
@@ -79,7 +84,7 @@ function phGR(id) {
   const g = phGroup(i), s = phGSt(g), L = phLimG(g), j = phTierOf(g), o = (S.cfg.pm || {})[g.key] || {};
   const why = o.l != null && o.l !== '' ? 'حد خاص بالموديل' : (S.cfg.bl || {})[g.brand] != null && !(o.t != null) ? 'حد الماركة' : j >= 0 ? 'فئة: ' + ptCfg()[j][0] : 'الحد العام';
   const rows = g.items.map(x => `<div class="cs-vr"><span class="csd" style="background:${csBg(x.color)};color:${csInk(x.color)}"></span><b style="cursor:pointer" onclick="phGo('phOpen','${x.id}')">${esc(x.color || 'عام')}${rsQ(x) ? `<span class="rs"> · محجوز ${rsQ(x)}</span>` : ''}</b><button class="btn s cs-sb" onclick="phC('${x.id}',-1);phGR('${id}')">−</button><span class="cn">${x.cnt}</span><button class="btn cs-sb" onclick="phC('${x.id}',1);phGR('${id}')">+</button></div>`).join('');
-  $('sh').innerHTML = `<div class="bar"></div><div class="row2"><h3><bdi>${esc(g.brand + ' ' + g.name)}</bdi></h3>${g.price ? `<span class="cmp-pr">${esc(fmtPr(g.price))}</span>` : ''}<span class="dotl" style="background:${DT[s]}"></span></div>`
+  $('sh').innerHTML = `<div class="bar"></div><div class="row2"><h3><bdi>${esc(g.brand + ' ' + g.name)}</bdi></h3>${g.price ? prBadge(g.price) : ''}<span class="dotl" style="background:${DT[s]}"></span></div>`
     + `<p class="m" style="margin:2px 0 6px">${esc([g.ram, g.cap, g.cond].filter(Boolean).join(' · '))} · المتاح للبيع: ${g.tot} · «قارب» عند ${L} فأقل لمجموع الألوان (${esc(why)})</p>`
     + rows
     + `<div class="cs-acts"><button class="btn s" onclick="phGo('phDupC','${id}')">+ لون آخر</button><button class="btn s" onclick="phGo('phDup','${id}')">+ سعة / RAM أخرى</button><button class="btn s" onclick="phGo('phLimEd','${id}')">الحد لهذا الموديل</button><button class="btn s" onclick="phGo('phAcc','${id}')">${I('shield')} ملحقات</button></div>`
@@ -105,7 +110,7 @@ const ptRng = j => { const T = ptCfg(); return j == 0 ? 'حتى ' + T[0][1] + ' 
 VW.st_pt = () => ({
   t: 'حدود الهواتف حسب السعر',
   h: '<p class="m">يُحكم على مجموع كل ألوان نفس الموديل والسعة والـ RAM، ويصير «قارب على النفاد» عند هذا العدد فأقل. الفئة تُحدَّد من سعر البيع، ويمكن تغييرها لموديل معيّن من نافذته.</p>'
-    + ptCfg().map((x, j) => `<button class="card row2" onclick="ptEd(${j})"><b>${esc(x[0])}</b><span class="m">${ptRng(j)}</span><span class="m">حد ${x[2]}</span></button>`).join('')
+    + ptCfg().map((x, j) => `<button class="card row2 st-row" onclick="ptEd(${j})"><b class="st-lbl">${esc(x[0])}</b><span class="m st-val">${ptRng(j)} · حد ${x[2]}</span></button>`).join('')
 });
 function ptEd(j) {
   if (!can('tags')) return toast('للمدير فقط');
@@ -126,7 +131,7 @@ function phCard(i) {
   const t = [i.color, i.ram, i.cap, i.cond && i.cond != 'جديد' && i.cond, ...(cmp ? [] : fxParts)].filter(Boolean).map(x => `<bdi>${esc(x)}</bdi>`).join(' · ');
   const rsBadge = rsQ(i) ? `<span class="rs"> · محجوز ${rsQ(i)}</span>` : '';
   const extra = !cmp ? (i.note ? `<div class="cs-nt m">${esc(i.note)}</div>` : '') + (i.imei ? `<div class="cs-nt m">IMEI: <bdi>${esc(i.imei)}</bdi></div>` : '') : '';
-  return cardH(`<div class="row2" style="gap:6px"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phOpen('${i.id}')"><b><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b>${t || rsBadge ? `<div class="m">${t}${rsBadge}</div>` : ''}${extra}</div>${i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : ''}<button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button></div>`, colOf(i), 'cmp');
+  return cardH(`<div class="row2" style="gap:6px;flex-wrap:wrap"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phOpen('${i.id}')"><b><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b>${t || rsBadge ? `<div class="m">${t}${rsBadge}</div>` : ''}${extra}</div>${i.price ? prBadge(i.price) : ''}<div class="row2" style="gap:4px"><button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="phC('${i.id}',1)">+</button></div></div>`, colOf(i), 'cmp');
 }
 /* نافذة الإجراءات السفلية للهاتف (تفتح عند الضغط على اسم الهاتف) */
 const phGo = (f, id) => { finish(null); setTimeout(() => window[f](id), 380); };
@@ -137,7 +142,7 @@ function phOpen(id) {
 function phSheetR(id) {
   const i = find(id); if (!i) return;
   const s = phSt(i), specs = [i.color, i.ram, i.cap, i.cond || 'جديد'].filter(Boolean).join(' · ');
-  $('sh').innerHTML = `<div class="bar"></div><div class="row2"><h3><bdi>${esc(i.brand + ' ' + i.name)}</bdi></h3>${i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : ''}<span class="dotl" style="background:${DT[s]}"></span></div>`
+  $('sh').innerHTML = `<div class="bar"></div><div class="row2"><h3><bdi>${esc(i.brand + ' ' + i.name)}</bdi></h3>${i.price ? prBadge(i.price) : ''}<span class="dotl" style="background:${DT[s]}"></span></div>`
     + (specs ? `<p class="m" style="margin:2px 0 6px">${esc(specs)} · المتاح للبيع: ${av(i)}</p>` : '')
     + rsHtml(i) + fxShow(i)
     + (i.imei ? `<div class="m">IMEI: <bdi>${esc(i.imei)}</bdi></div>` : '')
@@ -206,9 +211,9 @@ function phUpR(id) {
       + S.tags.glass.map((ty, j) => {
         if (!gHas(g, mName, ty)) return '';
         const it = gitem(g.id, ty) || { stock: {} }, lv = (it.lv || {})[mName], ex = lv === undefined && (it.stock || {})[mName] !== undefined;
-        return `<div class="gm"><div class="row2"><b style="flex:1">${esc(ty)}${it.price ? ` <span class="cmp-pr">(${esc(fmtPr(it.price))})</span>` : ''}</b>`
+        return `<div class="gm"><div class="row2"><b class="f1">${esc(ty)}${it.price ? ' ' + prBadge(it.price) : ''}</b>`
           + (ex ? `<button class="btn s sm" onclick="glC('${g.id}',${j},${mk},-1);phUpR('${id}')">−1</button><span class="cn">${it.stock[mName]}</span>`
-            : [['a', `<bdi>${T.a}+</bdi>`], ['b', `<bdi>${T.b}+</bdi>`], ['c', `<bdi>${T.c}+</bdi>`], ['y', 'قليل'], ['r', 'نفد']].map(([l, lb]) => `<button class="tag ${lv == l ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:.75rem" onclick="glLv('${g.id}',${j},${mk},'${l}');phUpR('${id}')">${lb}</button>`).join(''))
+            : [['a', `<bdi>${T.a}+</bdi>`], ['b', `<bdi>${T.b}+</bdi>`], ['c', `<bdi>${T.c}+</bdi>`], ['y', 'قليل'], ['r', 'نفد']].map(([l, lb]) => `<button class="tag ${lv == l ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:var(--t-xs)" onclick="glLv('${g.id}',${j},${mk},'${l}');phUpR('${id}')">${lb}</button>`).join(''))
           + `</div></div>`;
       }).join('') + `</div>`;
   }
@@ -257,10 +262,10 @@ function phForm(rec) {
     + `<label style="margin-top:8px">الموديل<input id="pm" data-sug="mn" oninput="colRef()" onchange="colRef()" value="${esc(rec.name || '')}" placeholder="مثال: A07"></label>`
     + `<div class="pcrow"><label class="pcp"${hh('phones', 'price')}>سعر البيع (درهم)<input id="pp" type="tel" value="${esc(rec.price || '')}" placeholder="${esc(rec._costPh || 'مثال: 1350')}" ${ed && !can('price') ? 'disabled' : ''}></label><label class="pcn">العدد<input id="pcnt" type="number" value="${rec.cnt ?? 1}"></label></div>`
     + `<div id="cc2"></div>`
-    + `<label${hh('phones', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="pimei" value="${esc(rec.imei || '')}" placeholder="امسح الباركود أو اكتب الرقم" style="flex:1"><button type="button" class="btn s sm" onclick="scanIntoInput('pimei')">${I('scan')} مسح</button></div></label>`
+    + `<label${hh('phones', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2" style="margin-top:4px"><input id="pimei" value="${esc(rec.imei || '')}" placeholder="امسح الباركود أو اكتب الرقم" class="f1"><button type="button" class="btn s sm" onclick="scanIntoInput('pimei')">${I('scan')} مسح</button></div></label>`
     + `<div id="fx"></div><label${hh('phones', 'note')}>ملاحظة<textarea id="pt">${esc(rec.note || '')}</textarea></label>`
     + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="phSave()">حفظ</button></div>`
-    + (ed || rec._fromUsed ? '' : `<button class="btn s" onclick="phSave(2)">حفظ وإضافة مثله (لون أو سعة أخرى)</button>` + moreBtn('phSave')) + (ed && S.items.includes(rec) && can('del') ? `<button class="btn s" style="color:#dc2626;margin-top:10px" onclick="phDelF('${rec.id}')">حذف هذا الهاتف</button>` : '');
+    + (ed || rec._fromUsed ? '' : `<button class="btn s" onclick="phSave(2)">حفظ وإضافة مثله (لون أو سعة أخرى)</button>` + moreBtn('phSave')) + (ed && S.items.includes(rec) && can('del') ? `<button class="btn s del" style="margin-top:10px" onclick="phDelF('${rec.id}')">حذف هذا الهاتف</button>` : '');
   chipsR();
 }
 function phSave(more) {

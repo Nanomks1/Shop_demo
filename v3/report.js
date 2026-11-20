@@ -131,32 +131,52 @@
     if (c.ft) { o.push(''); o.push(c.ft); }
     return o.map(bd).join('\n');
   };
-  /* ---------- شاشة التقرير ---------- */
-  const fmtRtHtml = raw => {
-    const segs = String(raw || '').split(' — ');
-    return segs.map((seg, idx) => {
-      if (idx > 0 && /^(?:العدد\s*≈?[0-9٠-٩]+|نفد|قارب النفاد|باقي\s+[0-9٠-٩]+)$/.test(seg.trim())) {
-        const h = esc(seg).replace(/(≈?[0-9٠-٩]+)/, '<bdi class="ltr">$1</bdi>');
-        return `<span class="nw">${h}</span>`;
-      }
-      if (idx === 0 && seg.includes(': ')) {
-        const cIdx = seg.indexOf(': '), head = seg.slice(0, cIdx), rest = seg.slice(cIdx + 2);
-        const mods = rest.split(' / ').map(m => `<bdi>${esc(m)}</bdi>`).join(' / ');
-        return `<bdi>${esc(head)}</bdi>: ${mods}`;
-      }
-      return `<bdi>${esc(seg)}</bdi>`;
-    }).join(' — ');
-  };
-  const stkRowHtml = i => {
-    const mdl = [i.brand, i.name].filter(Boolean).join(' '), sp = [i.ram, i.cap].filter(Boolean).join(' ');
-    const parts = [`<bdi><b>${esc(mdl)}</b></bdi>`];
-    if (sp) parts.push(`<bdi>${esc(sp)}</bdi>`);
-    if (i.color) parts.push(`<bdi class="m">${esc(i.color)}</bdi>`);
-    return parts.join(' · ');
-  };
+  /* ---------- شاشة التقرير: عرض هيكلي نظيف بلا انقلاب BiDi ---------- */
   const SECI = { topup: 'ctopup', phones: 'cphone', glass: 'cglass', pochette: 'ccase', acc: 'cacc', rpp: 'crepair' };
   const secT = b => (SECI[b.k] ? I(SECI[b.k]) + ' ' : '') + esc(String(b.t).replace(/^[^\u0600-\u06FFA-Za-z0-9]+/, ''));
-  const rrow = l => {
+  function rrowBody(bk, l, fn, arg) {
+    const isRed = l.x[2] == 'r';
+    if (bk == 'phones' && fn == 'buyP') {
+      const it = find(arg);
+      if (it) {
+        const g = phGroup(it), mem = memBadge(g.ram, g.cap);
+        const cls = g.items.map(x => `${x.color || 'عام'} (${av(x)})`).join('، ');
+        const stH = g.tot <= 0 ? 'نفد' : 'العدد ' + g.tot;
+        return `<div class="rt-main"><div class="rt-line1"><bdi>${esc(g.brand + ' ' + g.name)}</bdi>${mem}${g.cond != 'جديد' ? `<span class="m">(${esc(g.cond)})</span>` : ''}</div><div class="rt-sub">الألوان: ${esc(cls)}${g.rs ? ' · محجوز ' + g.rs : ''}</div></div><span class="rt-st ${isRed ? 'r' : ''}">${stH}</span>`;
+      }
+    }
+    if (bk == 'glass') {
+      const segs = String(l.s || '').split(' — '), head = segs[0] || '', stRaw = segs.slice(1).join(' — ');
+      const cIdx = head.indexOf(': ');
+      const ty = cIdx > 0 ? head.slice(0, cIdx) : '', ms = cIdx > 0 ? head.slice(cIdx + 2) : head;
+      const modsH = ms.split(' / ').map(m => `<bdi>${esc(m)}</bdi>`).join(' / ');
+      const stH = esc(stRaw || (isRed ? 'نفد' : 'قارب')).replace(/(≈?[0-9٠-٩]+)/, '<bdi class="ltr">$1</bdi>');
+      return `<div class="rt-main"><div class="rt-line1">${ty ? `<span class="tag" style="margin:0;padding:1px 7px;font-size:var(--t-xs)">${esc(ty)}</span>` : ''}${modsH}</div></div><span class="rt-st ${isRed ? 'r' : ''}">${stH}</span>`;
+    }
+    if (bk == 'topup') {
+      const segs = String(l.s || '').split(' — '), op = segs[0] || '', rest = segs.slice(1);
+      if (rest.length >= 2) {
+        const stTxt = rest.pop();
+        return `<div class="rt-main"><div class="rt-line1"><bdi>${esc(op)}</bdi><span>— ${esc(rest.join(' — '))}</span></div></div><span class="rt-st ${isRed ? 'r' : ''}">${esc(stTxt)}</span>`;
+      }
+      const pTxt = rest[0] || '';
+      const pm = pTxt.match(/^(.+?)\s+(\d+(?:\.\d+)?\s*درهم)$/);
+      if (pm) return `<div class="rt-main"><div class="rt-line1"><bdi>${esc(op)}</bdi><span>— ${esc(pm[1])}</span></div></div><span class="rt-st ${isRed ? 'r' : ''}">${esc(pm[2])}</span>`;
+    }
+    if (bk == 'pochette') {
+      const segs = String(l.s || '').split(' — '), nm = segs[0] || '', det = segs.slice(1).join(' · ');
+      return `<div class="rt-main"><div class="rt-line1"><bdi>${esc(nm)}</bdi></div>${det ? `<div class="rt-sub">${esc(det)}</div>` : ''}</div><span class="rt-st ${isRed ? 'r' : ''}">${isRed ? 'نفد' : 'قارب'}</span>`;
+    }
+    const segs = String(l.s || '').split(' — '), nm = segs[0] || '';
+    let stTxt = isRed ? 'نفد' : 'قارب', subs = [];
+    segs.slice(1).forEach(s => {
+      if (/^(?:العدد\s*≈?[0-9٠-٩]+|المجموع\s*≈?[0-9٠-٩]+|نفد|قارب النفاد)$/.test(s.trim())) stTxt = s.trim();
+      else subs.push(s);
+    });
+    const stH = esc(stTxt).replace(/(≈?[0-9٠-٩]+)/, '<bdi class="ltr">$1</bdi>');
+    return `<div class="rt-main"><div class="rt-line1"><bdi>${esc(nm)}</bdi></div>${subs.length ? `<div class="rt-sub">${esc(subs.join(' · '))}</div>` : ''}</div><span class="rt-st ${isRed ? 'r' : ''}">${stH}</span>`;
+  }
+  const rrow = (bk, l) => {
     const c = rcf(), act = l.x[3] || '';
     const m = act.match(/^([a-zA-Z]+)\('([^']*)'\)$/);
     const fn = m ? m[1] : '', arg = m ? m[2] : '';
@@ -165,7 +185,12 @@
     const mainClick = c.qb && hasPrompt ? `rcQuick('${fn}','${arg}')` : act;
     const showNumBtn = isGrp || (c.qb && hasPrompt);
     const askBtn = showNumBtn ? `<button class="rck s" title="إدخال الكمية يدوياً" onclick="rcManual('${fn}','${arg}')">${I('hash')}</button>` : '';
-    return `<div class="rrow ${l.x[2] == 'r' ? 'r' : ''}"><span class="dotl" style="background:${DT[l.x[2]]}"></span><span class="rt">${fmtRtHtml(l.s)}</span>${askBtn}<button class="rck" aria-label="تم الشراء" onclick="${mainClick}">${I('check')}</button></div>`;
+    return `<div class="rrow ${l.x[2] == 'r' ? 'r' : ''}"><span class="dotl" style="background:${DT[l.x[2]]}"></span>${rrowBody(bk, l, fn, arg)}${askBtn}<button class="rck" aria-label="تم الشراء" onclick="${mainClick}">${I('check')}</button></div>`;
+  };
+  const stkRow = (i, showPr) => {
+    const bg = typeof csBg == 'function' ? csBg(i.color) : '#64748b';
+    const fg = typeof csInk == 'function' ? csInk(i.color) : '#fff';
+    return `<div class="rrow"><div class="rt-line1 f1"><bdi>${esc(i.brand + ' ' + i.name)}</bdi>${memBadge(i.ram, i.cap)}${rsQ(i) ? `<span class="rs">محجوز ${rsQ(i)}</span>` : ''}</div><span class="m" style="font-weight:700">${esc(i.color || 'عام')}</span><span class="csd sm" style="background:${bg};color:${fg}">${i.cnt}</span>${showPr && i.price ? prBadge(i.price) : ''}</div>`;
   };
   VW.rep = () => {
     const c = rcf(), s = stkL(), lv = window.RLV || c.lv, f = window.reportSectionFilter;
@@ -192,12 +217,12 @@
       else if (b.k == 'rpp') x = b.ls.map(l => `<div class="rrow r"><span class="dotl" style="background:${DT.r}"></span><span class="rt" onclick="rpOpen('${l.id}')">${esc(l.s)}</span><button class="rck" title="وصلت القطعة" onclick="rpPartDone('${l.id}')">${I('check')}</button></div>`).join('');
       else {
         const ex = EXP['r_' + b.k], L = !ex && b.ls.length > 6 ? b.ls.slice(0, 5) : b.ls;
-        x = L.map(rrow).join('') + (b.ls.length > 6 ? `<button class="tag" style="width:100%;justify-content:center;margin:6px 0 0" onclick="toggleExp('r_${b.k}')">${ex ? 'طيّ ▴' : 'عرض الباقي (+' + (b.ls.length - 5) + ') ▾'}</button>` : '');
+        x = L.map(l => rrow(b.k, l)).join('') + (b.ls.length > 6 ? `<button class="tag" style="width:100%;justify-content:center;margin:6px 0 0" onclick="toggleExp('r_${b.k}')">${ex ? 'طيّ ▴' : 'عرض الباقي (+' + (b.ls.length - 5) + ') ▾'}</button>` : '');
       }
       if (x) h += `<h3 class="sch" style="--sc:${SCOL[b.k] || '#64748b'}">${secT(b)} <span class="m">(${b.ls.length})</span></h3><div class="card rlist sx" style="--sc:${SCOL[b.k] || '#64748b'}">${x}</div>`; else if (c.em) h += `<h3>${secT(b)}</h3><p class="m">لا نقص</p>`;
     });
     if ((F == 'all' || F == 'phones') && c.st && !c.hs.includes('phones') && s.length)
-      h += '<h3>الهواتف المتوفرة</h3><div class="card rlist">' + s.map(i => `<div class="rrow"><span class="rt">${stkRowHtml(i)}</span><span class="phk n"><b>${i.cnt}</b></span>${rsQ(i) ? `<span class="rs">محجوز ${rsQ(i)}</span>` : ''}${c.pr && i.price ? `<span class="cmp-pr">${esc(dh(i.price))}</span>` : ''}</div>`).join('') + '</div>';
+      h += '<h3>الهواتف المتوفرة</h3><div class="card rlist">' + s.map(i => stkRow(i, c.pr)).join('') + '</div>';
     if (!h.includes('<h3')) h += emptyBox('لا يوجد نقص في المخزون حالياً ✓', 'جميع الأصناف متوفرة فوق الحد المطلوب');
     h += `<details class="card" style="margin-top:14px"><summary><b>معاينة النص</b></summary><div style="white-space:pre-wrap;margin-top:8px;line-height:1.8">${esc(generateReportText(F))}</div></details>`
       + `<div class="rbar"><button class="btn" onclick="rcSend()">${I('send')} إرسال بالواتساب</button><button class="btn s" onclick="rcCopy()">نسخ</button></div>`;
@@ -213,7 +238,7 @@
       t: 'إعدادات التقرير', h: '<p class="m">هذه الإعدادات تحدد ما يظهر في التقرير ونصّ الواتساب، وتنطبق على كل الأجهزة.</p>'
         + '<h3>استلام السلعة من التقرير</h3>'
         + tog('زر (✓) في التقرير: شراء سريع بضغطة واحدة', 'qb')
-        + '<p class="m" style="margin:2px 8px 12px;font-size:.8rem">عند تفعيله: ضغطة واحدة على (✓) تعتمد الكمية الافتراضية فوراً، ويظهر بجانبه زر (#) لمن أراد كتابة عدد مخصص.</p>'
+        + '<p class="m" style="margin:2px 8px 12px">عند تفعيله: ضغطة واحدة على (✓) تعتمد الكمية الافتراضية فوراً، ويظهر بجانبه زر (#) لمن أراد كتابة عدد مخصص.</p>'
         + '<h3>العنوان والتوقيع</h3>' + row('عنوان التقرير', 'rcTt()', c.tt || 'بدون') + tog('إظهار التاريخ بجانب العنوان', 'dt') + row('عبارة في آخر التقرير', 'rcFt()', c.ft || 'بدون')
         + '<h3>ما الذي يُدرج</h3>' + tog('قائمة الهواتف المتوفرة', 'st') + tog('أسعار الهواتف المتوفرة', 'pr') + tog('طلبات الزبائن', 'rq') + tog('ملاحظات البوشيط (باقي / خاصنا)', 'pn') + tog('إظهار الأقسام التي لا نقص فيها', 'em')
         + '<h3>أسطر إضافية في التقرير</h3>' + tog('سطر الصيانة (في المحل / جاهز / لم يصلح / منسي)', 'rr') + tog('سطر الديون المفتوحة', 'rd')

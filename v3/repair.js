@@ -21,7 +21,7 @@ const dh = p => sn1(p) ? dg(String(p).trim()) + ' درهم' : (p || '');
 const tOf = r => r.st == 'dn' ? r.t2 : r.st == 'rd' ? (r.t1 || r.t0) : r.t0;
 const isLateRp = r => r.st == 'rd' && Math.floor((Date.now() - (r.t1 || r.t0)) / 864e5) > 15;
 const isSlowRp = r => r.st == 'in' && Math.floor((Date.now() - (r.t0 || Date.now())) / 864e5) >= 3;
-/* تاريخ مختصر للبطاقة الخارجية حتى لا يطول السطر وينكسر اسم الموظف */
+/* تاريخ مختصر للبطاقة الخارجية */
 const fdS = t => {
   if (!t) return '';
   const d = new Date(t), now = new Date(), p = n => String(n).padStart(2, '0');
@@ -114,7 +114,7 @@ function cleanOldRpMedia() {
   if (chg) save();
 }
 cleanOldRpMedia();
-/* ---------- بطاقة الصيانة المدمجة (مرنة الأسطر وبلا انكسار حروف) ---------- */
+/* ---------- بطاقة الصيانة الهادئة (بلا صناديق داخل صناديق وبلا قصّ للتواريخ والأسماء) ---------- */
 function rc(r) {
   const n = Math.floor((Date.now() - r.t0) / 864e5), w = r.st == 'rd' ? Math.floor((Date.now() - (r.t1 || r.t0)) / 864e5) : 0;
   const i = r.id, im = rImg(r), wi = warInfo(r), slow = isSlowRp(r), stB = rpStInfo(r);
@@ -122,31 +122,28 @@ function rc(r) {
   const oDebts = r.st != 'dn' ? rpDebts(r.tel, r.name) : [], oSum = oDebts.length ? rpDebtSum(oDebts) : 0;
   const retB = r.ret ? `<span class="rp-badge ret">راجع${r.ret > 1 ? ' ' + r.ret : ''}</span>` : '';
   const prHtml = r.cap
-    ? `<div class="rp-pr"><span class="rp-pr-pill">${esc(dh(r.cap))}</span>${r.dep ? `<small class="rp-dep">عربون ${esc(dh(r.dep))}</small>` : ''}</div>`
+    ? `<div class="rp-pr-col">${prBadge(r.cap)}${r.dep ? `<small class="rp-dep">عربون ${esc(dh(r.dep))}</small>` : ''}</div>`
     : (r.st == 'in'
-      ? `<div class="rp-pr"><span class="rp-pr-pill wait">السعر بعد الفحص</span>${r.dep ? `<small class="rp-dep">عربون ${esc(dh(r.dep))}</small>` : ''}</div>`
-      : (r.dep ? `<div class="rp-pr"><small class="rp-dep">عربون ${esc(dh(r.dep))}</small></div>` : ''));
-  const telHtml = r.tel ? `<a href="tel:${esc(r.tel)}" class="rp-tel-pill" onclick="event.stopPropagation()"><bdi>${esc(r.tel)}</bdi>${I('phone')}</a>` : '';
+      ? `<div class="rp-pr-col"><span class="pr-b wait">السعر بعد الفحص</span>${r.dep ? `<small class="rp-dep">عربون ${esc(dh(r.dep))}</small>` : ''}</div>`
+      : (r.dep ? `<div class="rp-pr-col"><small class="rp-dep">عربون ${esc(dh(r.dep))}</small></div>` : ''));
+  const telHtml = r.tel ? `<a href="tel:${esc(r.tel)}" class="rp-tel" onclick="event.stopPropagation()"><bdi>${esc(r.tel)}</bdi>${I('phone')}</a>` : '';
   const whoName = r.st == 'dn' ? (r.dby || r.by) : (r.lb || r.by);
   let dateLabel = '';
-  if (r.st == 'in') dateLabel = `استلام: <bdi class="ltr">${fdS(r.t0)}</bdi>${n ? ` (${agoTxt(r.t0)})` : ''}`;
-  else if (r.st == 'rd') dateLabel = `${r.res == 'fail' || r.res == 'ref' ? 'فُحص:' : 'جُهّز:'} <bdi class="ltr">${fdS(r.t1 || r.t0)}</bdi>${w ? ` (${agoTxt(r.t1 || r.t0)})` : ''}`;
+  if (r.st == 'in') dateLabel = `استلام: <bdi class="ltr">${fdS(r.t0)}</bdi>${slow ? ` <span class="rp-warn-inline">· متأخر ${arCnt(n, 'يوم', 'يومين', 'أيام', 'يوماً')}</span>` : (n ? ` (${agoTxt(r.t0)})` : '')}`;
+  else if (r.st == 'rd') dateLabel = `${r.res == 'fail' || r.res == 'ref' ? 'فُحص:' : 'جُهّز:'} <bdi class="ltr">${fdS(r.t1 || r.t0)}</bdi>${w > 15 ? ` <span class="rp-warn-inline">· منسي ${arCnt(w, 'يوم', 'يومين', 'أيام', 'يوماً')}</span>` : (w ? ` (${agoTxt(r.t1 || r.t0)})` : '')}`;
   else if (r.st == 'dn') dateLabel = `سُلّم: <bdi class="ltr">${fdS(r.t2)}</bdi> · المقبوض: <b>${esc(dh(r.paid))}</b>`;
   let callRowHtml = '';
   if (r.st == 'rd' && (r.calls || []).length) {
     const pc = rpParseCall(r.calls[r.calls.length - 1]);
-    callRowHtml = `<div class="rp-info-row call-row"><span class="rp-info-txt">آخر تواصل: <bdi class="ltr">${esc(pc.dt)}</bdi></span><div class="rp-call-badges">${pc.by ? `<span class="rp-staff">${esc(pc.by)}</span>` : ''}<span class="rp-cnt-b">${arCnt(r.calls.length, 'اتصال', 'اتصالان', 'اتصالات', 'اتصالاً')}</span></div></div>`;
+    callRowHtml = `<div class="rp-meta-line"><span>آخر تواصل: <bdi class="ltr">${esc(pc.dt)}</bdi></span><span><b class="rp-warn-inline">${arCnt(r.calls.length, 'اتصال', 'اتصالان', 'اتصالات', 'اتصالاً')}</b>${pc.by ? ` · <b><bdi>${esc(pc.by)}</bdi></b>` : ''}</span></div>`;
   }
-  const infoBox = `<div class="rp-info-box" onclick="rpOpen('${i}')"><div class="rp-info-row"><span class="rp-info-txt">${dateLabel}</span>${whoName ? `<span class="rp-staff">${esc(whoName)}</span>` : ''}</div>${callRowHtml}</div>`;
+  const infoBox = `<div class="rp-meta" onclick="rpOpen('${i}')"><div class="rp-meta-line"><span>${dateLabel}</span>${whoName ? `<b><bdi>${esc(whoName)}</bdi></b>` : ''}</div>${callRowHtml}</div>`;
   let statusRow = '';
   if (r.st == 'in') {
     const locBtns = shown('rp', 'loc') ? Object.keys(LOC).map(k => `<button class="tag rp-mini ${r.loc == k ? 'on' : ''}" onclick="rLoc('${i}','${k}')">${LOC[k]}</button>`).join('') : '';
     const partBtn = shown('rp', 'need') ? (r.part ? `<button class="tag rp-mini part on" onclick="rPart('${i}')">${I('tool')} خاصو: ${esc(r.part)}</button>` : `<button class="tag rp-mini" onclick="rPart('${i}')">+ خاصو قطعة</button>`) : '';
-    const slowBadge = slow ? `<span class="rp-badge warn">متأخر ${arCnt(n, 'يوم', 'يومين', 'أيام', 'يوماً')}</span>` : '';
     const lockInd = (r.lock || (r.pat || []).length > 1) ? `<button class="tag rp-mini" onclick="rpOpen('${i}')" title="عرض القفل">${I('lock')} القفل</button>` : '';
-    if (locBtns || partBtn || slowBadge || lockInd) statusRow = `<div class="rp-tags">${locBtns}${partBtn}${lockInd}${slowBadge}</div>`;
-  } else if (r.st == 'rd' && w > 15) {
-    statusRow = `<div class="rp-tags"><span class="rp-badge bad">منسي منذ ${arCnt(w, 'يوم', 'يومين', 'أيام', 'يوماً')}</span></div>`;
+    if (locBtns || partBtn || lockInd) statusRow = `<div class="rp-tags">${locBtns}${partBtn}${lockInd}</div>`;
   } else if (r.st == 'dn') {
     const tstBadge = r.tst ? `<span class="rp-badge ok">${I('check')} جُرِّب مع الزبون</span>` : '';
     const wiBadge = wi ? `<span class="rp-badge ${wi.active ? 'ok' : ''}">${I('shield')} ${esc(wi.label)}</span>` : '';
@@ -159,9 +156,8 @@ function rc(r) {
       ? `<div class="sub"><button class="btn sm" onclick="rDV('${i}')">${I('check')} تسليم</button><button class="btn s sm rp-wa-btn" onclick="rWA('${i}')">${I('chat')} واتساب</button><button class="btn s sm" onclick="rCL('${i}')">اتصلت</button>${moreBtn2}</div>`
       : `<div class="sub"><button class="btn s sm" onclick="rRet('${i}')">${I('undo')} إرجاع للصيانة</button><button class="btn s sm" onclick="rpOpen('${i}')">تفاصيل وتعديل</button></div>`;
   return `<div class="card cmp ${bCls}">`
-    + `<div class="rp-top-row" onclick="rpOpen('${i}')"><div class="rp-badges">${r.tk ? `<span class="tk-b ${stB.cls}">#${esc(r.tk)}</span>` : ''}<span class="rp-badge ${stB.cls}">${esc(stB.txt)}</span>${retB}</div>${prHtml}</div>`
-    + `<div class="rp-cust-row"><div class="rp-cust-main" onclick="rpOpen('${i}')">${im ? `<img class="rp-th" onclick="event.stopPropagation();rpZoom('${i}')" src="${im}">` : ''}<b class="rp-cust-nm">${esc(r.name)}</b></div>${telHtml}</div>`
-    + `<div class="rp-dev" onclick="rpOpen('${i}')"><bdi>${esc(r.dev || 'هاتف')}</bdi> — <span>${esc(r.fault)}</span></div>`
+    + `<div class="rp-head" onclick="rpOpen('${i}')"><div class="rp-who">${r.tk ? `<span class="tk-b ${stB.cls}">#${esc(r.tk)}</span>` : ''}<span class="rp-nm">${esc(r.name)}</span><span class="rp-st-txt ${stB.cls}">· ${esc(stB.txt)}</span>${retB}</div>${prHtml}</div>`
+    + `<div class="rp-body">${im ? `<img class="rp-th" onclick="event.stopPropagation();rpZoom('${i}')" src="${im}">` : ''}<div class="rp-dev" onclick="rpOpen('${i}')"><bdi>${esc(r.dev || 'هاتف')}</bdi> <span>— ${esc(r.fault)}</span></div>${telHtml}</div>`
     + infoBox
     + statusRow
     + (r.note ? `<div class="rnote" onclick="rNote('${i}')" title="اضغط لتعديل الملاحظة">${I('chat')}<span>${esc(r.note)}</span></div>` : '')
@@ -170,7 +166,7 @@ function rc(r) {
     + (oSum > 0 ? `<div class="rs rp-click" onclick="go('dbt')">${I('alert')} تنبيه: على هذا الزبون دين مفتوح (${oSum} درهم)</div>` : '')
     + actsRow + `</div>`;
 }
-/* ---------- نافذة تفاصيل التذكرة السفلية ---------- */
+/* ---------- نافذة تفاصيل التذكرة السفلية (رأس واضح ومربعا تاريخ متناظران) ---------- */
 const rpGo = (fn, id, arg2) => { finish(null); setTimeout(() => window[fn](id, arg2), 380); };
 function rpCanSaveGuide(r) {
   if (!can('price') || !r || !r.dev || !r.fault || !sn1(r.cap)) return false;
@@ -199,21 +195,22 @@ function rpSheetR(id) {
   const im = rImg(r), wi = warInfo(r), others = rpOtherOpen(r.tel, r.name, r.id), oDebts = rpDebts(r.tel, r.name);
   const calls = (r.calls || []).slice().reverse(), stB = rpStInfo(r);
   const secDateBox = r.st == 'dn' && r.t2
-    ? `<div class="rp-date-box"><small>تاريخ التسليم${r.dby ? ' (' + esc(r.dby) + ')' : ''}</small><b><bdi class="ltr">${fd(r.t2)}</bdi></b></div>`
+    ? `<div class="rp-date-box"><small>تاريخ التسليم${r.dby ? ' (' + esc(r.dby) + ')' : ''}</small><b><bdi class="ltr">${fdDate(r.t2)}</bdi></b><span><bdi class="ltr">${fdTime(r.t2)}</bdi></span></div>`
     : (r.t1
-      ? `<div class="rp-date-box"><small>تاريخ الجاهزية${r.lb ? ' (' + esc(r.lb) + ')' : ''}</small><b><bdi class="ltr">${fd(r.t1)}</bdi></b></div>`
+      ? `<div class="rp-date-box"><small>تاريخ الجاهزية${r.lb ? ' (' + esc(r.lb) + ')' : ''}</small><b><bdi class="ltr">${fdDate(r.t1)}</bdi></b><span><bdi class="ltr">${fdTime(r.t1)}</bdi></span></div>`
       : `<div class="rp-date-box"><small>الحالة الحالية</small><b>${esc(LOC[r.loc] || 'قيد الفحص والإصلاح')}</b></div>`);
   const priBar = r.st == 'rd'
-    ? `<div class="rp-sh-pri"><button class="btn" onclick="rpGo('rDV','${r.id}')">${I('check')} تسليم الهاتف للزبون</button><button class="btn s rp-wa-btn" onclick="rpGo('rWA','${r.id}')">${I('chat')} إشعار واتساب</button></div>`
+    ? `<div class="pair-grid"><button class="btn" onclick="rpGo('rDV','${r.id}')">${I('check')} تسليم الهاتف للزبون</button><button class="btn s rp-wa-btn" onclick="rpGo('rWA','${r.id}')">${I('chat')} إشعار واتساب</button></div>`
     : (r.st == 'in'
-      ? `<div class="rp-sh-pri"><button class="btn" onclick="rpGo('rSt','${r.id}','ok')">${I('check')} جاهز (مصلوح)</button><button class="btn s" onclick="rpGo('rSt','${r.id}','fail')">غير مصلوح</button></div>`
+      ? `<div class="pair-grid"><button class="btn" onclick="rpGo('rSt','${r.id}','ok')">${I('check')} جاهز (مصلوح)</button><button class="btn s" onclick="rpGo('rSt','${r.id}','fail')">غير مصلوح</button></div>`
       : '');
   $('sh').innerHTML = `<div class="bar"></div>`
-    + `<div class="rp-sh-hd"><div class="rp-title">${r.tk ? `<span class="tk-b ${stB.cls}">#${esc(r.tk)}</span>` : ''}<span class="rp-badge ${stB.cls}">${esc(stB.txt)}</span><h3>${esc(r.name)}</h3></div><button type="button" class="rp-xbtn" onclick="finish(null)" aria-label="إغلاق">${I('close')}</button></div>`
+    + `<div class="rp-sh-hd"><div class="rp-who">${r.tk ? `<span class="tk-b ${stB.cls}">#${esc(r.tk)}</span>` : ''}<h3>${esc(r.name)}</h3><span class="rp-st-txt ${stB.cls}">· ${esc(stB.txt)}</span></div><button type="button" class="rp-xbtn" onclick="finish(null)" aria-label="إغلاق">${I('close')}</button></div>`
     + `<div class="card rp-sum-box">`
-    + `<div class="row2"><b><bdi>${esc(r.dev || 'هاتف')}</bdi> — ${esc(r.fault)}</b>${r.cap ? `<span class="rp-pr-pill">${esc(dh(r.cap))}</span>` : '<span class="rp-pr-pill wait">السعر بعد الفحص</span>'}</div>`
-    + `<div class="rp-tel-bar"><span>هاتف الزبون:</span>${r.tel ? `<a href="tel:${esc(r.tel)}" class="rp-tel-pill"><bdi>${esc(r.tel)}</bdi>${I('phone')}</a>` : '<b>بدون رقم مسجل</b>'}</div>`
-    + `<div class="rp-dates-grid"><div class="rp-date-box"><small>تاريخ الاستلام${r.by ? ' (' + esc(r.by) + ')' : ''}</small><b><bdi class="ltr">${fd(r.t0)}</bdi></b></div>${secDateBox}</div>`
+    + `<div class="ph-top"><b class="ph-nm"><bdi>${esc(r.dev || 'هاتف')}</bdi></b>${prBadge(r.cap, '<span class="pr-b wait">السعر بعد الفحص</span>')}</div>`
+    + `<div class="m" style="margin-top:3px;font-weight:600;color:var(--t)">العطل: ${esc(r.fault)}</div>`
+    + `<div class="rp-tel-bar"><span>هاتف الزبون:</span>${r.tel ? `<a href="tel:${esc(r.tel)}" class="rp-tel"><bdi>${esc(r.tel)}</bdi>${I('phone')}</a>` : '<b>بدون رقم مسجل</b>'}</div>`
+    + `<div class="rp-dates-grid"><div class="rp-date-box"><small>تاريخ الاستلام${r.by ? ' (' + esc(r.by) + ')' : ''}</small><b><bdi class="ltr">${fdDate(r.t0)}</bdi></b><span><bdi class="ltr">${fdTime(r.t0)}</bdi></span></div>${secDateBox}</div>`
     + (r.dep ? `<div class="m" style="margin-top:6px">العربون المقبوض: <b>${esc(dh(r.dep))}</b>${sn1(r.cap) && sn1(r.dep) ? ` · المتبقي: <b>${Math.max(0, +dg(r.cap) - +dg(r.dep))} درهم</b>` : ''}</div>` : '')
     + (r.st == 'dn' ? `<div class="m" style="margin-top:4px">المبلغ المقبوض عند التسليم: <b>${esc(dh(r.paid))}</b></div>` : '')
     + ((r.chk || []).length ? `<div class="m" style="margin-top:4px">حالة الاستلام / الأمانات: <b>${esc(r.chk.join('، '))}</b></div>` : '')
@@ -274,7 +271,6 @@ function rpSubFiltersHtml(tab) {
     const wCnt = S.rp.filter(isSlowRp).length;
     if (!mCnt && !sCnt && !pCnt && !wCnt && !sf) return '';
     return `<div class="sec-tags rp-sub-tags">`
-      + `<button class="tag ${!sf ? 'on' : ''}" onclick="V.sf='';render()">الكل</button>`
       + (mCnt || sf == 'm' ? `<button class="tag ${sf == 'm' ? 'on' : ''}" onclick="V.sf=V.sf=='m'?'':'m';render()">عند المعلم (${mCnt})</button>` : '')
       + (sCnt || sf == 's' ? `<button class="tag ${sf == 's' ? 'on' : ''}" onclick="V.sf=V.sf=='s'?'':'s';render()">في الرف (${sCnt})</button>` : '')
       + (pCnt || sf == 'part' ? `<button class="tag ${sf == 'part' ? 'on' : ''}" onclick="V.sf=V.sf=='part'?'':'part';render()">${I('tool')} خاصو قطعة (${pCnt})</button>` : '')
@@ -284,12 +280,12 @@ function rpSubFiltersHtml(tab) {
   if (tab == 'rd' || tab == 'nf') {
     const lateCnt = S.rp.filter(r => tabOf(r) == tab && isLateRp(r)).length;
     if (!lateCnt && sf != 'late') return '';
-    return `<div class="sec-tags rp-sub-tags"><button class="tag ${!sf ? 'on' : ''}" onclick="V.sf='';render()">الكل</button><button class="tag ${sf == 'late' ? 'on' : ''}" onclick="V.sf=V.sf=='late'?'':'late';render()">${I('alert')} منسي +15 يوم (${lateCnt})</button></div>`;
+    return `<div class="sec-tags rp-sub-tags"><button class="tag ${sf == 'late' ? 'on' : ''}" onclick="V.sf=V.sf=='late'?'':'late';render()">${I('alert')} منسي +15 يوم (${lateCnt})</button></div>`;
   }
   if (tab == 'dn') {
     const warCnt = S.rp.filter(r => r.st == 'dn' && (warInfo(r) || {}).active).length;
     if (!warCnt && sf != 'war') return '';
-    return `<div class="sec-tags rp-sub-tags"><button class="tag ${!sf ? 'on' : ''}" onclick="V.sf='';render()">كل الأرشيف</button><button class="tag ${sf == 'war' ? 'on' : ''}" onclick="V.sf=V.sf=='war'?'':'war';render()">${I('shield')} تحت الضمان (${warCnt})</button></div>`;
+    return `<div class="sec-tags rp-sub-tags"><button class="tag ${sf == 'war' ? 'on' : ''}" onclick="V.sf=V.sf=='war'?'':'war';render()">${I('shield')} تحت الضمان (${warCnt})</button></div>`;
   }
   return '';
 }
@@ -297,7 +293,7 @@ VW.rp = () => {
   const tab = V.tab || 'in';
   return {
     t: 'الصيانة',
-    h: `<div class="row2"><button class="btn rp-top-main" onclick="rEd(null)">${I('plus')} استلام هاتف</button><button class="btn s rp-top-sub" onclick="go('gd')">${I('bookmark')} دليل الأسعار</button></div>`
+    h: `<div class="pair-grid"><button class="btn" onclick="rEd(null)">${I('plus')} استلام هاتف</button><button class="btn s" onclick="go('gd')">${I('bookmark')} دليل الأسعار</button></div>`
       + `<div class="sec-panel">`
       + `<div class="rp-tabs-grid">`
       + Object.keys(TB).map(k => {
@@ -306,7 +302,7 @@ VW.rp = () => {
       }).join('')
       + `</div>`
       + rpSubFiltersHtml(tab)
-      + `<div class="row2" style="gap:5px;margin-top:6px"><input class="rp-srch" style="margin:0;flex:1.5" placeholder="ابحث: تذكرة، اسم، هاتف..." value="${esc(V.q)}" oninput="V.q=this.value;V.rlim=40;rpL()"><select class="rp-dt-sel" style="flex:0.85;min-width:92px" aria-label="التاريخ" onchange="V.d=this.value;V.rlim=40;render()">${FL.map(([k, l]) => `<option value="${k}" ${(V.d || 'all') == k ? 'selected' : ''}>${k == 'all' ? 'كل التواريخ' : l}</option>`).join('')}</select><button class="tool-pill ${V.all ? 'on' : ''}" style="min-height:calc(37px * var(--ds))" onclick="V.all=!V.all;V.rlim=40;render()">الكل (${S.rp.length})</button></div>`
+      + `<div class="rp-filter-row"><input placeholder="ابحث: تذكرة (#A104)، اسم، هاتف، جهاز..." value="${esc(V.q)}" oninput="V.q=this.value;V.rlim=40;rpL()"><select aria-label="التاريخ" onchange="V.d=this.value;V.rlim=40;render()">${FL.map(([k, l]) => `<option value="${k}" ${(V.d || 'all') == k ? 'selected' : ''}>${k == 'all' ? 'كل التواريخ' : l}</option>`).join('')}</select></div>`
       + `${V.d == 'date' ? `<input type="date" class="rp-dt-inp" value="${V.dt || ''}" onchange="V.dt=this.value;render()">` : ''}`
       + `</div><div id="rl">${rpList()}</div>`
   };
@@ -692,7 +688,7 @@ window.rpZoom = function (id) {
   sheetOpen(() => { });
 };
 /* ---------- دليل أسعار الإصلاح (مع أزرار الماركات والأعطال السريعة) ---------- */
-const gdCard = g => `<div class="card cmp"><div class="row2"><b><bdi>${esc(g.m)}</bdi></b><span class="cmp-pr">${esc(dh(g.p))}${g.p2 ? ` <span class="m">· أصلي/2:</span> ${esc(dh(g.p2))}` : ''}</span></div><div class="row2"><span class="m f1">${esc(g.f)}${g.n ? ' · ' + esc(g.n) : ''}</span>${can('price') ? `<button class="btn s sm" onclick="gdEd('${g.id}')">تعديل</button><button class="btn s sm del" onclick="gdDel('${g.id}')">حذف</button>` : ''}</div></div>`;
+const gdCard = g => `<div class="card cmp"><div class="ph-top"><b class="ph-nm"><bdi>${esc(g.m)}</bdi></b><div class="ph-pr-wrap">${prBadge(g.p)}${g.p2 ? `<span class="m">أصلي:</span>${prBadge(g.p2)}` : ''}</div></div><div class="row2" style="margin-top:4px;flex-wrap:wrap"><span class="m f1">${esc(g.f)}${g.n ? ' · ' + esc(g.n) : ''}</span>${can('price') ? `<button class="btn s sm" onclick="gdEd('${g.id}')">تعديل</button><button class="btn s sm del" onclick="gdDel('${g.id}')">حذف</button>` : ''}</div></div>`;
 const gdList = (q, flt) => {
   const n = nz(q || ''), fn = nz(flt || '');
   return S.guide.filter(g => (!fn || nz(g.f).includes(fn)) && (!n || nz(g.m + ' ' + g.f + ' ' + (g.n || '')).includes(n))).sort((a, b) => a.m.localeCompare(b.m)).map(gdCard).join('') || emptyBox('لا توجد تسعيرات مطابقة', can('price') ? 'اضغط على «+ إضافة تسعيرة» في الأعلى لإضافة سعر إصلاح جديد' : '');
@@ -787,7 +783,7 @@ VW.req = () => ({
   t: 'طلبات الزبائن',
   h: `<button class="btn" onclick="rq()">+ تسجيل طلب زبون (سأل ولم نجد)</button>`
     + `<div class="sec-panel">`
-    + `<div class="row2"><b class="f1">إجمالي الطلبات المسجلة: ${(S.req || []).length}</b><span class="m">تظهر أيضاً في التقرير اليومي</span></div>`
+    + `<div class="m" style="margin-bottom:4px">إجمالي الطلبات: <b>${(S.req || []).length}</b> · تظهر أيضاً في التقرير اليومي</div>`
     + `<input class="rp-srch" placeholder="ابحث في الطلبات: موديل، سلعة، أو رقم..." value="${esc(V.q || '')}" oninput="V.q=this.value;$('rql').innerHTML=rqList()">`
     + `</div><div id="rql">${rqList()}</div>`
 });

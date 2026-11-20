@@ -172,4 +172,4 @@ function bcSet(id) {
   upd(() => { if (i.sec == 'phones' && isImei(BCODE)) i.imei = i.imei ? (i.imei.includes(BCODE) ? i.imei : i.imei + ' · ' + BCODE) : BCODE; i.code = i.code || BCODE; i.by = S.me; });
   finish(null); toast('تم ربط الباركود بنجاح');
 }
-HOME.tools.push(() => `<div class="row2" style="margin:8px 0"><button class="btn s" style="flex:1.15;margin:0;white-space:nowrap;padding-inline:10px" onclick="bcHome()">${I('scan')} مسح باركود</button><button class="btn ${bcQ() ? '' : 's'} sm" style="flex:1;min-height:calc(45px * var(--ds));white-space:nowrap" onclick="upd(()=>S.cfg.bcQuick=bcQ()?0:Date.now())" title="خصم قطعة تلقائياً عند المسح (15 دقيقة)">${I('zap')} ${bcQ() ? 'البيع السريع مفعّل' : 'بيع سريع −1'}</button></div>`);
+HOME.tools.push(() => `<div class="pair-grid"><button class="btn s" onclick="bcHome()">${I('scan')} مسح باركود</button><button class="btn ${bcQ() ? '' : 's'}" onclick="upd(()=>S.cfg.bcQuick=bcQ()?0:Date.now())" title="خصم قطعة تلقائياً عند المسح (15 دقيقة)">${I('zap')} ${bcQ() ? 'البيع السريع مفعّل' : 'بيع سريع (−1)'}</button></div>`);

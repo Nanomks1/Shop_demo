@@ -1,5 +1,5 @@
 /* ============================================================
-   invglass.js — الأنتي كاس: مجموعات الموديلات ومستويات الزجاج (بتصميم مدمج)
+   invglass.js — الأنتي كاس: مجموعات الموديلات ومستويات الزجاج (بتصميم متوازن)
    يُحمَّل بعد invphones.js.
    ============================================================ */
 /* ============================ الأنتي كاس ============================ */
@@ -65,11 +65,13 @@ function glView() {
 function glRow(g, i, j, k, m, single) {
   const lv = (i.lv || {})[m], ex = lv === undefined && (i.stock || {})[m] !== undefined, T = GT(), br = (g.br || {})[m];
   const dots = [['a', `<bdi class="ltr">${T.a}+</bdi>`], ['b', `<bdi class="ltr">${T.b}+</bdi>`], ['c', `<bdi class="ltr">${T.c}+</bdi>`], ['y', 'قليل'], ['r', 'نفد']].map(([l, t]) => `<button class="lvb ${lv == l ? 'on' : ''}" style="--lc:${LC[l]};--lt:${l == 'c' ? '#14532d' : '#fff'}" onclick="glLv('${g.id}',${j},${k},'${l}')">${t}</button>`).join('');
-  const hd2 = ex ? `<button class="btn s sm" onclick="glC('${g.id}',${j},${k},-1)">−</button><span class="cn">${i.stock[m]}</span><button class="btn sm" onclick="glC('${g.id}',${j},${k},1)">+</button>` : `<button class="tag" style="margin:0;padding:3px 9px;font-size:.76rem" onclick="glEx('${g.id}',${j},${k})">${lv !== undefined && lv != 'r' && !single ? `<bdi class="ltr">≈${lvN(lv)}</bdi> · ` : ''}أدخل العدد</button>`;
+  const hd2 = ex
+    ? `<div class="row2" style="gap:4px"><button class="btn s sm" onclick="glC('${g.id}',${j},${k},-1)">−</button><span class="cn">${i.stock[m]}</span><button class="btn sm" onclick="glC('${g.id}',${j},${k},1)">+</button></div>`
+    : `<button class="gm-cnt-btn" onclick="glEx('${g.id}',${j},${k})">${lv !== undefined && lv != 'r' && !single ? `<bdi class="ltr">≈${lvN(lv)}</bdi> · ` : ''}أدخل العدد</button>`;
   if (single && !ex) {
-    return `<div class="lvs" style="margin-top:6px">${dots}<button class="lvb" style="--lc:var(--b);--lt:var(--t);flex:0 0 auto;padding:0 10px;opacity:.9" onclick="glEx('${g.id}',${j},${k})">#</button></div>`;
+    return `<div class="lvs" style="margin-top:6px">${dots}<button class="lvb" style="--lc:var(--b);--lt:var(--t);flex:0 0 2.1rem;opacity:.9" onclick="glEx('${g.id}',${j},${k})">#</button></div>`;
   }
-  return `<div class="gm"><div class="row2"><span style="flex:1;font-size:.9rem"><b><bdi>${esc(m)}</bdi></b>${br ? ` <span class="m">· <bdi>${esc(br)}</bdi></span>` : ''}</span>${hd2}</div><div class="lvs">${dots}</div></div>`;
+  return `<div class="gm"><div class="gm-head"><span><b><bdi>${esc(m)}</bdi></b>${br ? ` <span class="m">· <bdi>${esc(br)}</bdi></span>` : ''}</span>${hd2}</div><div class="lvs">${dots}</div></div>`;
 }
 function glCard(g, j) {
   const ty = S.tags.glass[j], i = gitem(g.id, ty) || { stock: {}, ty }, s = gSt(i, g, ty), min = gLim(i, ty);
@@ -77,8 +79,11 @@ function glCard(g, j) {
   const ex = EXP['g_' + g.id], limM = !ex && L.length > 4 ? L.slice(0, 3) : L;
   const more = L.length > 4 ? `<button class="tag" style="width:100%;justify-content:center;margin-top:4px" onclick="toggleExp('g_${g.id}')">${ex ? 'طيّ القائمة ▴' : 'عرض باقي الموديلات (+' + (L.length - 3) + ') ▾'}</button>` : '';
   const single = L.length === 1, br0 = single ? (g.br || {})[L[0][0]] : '';
-  return cardH(`<div class="row2" style="gap:6px"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="glOpen('${g.id}',${j})"><b>${glModsH(L.map(x => x[0]))}${br0 ? ` <span class="m" style="font-weight:500">· <bdi>${esc(br0)}</bdi></span>` : ''}</b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · الحد: <bdi class="ltr">${min - 1}</bdi>${i.min != null ? ' (خاص)' : ''}</div></div>${i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : ''}<button class="tag" style="margin:0;padding:4px 9px" onclick="glOpen('${g.id}',${j})" aria-label="خيارات المجموعة">⋯</button></div>`
-    + limM.map(([m, k]) => glRow(g, i, j, k, m, single)).join('') + more, colG(g), 'cmp');
+  return cardH(
+    `<div class="gl-head"><div class="gl-title" onclick="glOpen('${g.id}',${j})"><b>${glModsH(L.map(x => x[0]))}${br0 ? ` <span class="m" style="font-weight:500">· <bdi>${esc(br0)}</bdi></span>` : ''}</b><div class="gl-meta"><span class="dotl" style="background:${DT[s]}"></span><span>المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · الحد: <bdi class="ltr">${min - 1}</bdi>${i.min != null ? ' (خاص)' : ''}</span></div></div><div class="row2" style="gap:6px">${i.price ? prBadge(i.price) : ''}<button class="gl-more" onclick="glOpen('${g.id}',${j})" aria-label="خيارات المجموعة">⋯</button></div></div>`
+    + limM.map(([m, k]) => glRow(g, i, j, k, m, single)).join('') + more,
+    colG(g), 'cmp'
+  );
 }
 /* نافذة خيارات مجموعة الأنتي كاس */
 function glOpen(gid, j) {
@@ -104,8 +109,8 @@ function glOpen(gid, j) {
 }
 function glB(g) {   // بطاقة نتيجة البحث: كل أنواع الزجاج للمجموعة مع السعر الواضح
   return cardH(`<b>زجاج يطابق: ${glModsH(g.models)}</b>` + S.tags.glass.filter(t => gShow(g, t)).map(t => {
-    const i = gitem(g.id, t), s = i ? gSt(i, g, t) : 'r', pr = i && i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : '';
-    return `<div class="row2" style="margin-top:4px"><span class="dotl" style="background:${DT[s]}"></span><span style="flex:1">${esc(t)}</span>${pr}<span class="m"><bdi class="ltr">${i ? (gEst(i, g) ? '≈' : '') + gTot(i, g) : 0}</bdi></span></div>`;
+    const i = gitem(g.id, t), s = i ? gSt(i, g, t) : 'r', pr = i && i.price ? prBadge(i.price) : '';
+    return `<div class="row2" style="margin-top:4px"><span class="dotl" style="background:${DT[s]}"></span><span class="f1">${esc(t)}</span>${pr}<span class="m"><bdi class="ltr">${i ? (gEst(i, g) ? '≈' : '') + gTot(i, g) : 0}</bdi></span></div>`;
   }).join(''), colG(g));
 }
 function glC(gid, j, k, d) { const m = S.gg.find(x => x.id == gid).models[k], i = glGet(gid, S.tags.glass[j]); upd(() => { i.stock[m] = Math.max(0, (i.stock[m] || 0) + d); touch(i); }); if (d > 0) reqChk('أنتي كاس ' + m); }
