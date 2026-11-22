@@ -33,7 +33,7 @@ function memBadge(ram, cap) {
 }
 /* الأيقونات */
 const IC={home:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',tool:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',sl:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',back:'<path d="M5 12h14M12 5l7 7-7 7"/>'};
-Object.assign(IC,{lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M8 7v10M12 7v10M16 7v10"/>',mobile:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',box:'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12M3.3 7l8.7 5 8.7-5"/>',plug:'<path d="M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>',check:'<path d="M20 6 9 17l-5-5"/>',bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/>',tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',send:'<path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/>',cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>'});
+Object.assign(IC,{lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M8 7v10M12 7v10M16 7v10"/>',mobile:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',box:'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1.73-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1.73 1.73z"/><path d="M12 22V12M3.3 7l8.7 5 8.7-5"/>',plug:'<path d="M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>',check:'<path d="M20 6 9 17l-5-5"/>',bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/>',tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',send:'<path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/>',cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>'});
 Object.assign(IC,{search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'});
 const ic = n => (typeof CI != 'undefined' && CI[n]) ? `<svg class="ic ci" viewBox="0 0 24 24" aria-hidden="true"${typeof CIH != 'undefined' && CIH[n] ? ` style="--hue:${CIH[n]}"` : ''}>${CI[n]}</svg>` : `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
 const I = n => ic(n).replace('class="ic', 'class="ic s');
@@ -62,8 +62,8 @@ const MORE = [];                                // عناصر قائمة الم�
 const SRCH = [];                                // مصادر البحث: {k, l, run(n) -> [html]}
 const ST = { ver: 0, dirty: 0 };                // ver: يتغير مع كل حفظ (ذاكرة البحث) · dirty: يحتاج مزامنة
 /* ---------- الثوابت ---------- */
-const TG = { brand: 'الماركات', color: 'الألوان', cap: 'السعات', ram: 'RAM', gender: 'الجنس', kind: 'نوع الإكسسوار', conn: 'الموصل', tier: 'الفئات السعرية', glass: 'أنواع الزجاج', pw: 'القدرة (واط)', fault: 'أعطال الصيانة' };
-const PL = { del: 'الحذف', price: 'تعديل الأسعار', tags: 'إدارة الوسوم', fields: 'إدارة الحقول' };
+const TG = { brand: 'الماركات', color: 'الألوان', cap: 'السعات', ram: 'RAM', kind: 'نوع الإكسسوار', conn: 'الموصل', tier: 'الفئات السعرية', glass: 'أنواع الزجاج', pw: 'القدرة (واط)', fault: 'أعطال الصيانة', rpchk: 'حالة الاستلام والأمانات' };
+const PL = { del: 'الحذف', price: 'تعديل الأسعار', tags: 'إدارة الوسوم', fields: 'إدارة الحقول', trash: 'الاسترجاع من المحذوفات', stat: 'عرض الإحصائيات', rpDone: 'تعديل الصيانة المسلّمة (الأرشيف)', debt: 'إدارة الديون (تسجيل ودفع)' };
 const DT = { g: '#16a34a', y: '#d97706', r: '#dc2626' }, TX = { g: 'متوفر', y: 'قارب على النفاد', r: 'نفد' };
 const DL0 = { low: 1, gmin: 10, cl: 3, stale: 7, alk: 5 };
 const LM = [
@@ -72,16 +72,32 @@ const LM = [
   ['cl', 'بوشيط: «قارب النفاد» عند مجموع ≤ (الحد العام)'],
   ['stale', 'الجولة: يُعتبر الصنف غير مؤكد بعد (أيام)']
 ];
-/* ---------- البحث: توحيد الكتابة (عربي/إنجليزي/أرقام) ---------- */
-const AL={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g','كابل':'cable','كابلو':'cable','كابلات':'cable','câble':'cable','شاحن':'charger','شارجور':'charger','شارجر':'charger','شارجيور':'charger','chargeur':'charger','سماعة':'headset','سماعات':'headset','ecouteur':'headset','écouteur':'headset','اكوتور':'headset','ايربودز':'airpods','بوشيط':'pochette','بوشيت':'pochette','جراب':'pochette','انتي كاس':'glass','انتيكاس':'glass','زجاج':'glass','verre':'glass','فلاشة':'usb','افيشور':'شاشة','ميموار':'memorycard','باتري':'بطارية','تيربو':'charger','يو اس بي':'usb','جالاكسي':'galaxy','جلاكسي':'galaxy','لايتنينغ':'lightning'};
-const KS=Object.keys(AL).sort((a,b)=>b.length-a.length);
-const nz=s=>{s=String(s||'').toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/[\u064B-\u0652]/g,'');for(const k of KS)s=s.split(k).join(AL[k]);return s.replace(/[\s\-_]/g,'')};
+/* ---------- البحث: توحيد الكتابة + قاموس المترادفات (مدمج + إضافات المدير S.cfg.al) ---------- */
+const AL_BASE={'ايفون':'iphone','سامسونج':'samsung','سامسونغ':'samsung','شاومي':'xiaomi','ريدمي':'redmi','ريلمي':'realme','هواوي':'huawei','اوبو':'oppo','فيفو':'vivo','تكنو':'tecno','انفنكس':'infinix','انفينيكس':'infinix','ايتل':'itel','نوكيا':'nokia','بوكو':'poco','هونر':'honor','تايب سي':'typec','تايبسي':'typec','ميكرو':'micro','لايتننق':'lightning','لايتنينج':'lightning','باور بانك':'powerbank','باوربانك':'powerbank','كارت ميموري':'memorycard','ماكس':'max','برو':'pro','بلس':'plus','بلاس':'plus','الترا':'ultra','لايت':'lite','نوت':'note','سي':'c','اس':'s','تي':'t','اكس':'x','ايه':'a','جي':'g','كابل':'cable','كابلو':'cable','كابلات':'cable','câble':'cable','شاحن':'charger','شارجور':'charger','شارجر':'charger','شارجيور':'charger','chargeur':'charger','سماعة':'headset','سماعات':'headset','ecouteur':'headset','écouteur':'headset','اكوتور':'headset','ايربودز':'airpods','بوشيط':'pochette','بوشيت':'pochette','جراب':'pochette','انتي كاس':'glass','انتيكاس':'glass','زجاج':'glass','verre':'glass','فلاشة':'usb','افيشور':'شاشة','ميموار':'memorycard','باتري':'بطارية','تيربو':'charger','يو اس بي':'usb','جالاكسي':'galaxy','جلاكسي':'galaxy','لايتنينغ':'lightning'};
+const nzRaw = s => String(s || '').toLowerCase().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/[\u064B-\u0652]/g, '');
+let _alVer = -1, _alMap = AL_BASE, _alKeys = Object.keys(AL_BASE).sort((a, b) => b.length - a.length);
+function nzDict() {
+  if (_alVer === ST.ver) return;
+  _alVer = ST.ver;
+  const u = typeof S != 'undefined' && S && S.cfg && S.cfg.al;
+  if (!u || !Object.keys(u).length) { _alMap = AL_BASE; }
+  else {
+    _alMap = { ...AL_BASE };
+    for (const k in u) {
+      const nk = nzRaw(k).trim(); if (!nk) continue;
+      if (u[k] === '') delete _alMap[nk];
+      else _alMap[nk] = nzRaw(u[k]).trim();
+    }
+  }
+  _alKeys = Object.keys(_alMap).sort((a, b) => b.length - a.length);
+}
+const nz = s => { nzDict(); s = nzRaw(s); for (const k of _alKeys) s = s.split(k).join(_alMap[k]); return s.replace(/[\s\-_]/g, ''); };
 const NZC = new WeakMap();   // ذاكرة مؤقتة خارج البيانات (لا تُحفظ ولا تُزامَن)
 const nzOf = (o, fn) => { let c = NZC.get(o); if (!c || c.v !== ST.ver) { c = { v: ST.ver, s: nz(fn(o)) }; NZC.set(o, c); } return c.s; };
 /* ---------- الحالة ---------- */
 const DEF = {
   me: '', users: [], pin: '',
-  perm: { del: 'a', price: 'a', tags: 'a', fields: 'a' },
+  perm: { del: 'a', price: 'a', tags: 'a', fields: 'a', trash: 'a', stat: 'a', rpDone: 'a', debt: 'e' },
   cfg: { fs: 18, th: 'a:warm:ibm:lcd:0:100' },
   tags: {
     brand: ['Samsung', 'Xiaomi', 'Redmi', 'Realme', 'Oppo', 'Vivo', 'Tecno', 'Infinix', 'iPhone', 'Itel'],
@@ -94,7 +110,8 @@ const DEF = {
     tier: ['10', '15', '20', '25', '30', '40', '50'],
     glass: ['عادي', 'Super Full Glue', 'Privacy'],
     pw: ['10W', '18W', '20W', '25W', '33W', '45W', '65W'],
-    fault: ['تغيير شاشة', 'كونكتور الشحن', 'بطارية', 'مشكلة شبكة', 'سقط في الماء', 'صوت / مايك', 'سوفتوير', 'تغيير ظهر']
+    fault: ['تغيير شاشة', 'كونكتور الشحن', 'بطارية', 'مشكلة شبكة', 'سقط في الماء', 'صوت / مايك', 'سوفتوير', 'تغيير ظهر'],
+    rpchk: ['شاشة مكسورة', 'مطفأ لا يشتغل', 'ترك شريحة SIM', 'ترك كارت ميموري', 'معه بوشيط', 'بدون غطاء', 'البصمة لا تعمل', 'بدون SIM']
   },
   items: [], rp: [], trash: [], req: [], gg: [], guide: [], ag: [], used: [], debt: [], tp: [], fields: []
 };
@@ -106,6 +123,9 @@ function load(chk) {
   return { ...d, ...o, tags: { ...d.tags, ...o.tags }, perm: { ...d.perm, ...o.perm }, cfg: { ...d.cfg, ...o.cfg } };
 }
 let S = load(1);
+const shopName = () => (S && S.cfg && S.cfg.shop && String(S.cfg.shop).trim()) || 'محل عزيز';
+const offDays = () => (S && S.cfg && Array.isArray(S.cfg.offDays)) ? S.cfg.offDays : ((S && S.cfg && S.cfg.rc && Array.isArray(S.cfg.rc.nd)) ? S.cfg.rc.nd : []);
+const isOffDay = (d = new Date()) => offDays().includes(d.getDay());
 let V = { v: 'home' }, Q = '', QP = 0, SH = false, SHR = null, ARM = 0, TT;
 /* ---------- مخازن IndexedDB (الصور + النسخة التلقائية) ---------- */
 function kvStore(db, store) {
@@ -259,7 +279,7 @@ addEventListener('popstate', e => {
 });
 function startHistory() { history.replaceState({ root: 1 }, ''); history.pushState({ V }, ''); }
 /* ---------- النافذة السفلية ---------- */
-function sheetOpen(res) { SH = true; SHR = { res, val: null }; $('ov').hidden = false; history.pushState({ V, sh: 1 }, ''); SHD = 0; SHE = draftFields().every(e => !e.value); draftRestore(); }
+function sheetOpen(res) { SH = true; SHR = { res, val: null }; $('ov').hidden = false; history.pushState({ V, sh: 1 }, ''); SHD = 0; SHE = draftIsNew(draftFields()); draftRestore(); }
 function hideSheet() {
   HK.hide.forEach(f => { try { f(); } catch (e) { } });
   sugClose(); clearTimeout(DRT);
@@ -268,9 +288,10 @@ function hideSheet() {
 }
 const finish = v => { if (!SHR) return; SHR.val = v; draftClear(); history.back(); };
 /* ---------- مسودة النافذة: ما كتبته لا يضيع إن أُغلقت النافذة بالخطأ أو انقطع التطبيق ---------- */
-let SHD = 0, SHE = 0, SHARM = 0, DRT = 0;   // SHD: كُتب شيء · SHE: فُتحت فارغة (إدخال جديد) · SHARM: تنبيه الرجوع
-const DRK = 'shopDraft';
+let SHD = 0, SHE = 0, SHARM = 0, DRT = 0;   // SHD: كُتب شيء · SHE: فُتحت كإدخال جديد · SHARM: تنبيه الرجوع
+const DRK = 'shopDraft', DR_DEF = ['pcnt', 'cq', 'pa', 'rq', 'gd_f', 'r_war'];
 const draftFields = () => [...($('sh') ? $('sh').querySelectorAll('input[id],textarea[id]') : [])].filter(e => !['hidden', 'password', 'file', 'checkbox', 'radio', 'button', 'range'].includes(e.type));
+const draftIsNew = F => { const nf = F.filter(e => !DR_DEF.includes(e.id)); return nf.length > 0 && nf.every(e => !e.value); };
 const draftKey = F => (V && V.v || '') + '|' + F.map(e => e.id).sort().join(',');
 function draftSave() {
   if (!SH || !SHE) return;   // نحفظ مسودة نماذج الإدخال الجديد فقط، لا نماذج تعديل عنصر موجود
@@ -407,10 +428,11 @@ function del(coll, id, label) {
     if (!y) return;
     const i = S[coll].findIndex(x => x.id == id); if (i < 0) return;
     const o = S[coll].splice(i, 1)[0], t = { id: uid(), coll, obj: o, label, t: Date.now() };
-    S.trash.push(t); save(); render(); toast('تم الحذف', () => restore(t.id));
+    S.trash.push(t); save(); render(); toast('تم الحذف', () => restore(t.id, 1));
   });
 }
-function restore(id) {
+function restore(id, fromUndo) {
+  if (!fromUndo && !can('trash')) return toast('الاسترجاع من المحذوفات للمدير فقط');
   const t = S.trash.find(x => x.id == id); if (!t) return;
   S.trash = S.trash.filter(x => x != t);
   if (t.coll == 'used' && t.obj && t.obj.repOf) {

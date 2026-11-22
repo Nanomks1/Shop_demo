@@ -6,12 +6,13 @@
   const RTABS = [['all', 'الشامل'], ['topup', 'التعبئة'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['pochette', 'البوشيط'], ['acc', 'الإكسسوارات']];
   const RSEC = { topup: ['التعبئة', '📶 التعبئة'], phones: ['الهواتف الناقصة', '📱 الهواتف'], glass: ['الأنتي كاس', '🛡️ الأنتي كاس'], pochette: ['البوشيط', '🅿️ البوشيط'], acc: ['الإكسسوارات', '🔌 الإكسسوارات'] };
   const SCOL = { topup: '#0891b2', phones: '#2563eb', glass: '#0d9488', pochette: '#db2777', acc: '#7c3aed', rpp: '#d97706', req: '#64748b' };
-  const RD = { lv: 'a', tt: 'تقرير محل عزيز', dt: 1, st: 1, pr: 0, rq: 1, pn: 1, em: 0, ft: '', hs: [], rr: 0, rd: 0, rm: 1, nd: [], rh: 16, qb: 0 };
-  const rcf = () => ({ ...RD, ...(S.cfg.rc || {}) });
+  const RD = { lv: 'a', dt: 1, st: 1, pr: 0, rq: 1, pn: 1, em: 0, ft: '', hs: [], rr: 0, rd: 0, rm: 1, nd: [], rh: 16, qb: 0 };
+  const rcf = () => ({ ...RD, tt: 'تقرير ' + shopName(), ...(S.cfg.rc || {}) });
   const okEdit = () => isAdmin() || !S.users.length;
   const rSecs = m => m == 'all' ? ['topup', 'phones', 'glass', 'pochette', 'acc'] : [m];
   window.reportSectionFilter = 'all'; window.RLV = null;
   window.rcSet = o => { if (!okEdit()) return toast('للمدير فقط'); upd(() => { S.cfg.rc = { ...(S.cfg.rc || {}), ...o }; }); };
+  window.rcReset = () => { if (!okEdit()) return toast('للمدير فقط'); upd(() => { delete S.cfg.rc; }); };
   window.rcHide = k => { const h = rcf().hs.slice(), i = h.indexOf(k); i < 0 ? h.push(k) : h.splice(i, 1); rcSet({ hs: h }); };
   window.rcTt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عنوان التقرير', [{ k: 't', l: 'العنوان (فارغ = بدون عنوان)', v: rcf().tt }]).then(v => { if (v) rcSet({ tt: v.t.trim() }); }); };
   window.rcFt = () => { if (!okEdit()) return toast('للمدير فقط'); ask('عبارة آخر التقرير', [{ k: 't', l: 'مثال: شكراً — فارغ = بدون عبارة', v: rcf().ft }]).then(v => { if (v) rcSet({ ft: v.t.trim() }); }); };
@@ -46,7 +47,8 @@
       if (typeof reqChk == 'function') reqChk(i.brand + ' ' + i.name);
     } else if (fnName == 'buyC') {
       const i = find(arg); if (!i) return;
-      commit('تم شراء بوشيط ' + i.name + ' (+3)', () => csBuyApply(i, 3));
+      const q = lim('csBuy');
+      commit('تم شراء بوشيط ' + i.name + ' (+' + q + ')', () => csBuyApply(i, q));
       if (typeof reqChk == 'function') reqChk('بوشيط ' + i.name);
     } else if (fnName == 'buyA') {
       const i = find(arg); if (!i) return;
@@ -78,11 +80,16 @@
   };
   const lines = () => { const c = rcf(); let L = invLines(!!c.pn).concat(typeof tpLines == 'function' ? tpLines() : []); if ((window.RLV || c.lv) == 'r') L = L.filter(x => x[2] == 'r'); return L; };
   const secs = m => rSecs(m).filter(k => !rcf().hs.includes(k));
+  window.repNeedCount = () => {
+    const L = invLines(false).concat(typeof tpLines == 'function' ? tpLines() : []).filter(x => secs('all').some(k => RSEC[k][0] == x[0]));
+    const rpp = typeof rpPartLines == 'function' ? rpPartLines().length : 0;
+    return L.length + rpp;
+  };
   const dstr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); };
   const rpLine = () => {
     const i = S.rp.filter(x => x.st == 'in').length, d = S.rp.filter(x => x.st == 'rd');
     const ok = d.filter(x => x.res != 'fail' && x.res != 'ref').length, nf = d.length - ok;
-    const late = d.filter(x => Date.now() - (x.t1 || x.t0) > 15 * 864e5).length;
+    const late = d.filter(x => Date.now() - (x.t1 || x.t0) > lim('rpLate') * 864e5).length;
     return i || d.length ? 'الصيانة: ' + i + ' في المحل · ' + ok + ' جاهز للتسليم' + (nf ? ' · ' + nf + ' لم يصلح' : '') + (late ? ' (منسي ' + late + ')' : '') : '';
   };
   const dbLine = () => { const n = (S.debt || []).filter(x => !x.paid).length; return n ? 'ديون مفتوحة: ' + n : ''; };
@@ -99,7 +106,7 @@
   const blocks = mode => {
     const c = rcf(), L = lines(), out = [];
     secs(mode).forEach(k => {
-      const ls = L.filter(x => x[0] == RSEC[k][0]).sort((a, b) => (a[2] == 'r' ? 0 : 1) - (b[2] == 'r' ? 1 : 1));
+      const ls = L.filter(x => x[0] == RSEC[k][0]).sort((a, b) => (a[2] == 'r' ? 0 : 1) - (b[2] == 'r' ? 0 : 1));
       out.push({ k, t: RSEC[k][1], ls: ls.map(x => ({ r: x[2] == 'r', s: k == 'topup' ? x[1] : fmtT(x), x })) });
     });
     if (mode == 'all' && typeof rpPartLines == 'function') {
@@ -229,13 +236,12 @@
     return { t: 'التقرير اليومي', h };
   };
   /* ---------- إعدادات التقرير ---------- */
-  const yn = v => v ? 'نعم' : 'لا', tog = (l, k) => swRow(l, 'rcSet({' + k + ':' + (rcf()[k] ? 0 : 1) + '})', !!rcf()[k]);
-  window.rcRh = () => { if (!okEdit()) return toast('للمدير فقط'); ask('ساعة بدء التذكير', [{ k: 'h', l: 'من 0 إلى 23 (مثال: 16)', v: String(rcf().rh) }]).then(v => { const h = v && parseInt(v.h, 10); if (h >= 0 && h <= 23) rcSet({ rh: h }); }); };
-  window.rcNd = i => { const n = rcf().nd.slice(), k = n.indexOf(i); k < 0 ? n.push(i) : n.splice(k, 1); rcSet({ nd: n }); };
+  const tog = (l, k) => swRow(l, 'rcSet({' + k + ':' + (rcf()[k] ? 0 : 1) + '})', !!rcf()[k]);
+  window.rcRh = () => { if (!okEdit()) return toast('للمدير فقط'); ask('ساعة بدء التذكير', [{ k: 'h', l: 'من 0 إلى 23 (مثال: 16)', v: String(rcf().rh) }]).then(v => { const h = v && parseInt(dg(v.h), 10); if (h >= 0 && h <= 23) rcSet({ rh: h }); }); };
   VW.st_rep = () => {
-    const c = rcf();
+    const c = rcf(), od = offDays();
     return {
-      t: 'إعدادات التقرير', h: '<p class="m">هذه الإعدادات تحدد ما يظهر في التقرير ونصّ الواتساب، وتنطبق على كل الأجهزة.</p>'
+      t: 'التقرير اليومي', h: '<p class="m">هذه الإعدادات تحدد ما يظهر في التقرير ونصّ الواتساب، وتنطبق على كل الأجهزة.</p>'
         + '<h3>استلام السلعة من التقرير</h3>'
         + tog('زر (✓) في التقرير: شراء سريع بضغطة واحدة', 'qb')
         + '<p class="m" style="margin:2px 8px 12px">عند تفعيله: ضغطة واحدة على (✓) تعتمد الكمية الافتراضية فوراً، ويظهر بجانبه زر (#) لمن أراد كتابة عدد مخصص.</p>'
@@ -243,11 +249,10 @@
         + '<h3>ما الذي يُدرج</h3>' + tog('قائمة الهواتف المتوفرة', 'st') + tog('أسعار الهواتف المتوفرة', 'pr') + tog('طلبات الزبائن', 'rq') + tog('ملاحظات البوشيط (باقي / خاصنا)', 'pn') + tog('إظهار الأقسام التي لا نقص فيها', 'em')
         + '<h3>أسطر إضافية في التقرير</h3>' + tog('سطر الصيانة (في المحل / جاهز / لم يصلح / منسي)', 'rr') + tog('سطر الديون المفتوحة', 'rd')
         + '<h3>تذكير الإرسال</h3>' + tog('تذكير في الرئيسية إن لم يُرسل التقرير اليوم', 'rm') + row('ساعة بدء التذكير', 'rcRh()', c.rh + ':00')
-        + '<p class="m">أيام بلا تذكير:</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">' + ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((n, i) => `<button class="tag ${c.nd.includes(i) ? 'on' : ''}" onclick="rcNd(${i})">${n}</button>`).join('') + '</div>'
-        + '<h3>الجولة اليومية</h3>' + row('يُعتبر الصنف غير مؤكد بعد (أيام)', "limEd('stale')", lim('stale') + ' يوم')
+        + row('أيام عطلة المحل (بلا تذكير)', "go('st_shop')", od.length ? arCnt(od.length, 'يوم', 'يومان', 'أيام') : 'لا عطلة')
         + '<h3>المستوى الافتراضي</h3><div style="display:flex;gap:6px;margin-bottom:10px"><button class="tag ' + (c.lv == 'a' ? 'on' : '') + '" onclick="rcSet({lv:\'a\'})">النافد وقارب النفاد</button><button class="tag ' + (c.lv == 'r' ? 'on' : '') + '" onclick="rcSet({lv:\'r\'})">النافد فقط</button></div>'
         + '<h3>الأقسام الظاهرة في التقرير</h3>' + RTABS.filter(([k]) => k != 'all').map(([k, l]) => swRow(l, "rcHide('" + k + "')", !c.hs.includes(k))).join('')
-        + `<div style="margin-top:14px"><button class="btn s" onclick="rcSet({lv:'a',tt:'تقرير محل عزيز',dt:1,st:1,pr:0,rq:1,pn:1,em:0,ft:'',hs:[],rr:0,rd:0,rm:1,nd:[],rh:16,qb:0})">إرجاع الإعدادات الافتراضية</button></div>`
+        + `<div style="margin-top:14px"><button class="btn s" onclick="rcReset()">إرجاع الإعدادات الافتراضية</button></div>`
     };
   };
   window.rcSkip = () => sure('لن يُرسل تقرير اليوم؟ سيختفي التذكير حتى الغد.', 'نعم، لا تقرير اليوم', false).then(ok => {
@@ -257,8 +262,8 @@
   });
   HOME.top.push(() => {
     const c = rcf(), d = new Date();
-    if (!c.rm || (typeof noRem == 'function' && noRem()) || sentToday() || c.nd.includes(d.getDay()) || d.getHours() < c.rh || S.cfg.rx == d.toDateString()) return '';
+    if (!c.rm || (typeof noRem == 'function' && noRem()) || sentToday() || isOffDay(d) || d.getHours() < c.rh || S.cfg.rx == d.toDateString()) return '';
     return `<div class="card row2">${I('alert')}<span class="f1">لم يُرسل تقرير اليوم بعد</span><button class="btn sm" onclick="go('rep')">افتح التقرير</button><button class="btn s sm" aria-label="لا تقرير اليوم" onclick="rcSkip()">✕</button></div>`;
   });
-  MORE.push({ g: 'rep', o: 10, l: 'إعدادات التقرير', d: 'ما يظهر في التقرير ونص الواتساب، الشراء السريع، وتذكير الإرسال', fn: "go('st_rep')" });
+  MORE.push({ g: 'work', o: 20, l: 'التقرير اليومي', d: 'ما يظهر في التقرير ونص الواتساب، الشراء السريع، وتذكير الإرسال', fn: "go('st_rep')" });
 })();

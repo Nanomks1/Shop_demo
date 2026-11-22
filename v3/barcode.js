@@ -98,7 +98,7 @@ function bcPickCsVar(it) {
       const lbl = [v.g, v.c].filter(Boolean).join(' · ') || 'عام';
       commit(`بيع سريع (−1): بوشيط ${it.name} (${lbl})`, () => { v.n = Math.max(0, v.n - 1); touch(it); S.cfg.bcQuick = Date.now(); });
     });
-  }, 180);
+  }, 350);
 }
 /* تنفيذ البيع السريع (-1) عند مسح باركود صنف واحد موجود */
 function bcQuickSell(it) {

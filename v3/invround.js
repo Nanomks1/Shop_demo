@@ -131,8 +131,13 @@ function jlFiltered() {
   const allMode = V.jm == 'all', sec = jlCurSec(), q = nz(V.jq || '');
   return rnd(allMode).filter(i => (sec == 'all' || jlSecOf(i) == sec) && (!q || nz(jlTextOf(i)).includes(q)));
 }
+function jlListHtml() {
+  const L = jlFiltered(), limN = V.jlim || 40, a = L.slice(0, limN), rem = L.length - a.length;
+  const more = rem > 0 ? `<button type="button" class="btn s" onclick="V.jlim=(V.jlim||40)+40;jlRefreshList()">عرض المزيد (+${Math.min(40, rem)} من ${rem} متبقية)</button>` : '';
+  return { a, html: a.map(jlCompactRow).join('') + more };
+}
 function rCfAll() {
-  const L = jlFiltered().slice(0, 40);
+  const L = jlFiltered().slice(0, V.jlim || 40);
   if (!L.length) return;
   vib(40);
   commit('تم تأكيد ' + L.length + ' صنف في الجرد', () => {
@@ -153,23 +158,23 @@ function rCfAll() {
 }
 const JL_TABS = [['all', 'الكل'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['case', 'البوشيط'], ['acc', 'الإكسسوارات'], ['tp', 'التعبئة']];
 function jlRefreshList() {
-  const L = jlFiltered(), a = L.slice(0, 40), box = $('jl_list'), btn = $('jl_cf_all');
+  const { a, html } = jlListHtml(), box = $('jl_list'), btn = $('jl_cf_all');
   if (btn) { btn.hidden = !a.length; btn.innerHTML = `${I('check')} تأكيد كل القائمة الظاهرة (${a.length})`; }
-  if (box) box.innerHTML = a.map(jlCompactRow).join('') || emptyBox('كل الأصناف في هذا القسم مؤكدة حديثاً ✓');
+  if (box) box.innerHTML = html || emptyBox('كل الأصناف في هذا القسم مؤكدة حديثاً ✓');
 }
 VW.jl = () => {
   const allMode = V.jm == 'all', sec = jlCurSec(), staleCnt = rnd(false).length;
-  const L = jlFiltered(), a = L.slice(0, 40);
+  const { a, html } = jlListHtml();
   return {
     t: 'الجرد والجولة اليومية',
     h: `<div class="jl-sum-grid">${jlSecSummary(sec, staleCnt)}</div>`
       + `<div class="sec-panel">`
-      + `<div class="sec-tags">${JL_TABS.map(([k, l]) => `<button class="tag ${sec == k ? 'on' : ''}" onclick="V.js='${k}';delete V.jk;render()">${l}</button>`).join('')}</div>`
-      + `<div class="sec-toolbar"><div class="seg-group" style="width:100%"><button type="button" class="seg-btn ${!allMode ? 'on' : ''}" onclick="V.jm='old';render()">يحتاج تأكيداً (${staleCnt})</button><button type="button" class="seg-btn ${allMode ? 'on' : ''}" onclick="V.jm='all';render()">جرد شامل للقسم</button></div></div>`
-      + `<input style="margin:8px 0 0" placeholder="ابحث داخل الجرد: موديل أو ماركة..." value="${esc(V.jq || '')}" oninput="V.jq=this.value;jlRefreshList()">`
+      + `<div class="sec-tags">${JL_TABS.map(([k, l]) => `<button class="tag ${sec == k ? 'on' : ''}" onclick="V.js='${k}';delete V.jk;V.jlim=40;render()">${l}</button>`).join('')}</div>`
+      + `<div class="sec-toolbar"><div class="seg-group" style="width:100%"><button type="button" class="seg-btn ${!allMode ? 'on' : ''}" onclick="V.jm='old';V.jlim=40;render()">يحتاج تأكيداً (${staleCnt})</button><button type="button" class="seg-btn ${allMode ? 'on' : ''}" onclick="V.jm='all';V.jlim=40;render()">جرد شامل للقسم</button></div></div>`
+      + `<input style="margin:8px 0 0" placeholder="ابحث داخل الجرد: موديل أو ماركة..." value="${esc(V.jq || '')}" oninput="V.jq=this.value;V.jlim=40;jlRefreshList()">`
       + `</div>`
       + `<button id="jl_cf_all" class="btn s" ${a.length ? '' : 'hidden'} onclick="rCfAll()">${I('check')} تأكيد كل القائمة الظاهرة (${a.length})</button>`
-      + `<div id="jl_list">${a.map(jlCompactRow).join('') || emptyBox('كل الأصناف في هذا القسم مؤكدة حديثاً ✓', 'اضغط «جرد شامل للقسم» في الأعلى إن أردت مراجعة كل المخزون')}</div>`
+      + `<div id="jl_list">${html || emptyBox('كل الأصناف في هذا القسم مؤكدة حديثاً ✓', 'اضغط «جرد شامل للقسم» في الأعلى إن أردت مراجعة كل المخزون')}</div>`
   };
 };
 HOME.after.push(() => {

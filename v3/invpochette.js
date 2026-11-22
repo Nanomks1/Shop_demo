@@ -3,7 +3,7 @@
    كل لون دائرة بعدده، وحدّها يلوَّن بالحالة (أحمر نفد / برتقالي قارب).
    يُحمَّل بعد invglass.js.
    ============================================================ */
-/* ---------- ألوان الدوائر (الأسماء تُطابَق بعد التطبيع nz) ---------- */
+/* ---------- ألوان الدوائر (الأسماء تُطابَق بعد التطبيع nz + تخصيصات المدير S.cfg.colHex) ---------- */
 const CS_HEX = Object.fromEntries(Object.entries({
   'أسود': '#0a0a0a', 'black': '#0a0a0a', 'noir': '#0a0a0a',
   'أبيض': '#f8fafc', 'white': '#f8fafc', 'blanc': '#f8fafc',
@@ -30,7 +30,10 @@ const CS_EMO = Object.fromEntries(Object.entries({
   'أحمر': '🔴', 'red': '🔴', 'rouge': '🔴', 'وردي': '💗', 'pink': '💗', 'rose': '💗',
   'بنفسجي': '🟣', 'ليلكي': '🟣', 'violet': '🟣', 'بني': '🟤', 'بيج': '🟤', 'brown': '🟤', 'marron': '🟤', 'beige': '🟤'
 }).map(([k, v]) => [nz(k), v]));
-const csHex = c => CS_HEX[nz(c)] || '';
+const csHex = c => {
+  const k = nz(c), u = typeof S != 'undefined' && S && S.cfg && S.cfg.colHex;
+  return (u && (u[c] || u[k])) || CS_HEX[k] || '';
+};
 const csEmo = c => CS_EMO[nz(c)] || '🔹';
 const csBg = c => { const h = csHex(c); return h == 'pat' ? 'repeating-conic-gradient(#cbd5e1 0 25%,#f8fafc 0 50%) 50%/12px 12px' : (h || '#64748b'); };
 function csInk(c) {
@@ -131,7 +134,7 @@ function csX(id, vid) {
   commit('تم حذف اللون', () => { r.v = r.v.filter(x => x.id != vid); touch(r); });
   csSheetR(id);
 }
-function csDel(id) { del('items', id, find(id).name); }
+function csDel(id) { const i = find(id); if (i) del('items', id, i.name); }
 function csClrNeed(id) {
   const i = find(id); if (!i || !i.need) return;
   commit('تم مسح تنبيه «خاصنا»', () => { i.need = ''; i.by = S.me; });
@@ -156,7 +159,7 @@ function csAddView(id) {
   const i = id ? find(id) : null, nm = i ? i.name : CSD.name; if (!nm) return;
   fsInit([['color', 'اللون']], {}); FS.sugC = () => colSugCs(id);
   $('sh').innerHTML = `<div class="bar"></div><h3>${esc(nm)} — إضافة لون</h3><div id="cc"></div>`
-    + `<div class="row2" style="gap:8px"><label style="flex:1">العدد<input id="cq" type="number" value="${i ? 1 : 3}"></label>${i ? '' : `<label style="flex:1">السعر (اختياري)<input id="cpr" type="tel" placeholder="مثال: 30"></label>`}</div>`
+    + `<div class="row2" style="gap:8px"><label style="flex:1">العدد<input id="cq" type="number" value="${i ? 1 : lim('csBuy')}"></label>${i ? '' : `<label style="flex:1">السعر (اختياري)<input id="cpr" type="tel" placeholder="مثال: 30"></label>`}</div>`
     + `<div class="acts"><button class="btn s" onclick="${i ? `csSheetR('${i.id}')` : 'finish(null)'}">${i ? 'رجوع' : 'إلغاء'}</button><button class="btn s" onclick="csAddOk(1)">+ لون آخر</button><button class="btn" onclick="csAddOk(0)">حفظ</button></div>`;
   chipsR();
 }
@@ -215,7 +218,7 @@ function csBuyApply(i, n) {
 function buyC(id) {
   const i = find(id); if (!i) return;
   const bad = (csN(i).v || []).filter(x => csVSt(i, x) != 'g'), lbl = bad.length ? bad.map(x => x.c || 'عام').join(' + ') : 'كل الألوان';
-  qty(`بوشيط ${i.name} (${lbl})`, 3, n => { csBuyApply(i, n); reqChk('بوشيط ' + i.name, 1); });
+  qty(`بوشيط ${i.name} (${lbl})`, lim('csBuy'), n => { csBuyApply(i, n); reqChk('بوشيط ' + i.name, 1); });
 }
 /* تحويل البيانات القديمة عند الإقلاع (يُحفظ مع أول حفظ عادي) */
 S.items.forEach(i => { if (i.sec == 'case') csN(i); });

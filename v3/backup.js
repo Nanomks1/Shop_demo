@@ -1,8 +1,7 @@
 /* ============================================================
    backup.js — النسخ الاحتياطي والاستعادة والنسخ التلقائي
-   يُحمَّل بعد users.js وقبل app.js.
+   يُحمَّل بعد users.js وقبل adminset.js وapp.js.
    ============================================================ */
-
 /* ---------- النسخ الاحتياطي ---------- */
 const NOADM = { t: 'للمدير فقط', h: '<p class="m">هذه الصفحة للمدير فقط.</p>' };
 async function bkKey(pin) {
@@ -34,7 +33,6 @@ async function makeSafeBackupJson(pinOrHash) {
   delete copy.pin; if (copy.cfg) delete copy.cfg.lk;
   return JSON.stringify(copy);
 }
-
 let AB_T = 0, AB_FH = null;
 function bkCopy() { return JSON.parse(JSON.stringify(S, function (k, v) { return (k === 'img' && typeof v === 'string' && v.startsWith('data:') && this.id) ? 'idb:' + this.id : v; })); }
 const bkSize = d => (d.items || []).length + (d.rp || []).length + (d.gg || []).length + (d.tp || []).length + (d.used || []).length + (d.debt || []).length;
@@ -69,7 +67,6 @@ async function linkAutoFile() {
 AUTOBK.get('fh').then(async h => {
   if (h && h.queryPermission && (await h.queryPermission({ mode: 'readwrite' })) === 'granted') AB_FH = h;
 }).catch(() => {});
-
 function restSnap(key) {
   if (!isAdmin()) return toast('للمدير فقط');
   AUTOBK.get(key).then(rec => {
@@ -139,8 +136,8 @@ function abStatus() {
     const el = $('st_ab'); if (!el) return;
     const old = !r || Date.now() - r.at > 2 * 864e5;
     el.innerHTML = r ? (old ? I('alert') + ' آخر نسخة تلقائية قديمة: <bdi>' + fd(r.at) + '</bdi>' : I('check') + ' آخر نسخة تلقائية: <bdi>' + fd(r.at) + '</bdi>') : I('alert') + ' لا توجد نسخة تلقائية بعد';
-    if (old) el.style.color = '#dc2626';
-  }).catch(() => { const el = $('st_ab'); if (el) { el.innerHTML = I('alert') + ' تعذر قراءة النسخ التلقائية'; el.style.color = '#dc2626'; } });
+    el.classList.toggle('rs', old);
+  }).catch(() => { const el = $('st_ab'); if (el) { el.innerHTML = I('alert') + ' تعذر قراءة النسخ التلقائية'; el.classList.add('rs'); } });
 }
 VW.st_bk = () => {
   if (!isAdmin()) return NOADM;
@@ -153,10 +150,8 @@ VW.st_bk = () => {
       + '<button class="btn s" onclick="go(\'st_snap\')">النسخ التلقائية الداخلية (آخر 7 أيام)</button>'
       + '<button class="btn s" onclick="$(\'rst_f\').click()">استعادة من ملف خارجي</button><input id="rst_f" type="file" accept=".json,application/json" hidden onchange="RST(this.files[0]);this.value=\'\'">'
       + `<h3>المساحة المستعملة</h3><div class="card"><div class="row2"><b>${p}%</b><span class="m">${(n / 1e6).toFixed(1)} مليون حرف من نحو 5</span></div><div class="meter"><div style="width:${Math.min(100, p)}%;background:${p > 70 ? '#dc2626' : 'var(--p)'}"></div></div>${p > 70 ? '<p class="m">اقتربت المساحة من الامتلاء. خذ نسخة احتياطية الآن.</p>' : ''}</div>`
-      + `<div class="card"><b>خزنة الصور (IndexedDB)</b><div class="m">صور الصيانة والمستعمل المحفوظة خارج ذاكرة المتصفح الضيقة: <b>${Object.keys(IMG).length}</b> (لا تستهلك من حد الـ 5 ميجابايت).</div></div>`
       + '<div id="st_ab" class="m" style="margin:8px 0"></div>'
-      + (er.length ? '<h3>آخر الأخطاء (للتشخيص)</h3>' + er.map(x => `<div class="m">${esc(x)}</div>`).join('') : '')
+      + row('حالة النظام والتشخيص وسجل الأخطاء', "go('st_diag')", er.length ? er.length + ' خطأ' : 'سليم')
     , a: abStatus
   };
 };
-

@@ -159,7 +159,7 @@ function usDel(id) {
     const repIt = o.repOf ? S.items.find(x => x.id == o.repOf) : null;
     if (repIt) { repIt.cnt += 1; repIt.by = S.me; }
     S.trash.push(t); save(); render();
-    toast('تم الحذف', () => restore(t.id));
+    toast('تم الحذف', () => restore(t.id, 1));
   });
 }
 function usZoom(id) {
@@ -252,9 +252,14 @@ async function dbtSave(rec, v) {
   if (rec.rp) { const r = S.rp.find(x => x.id == rec.rp); if (r) r.debt = o.id; }
   save(); render(); toast('تم تسجيل الدين', () => { S.debt = S.debt.filter(x => x.id != o.id); if (rec.rp) { const r = S.rp.find(x => x.id == rec.rp); if (r) delete r.debt; } });
 }
-const dbtAdd = () => dbtForm({}).then(v => dbtSave({}, v));
-function dbtMore(id) { const d = S.debt.find(x => x.id == id); if (!d) return; const rec = { name: d.name, tel: d.tel || '' }; dbtForm(rec).then(v => dbtSave(rec, v)); }
+const dbtAdd = () => !can('debt') ? toast('إدارة الديون للمدير فقط') : dbtForm({}).then(v => dbtSave({}, v));
+function dbtMore(id) {
+  if (!can('debt')) return toast('إدارة الديون للمدير فقط');
+  const d = S.debt.find(x => x.id == id); if (!d) return;
+  const rec = { name: d.name, tel: d.tel || '' }; dbtForm(rec).then(v => dbtSave(rec, v));
+}
 function dbtFromRp(id) {
+  if (!can('debt')) return toast('إدارة الديون للمدير فقط');
   const r = S.rp.find(x => x.id == id); if (!r) return;
   const rest = Math.max(0, xn(r.cap) - xn(r.dep) - xn(r.paid));
   const rec = { name: r.name, tel: r.tel, amt: rest ? String(rest) : '', why: 'باقي إصلاح ' + (r.dev || ''), rp: r.id };
@@ -267,9 +272,10 @@ const dbtRp = r => {
     const rem = dRem(ld), done = ld.paid || rem <= 0;
     return `<div class="${done ? 'rp-ok-txt' : 'rs'}" style="margin-top:4px">${I('wallet')} ${done ? 'سُدِّد باقي الإصلاح' : 'سُجّل الباقي كدين (' + rem + ' درهم)'}</div>`;
   }
-  return r.res == 'ok' && xn(r.cap) > (xn(r.dep) + xn(r.paid)) ? `<div class="sub"><button class="btn s sm" onclick="dbtFromRp('${r.id}')">${I('wallet')} تسجيل الباقي كدين</button></div>` : '';
+  return can('debt') && r.res == 'ok' && xn(r.cap) > (xn(r.dep) + xn(r.paid)) ? `<div class="sub"><button class="btn s sm" onclick="dbtFromRp('${r.id}')">${I('wallet')} تسجيل الباقي كدين</button></div>` : '';
 };
 function dbtPay(id) {
+  if (!can('debt')) return toast('إدارة الديون للمدير فقط');
   const d = S.debt.find(x => x.id == id); if (!d) return;
   const rem = dRem(d);
   ask('دفعة من ' + d.name, [{ k: 'a', l: 'المبلغ المدفوع (الباقي ' + rem + ')', t: 'tel', v: String(rem) }], 'تسجيل').then(v => {
@@ -282,6 +288,7 @@ function dbtPay(id) {
   });
 }
 function dbtPayAll(id) {
+  if (!can('debt')) return toast('إدارة الديون للمدير فقط');
   const d0 = S.debt.find(x => x.id == id); if (!d0) return;
   const list = dbtSameCust(d0).sort((a, b) => a.at - b.at);
   const tot = list.reduce((s, x) => s + dRem(x), 0);
@@ -309,7 +316,9 @@ function dbtWA(id) {
     const details = all.length > 1
       ? `إجمالي المبلغ المتبقي هو ${tot} درهم (${all.map(x => dRem(x) + ' درهم: ' + (x.why || 'دين')).join(' + ')})`
       : `المبلغ المتبقي هو ${rem} درهم${d.why ? ' (' + d.why + ')' : ''}`;
-    const msg = `السلام عليكم ${d.name}، نتمنى أن تكونوا بخير.\nتذكير ودي بخصوص الحساب: ${details}.\n— محل عزيز`;
+    const msg = typeof waMsg == 'function'
+      ? waMsg('debt', { الزبون: d.name, التفاصيل: details })
+      : `السلام عليكم ${d.name}، نتمنى أن تكونوا بخير.\nتذكير ودي بخصوص الحساب: ${details}.\n— ${shopName()}`;
     location.href = 'https://wa.me/' + ph + '?text=' + encodeURIComponent(msg);
   };
   if (waNum(d.tel).length >= 8) return send(d.tel);
@@ -320,17 +329,20 @@ function dbtWA(id) {
 }
 function dbtDel(id) { const d = S.debt.find(x => x.id == id); if (d) del('debt', id, 'دين ' + d.name); }
 const dbtCard = d => {
-  const rem = dRem(d), open = !d.paid, same = open ? dbtSameCust(d) : [], pLen = (d.pays || []).length;
+  const rem = dRem(d), open = !d.paid, same = open ? dbtSameCust(d) : [], pLen = (d.pays || []).length, cd = can('debt');
   const totSame = same.length > 1 ? same.reduce((s, x) => s + dRem(x), 0) : 0;
   const origSub = open && (rem < xn(d.amt) || pLen)
     ? `<span class="dbt-orig">من أصل <bdi class="ltr">${esc(d.amt)} DH</bdi>${pLen ? ' · ' + arCnt(pLen, 'دفعة', 'دفعتان', 'دفعات', 'دفعة') : ''}</span>`
     : (d.paid ? `<span class="dbt-orig">سُدِّد <bdi class="ltr">${typeof fdS == 'function' ? fdS(d.paid) : fd(d.paid)}</bdi></span>` : '');
+  const acts = (open ? `${cd ? `<button class="btn sm" onclick="dbtPay('${d.id}')">تسجيل دفعة</button>${same.length > 1 ? `<button class="btn s sm" onclick="dbtPayAll('${d.id}')">دفعة للإجمالي</button>` : ''}` : ''}<button class="btn s sm rp-wa-btn" onclick="dbtWA('${d.id}')">${I('chat')} واتساب</button>` : '')
+    + (cd ? `<button class="btn s sm" onclick="dbtMore('${d.id}')">+ دين له</button>` : '')
+    + (can('del') ? `<button class="btn s sm del rp-icb" onclick="dbtDel('${d.id}')">حذف</button>` : '');
   return `<div class="card ${open ? '' : 'rp-ok'}">`
     + `<div class="dbt-top"><div class="dbt-who"><b>${esc(d.name)}</b>${d.tel ? xTel(d.tel) : ''}</div><div class="dbt-amt">${open ? prBadge(rem) : '<span class="pr-b">✓ مسدَّد</span>'}${origSub}</div></div>`
     + (totSame ? `<div class="rs" style="margin-top:4px">إجمالي ديون هذا الزبون: ${totSame} درهم (${arCnt(same.length, 'دين', 'دينان', 'ديون', 'ديناً')})</div>` : '')
     + (d.why ? `<div style="font-weight:600;margin-top:5px">${esc(d.why)}</div>` : '')
     + `<div class="rp-meta"><div class="rp-meta-line"><span>التسجيل: <bdi class="ltr">${fd(d.at)}</bdi></span>${d.by ? `<b><bdi>${esc(d.by)}</bdi></b>` : ''}</div></div>`
-    + `<div class="sub">${open ? `<button class="btn sm" onclick="dbtPay('${d.id}')">تسجيل دفعة</button>${same.length > 1 ? `<button class="btn s sm" onclick="dbtPayAll('${d.id}')">دفعة للإجمالي</button>` : ''}<button class="btn s sm rp-wa-btn" onclick="dbtWA('${d.id}')">${I('chat')} واتساب</button>` : ''}<button class="btn s sm" onclick="dbtMore('${d.id}')">+ دين له</button><button class="btn s sm del rp-icb" onclick="dbtDel('${d.id}')">حذف</button></div></div>`;
+    + (acts ? `<div class="sub">${acts}</div>` : '') + `</div>`;
 };
 function dbtListHtml() {
   const tab = V.tab || 'o', q = nz(V.q || '');
@@ -348,7 +360,7 @@ VW.dbt = () => {
   return {
     t: 'الديون',
     h: `<div class="qbar rsum" style="grid-template-columns:1fr 1fr"><div class="qpill wn"><div class="qn">${O0.length}</div><div class="ql">ديون مفتوحة</div></div><div class="qpill al"><div class="qn">${totOpen}</div><div class="ql">مجموع المتبقي (DH)</div></div></div>`
-      + `<button class="btn" onclick="dbtAdd()">+ دين جديد</button>`
+      + (can('debt') ? `<button class="btn" onclick="dbtAdd()">+ دين جديد</button>` : '')
       + `<input placeholder="ابحث باسم الزبون أو الهاتف أو السبب" value="${esc(V.q || '')}" oninput="V.q=this.value;V.lim=40;dbtF()">`
       + `<div class="sec-panel" style="padding:8px"><div class="sec-tags" style="border:0;padding:0"><button class="tag ${tab == 'o' ? 'on' : ''}" style="flex:1;justify-content:center" onclick="V.tab='o';V.lim=40;render()">مفتوحة (${O0.length})</button><button class="tag ${tab == 'p' ? 'on' : ''}" style="flex:1;justify-content:center" onclick="V.tab='p';V.lim=40;render()">المسدَّدة (${P0.length})</button></div></div>`
       + `<div id="dbtl">${dbtListHtml()}</div>`
@@ -359,6 +371,7 @@ function dbtF() { if ($('dbtl')) $('dbtl').innerHTML = dbtListHtml(); }
 const stCnt = (arr, f) => { const m = {}; arr.forEach(x => { const k = f(x); if (k) m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
 const stBars = (L, none) => { const mx = Math.max(1, ...L.map(x => x[1])); return L.length ? L.map(([l, n]) => `<div class="brow"><span class="bl">${esc(l)}</span><div class="bt"><i style="width:${Math.round(n / mx * 100)}%"></i></div><b>${n}</b></div>`).join('') : `<p class="m">${none}</p>`; };
 VW.stat = () => {
+  if (!can('stat')) return { t: 'إحصائيات', h: '<p class="m">عرض الإحصائيات للمدير فقط (يمكن فتحها للجميع من الصلاحيات).</p>' };
   const p = V.p ?? 30, since = p ? Date.now() - p * 864e5 : 0, rp = S.rp.filter(r => (r.t0 || 0) >= since);
   const faults = rp.flatMap(r => String(r.fault || '').split('،').map(s => s.trim()).filter(Boolean));
   const F = stCnt(faults, x => x).slice(0, 8);
@@ -376,8 +389,7 @@ VW.stat = () => {
       + `<h3>الصيانات المسلَّمة آخر 7 أيام</h3><div class="card">${stBars(Out, '')}</div>`
   };
 };
-/* ---------- التسجيل في الرئيسية والمزيد والبحث ---------- */
-MORE.push({ g: 'rep', o: 60, l: 'إحصائيات: الأعطال وطلبات الزبائن', fn: "go('stat')" });
+/* ---------- التسجيل في البحث والباركود ---------- */
 SRCH.push(
   { k: 'used', l: 'مستعمل', run: n => S.used.filter(u => usMatch(u, n)).slice(0, 20).map(usedCard) },
   { k: 'debt', l: 'ديون', run: n => S.debt.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(n)).slice(0, 20).map(dbtCard) }

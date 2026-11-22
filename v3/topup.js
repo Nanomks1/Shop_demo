@@ -85,7 +85,7 @@
   window.tpIn = (op, k, n, el, now) => {
     clearTimeout(tm[el.id]);
     const x = num(el.value); if (el.value.trim() === '' || x == null) return;
-    const go1 = () => { put(op, k, n, k == 'c' ? Math.round(x) : x, 0); el.placeholder = '—'; paint(); };
+    const go1 = () => { put(op, k, n, k == 'c' ? Math.round(x) : x, 0, !!now); el.placeholder = '—'; paint(); };
     now ? go1() : (tm[el.id] = setTimeout(go1, 600));
   };
   /* ضغطة حالة على بطاقة التعبئة: متوفر (أكثر من الحد) · قارب · نفد */
@@ -128,13 +128,14 @@
     });
   };
   VW.st_tp = () => {
-    const c = cf();
+    const c = cf(), od = offDays();
     return {
       t: 'حدود التعبئة',
       h: '<p class="m">تحدد متى يصير اللون برتقالياً أو أحمر في شاشة التعبئة والتقرير.</p><h3>رصيد هاتف التعبئة</h3>'
         + row(LB.bo, "tpLim('bo')", c.bo) + row(LB.br, "tpLim('br')", c.br)
         + '<h3>بطاقات التعبئة (الأحمر عند 0 دائماً)</h3><p class="m">لكل فئة حدّان مستقلان: «قارب» (أقل أو يساوي) و«متوفر» (أكثر من).</p>' + CARDS.map(n => row('بطاقة ' + n + ' درهم — «قارب» عند ≤', "tpLim('cl" + n + "')", c.cl[n]) + row('بطاقة ' + n + ' درهم — «متوفر» أكثر من', "tpLim('gm" + n + "')", c.gm[n])).join('')
         + '<h3>التذكير</h3>' + row(LB.rh, "tpLim('rh')", c.rh + ':00')
+        + row('أيام عطلة المحل (بلا تذكير)', "go('st_shop')", od.length ? arCnt(od.length, 'يوم', 'يومان', 'أيام') : 'لا عطلة')
         + '<div style="margin-top:14px"><button class="btn s" onclick="if(okTpE())upd(()=>{delete S.cfg.tp})">إرجاع الحدود الافتراضية</button></div>'
     };
   };
@@ -146,8 +147,9 @@
     toast('أُلغي تذكير التعبئة لليوم', () => { delete S.cfg.tx; });
   });
   HOME.top.push(() => {
-    if ((typeof noRem == 'function' && noRem()) || new Date().getHours() < cf().rh || phDone() >= OPS.length * PH.length || S.cfg.tx == new Date().toDateString()) return '';
+    const d = new Date();
+    if ((typeof noRem == 'function' && noRem()) || isOffDay(d) || d.getHours() < cf().rh || phDone() >= OPS.length * PH.length || S.cfg.tx == d.toDateString()) return '';
     return `<div class="card row2">${I('alert')}<span style="flex:1">لم تُسجَّل أرصدة التعبئة اليوم</span><button class="btn sm" onclick="go('tp')">سجّل الآن</button><button class="btn s sm" aria-label="لا تسجيل اليوم" onclick="tpSkip()">✕</button></div>`;
   });
-  MORE.push({ g: 'sec', o: 55, l: 'حدود التعبئة', d: 'حدود أرصدة الهواتف وبطاقات التعبئة وتذكير الصباح', fn: "go('st_tp')" });
+  MORE.push({ g: 'sec', o: 55, l: 'التعبئة', d: 'حدود أرصدة الهواتف وبطاقات التعبئة وتذكير الصباح', fn: "go('st_tp')" });
 })();

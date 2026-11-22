@@ -2,7 +2,6 @@
    invacc.js — الإكسسوارات ومجموعات الكابلات والشواحن (تصميم السطر الواحد المرن)
    يُحمَّل بعد invpochette.js.
    ============================================================ */
-
 /* ============================ الإكسسوارات ============================ */
 const DKC = { 'كابل': { conn: 1 }, 'شاحن': { conn: 1 } }, DK = { 'كابل': { g: 1, w: 0 }, 'شاحن': { g: 1, w: 1 }, 'رأس شاحن': { g: 1, w: 1 } };
 const kc = k => ({ conn: 0, tier: 1, ...(DKC[k] || {}), ...((S.cfg.kc || {})[k] || {}) });
@@ -14,7 +13,6 @@ const acTitle = i => [i.kind, i.conn, fxIn(i), i.brand].filter(Boolean).join(' '
 const acLim = i => i.lim ?? kc(i.kind).lim ?? lim('acl');
 const acSt = i => typeof i.cnt == 'number' ? (i.cnt <= 0 ? 'r' : i.cnt <= acLim(i) ? 'y' : 'g') : i.st;
 const ALB = { g: 'متوفر', y: 'قليل', r: 'نفد' };
-
 function acCard(i) {
   const s = acSt(i), cn = typeof i.cnt == 'number', cmp = isCmp('acc') && V.v == 'sec';
   const fxParts = S.fields.filter(f => f.sec == 'acc').map(f => fxVal(i, f).length ? f.name + ': ' + fxVal(i, f).join('، ') : '').filter(Boolean);
@@ -24,7 +22,6 @@ function acCard(i) {
     : ['g', 'y', 'r'].map(x => `<button class="tag ${i.st == x ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:.76rem" onclick="acS('${i.id}','${x}')">${ALB[x]}</button>`).join('');
   return cardH(`<div class="row2" style="flex-wrap:wrap;gap:6px"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="acOpen('${i.id}')"><b>${esc(acTitle(i))}</b>${sub ? `<div class="m">${sub}</div>` : ''}</div>${i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : ''}<div class="row2" style="gap:4px">${act}</div></div>`, colOf(i), 'cmp');
 }
-
 /* نافذة الإجراءات السفلية للإكسسوار (تفتح عند الضغط على السطر) */
 const acGo = (f, id) => { finish(null); setTimeout(() => window[f](id), 380); };
 function acOpen(id) {
@@ -57,7 +54,6 @@ function acDup(id) {
   $('sh').innerHTML = ''; sheetOpen(v => acDone(v, PR));
   acForm({ kind: r.kind, conn: r.conn || '', brand: r.brand || '', tier: r.tier || '', pw: r.pw || '', price: r.price || '', lim: r.lim });
 }
-
 function acView() {
   const j = V.kk, k = j == null ? null : S.tags.kind[j];
   const a = srt(S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && (k == null || i.kind == k)), 'acc', acName, i => ({ r: 0, y: 1, g: 2 })[acSt(i)], i => i.at);
@@ -72,11 +68,11 @@ function acView() {
       + G + (pg.items.map(acCard).join('') + pg.more || (G ? '' : emptyBox('لا توجد إكسسوارات في هذا القسم بعد', 'اضغط على «+ إضافة إكسسوار» في الأعلى لإضافة أول قطعة')))
   };
 }
-function acC(id, d) { const i = find(id); upd(() => { i.cnt = Math.max(0, i.cnt + d); touch(i); }); if (d > 0) reqChk(acName(i)); }
+function acC(id, d) { const i = find(id); if (!i || (d < 0 && i.cnt <= 0)) return; upd(() => { i.cnt = Math.max(0, i.cnt + d); touch(i); }); if (d > 0) reqChk(acName(i)); }
 function acCnt(id) { const i = find(id); ask('عدد القطع', [{ k: 'n', l: 'العدد الحالي', t: 'tel', v: '' }]).then(v => { if (v && v.n.trim() !== '') { upd(() => { i.cnt = ci(v.n); touch(i, 1); }); if (+dg(v.n) > 0) reqChk(acName(i), 1); } }); }
 function acS(id, s) { const i = find(id); upd(() => { i.st = s; touch(i, 1); }); if (s != 'r') reqChk(acName(i)); }
 function acNote(id) { const i = find(id); ask('ملاحظة للمشتري', [{ k: 'n', l: 'مثال: بقي 5 حبات', v: i.note || '' }]).then(v => { if (v) upd(() => { i.note = v.n.trim(); i.by = S.me; }); }); }
-function acDel(id) { del('items', id, acName(find(id))); }
+function acDel(id) { const i = find(id); if (i) del('items', id, acName(i)); }
 function acAdd() {
   PR = null; $('sh').innerHTML = `<div class="bar"></div><h3>إضافة إكسسوار</h3><label>ابحث أولاً (مثلاً: micro أو Sandisk)<input oninput="acF(this.value)"></label><div id="pr"></div><button class="btn s" onclick="finish(null)">إلغاء</button>`;
   sheetOpen(v => acDone(v, PR)); acF('');
@@ -125,7 +121,6 @@ function buyA(id) {
   if (typeof i.cnt == 'number') return qty(acTitle(i), Math.max(1, acLim(i) + 1 - i.cnt), n => { i.cnt += n; touch(i, 1); reqChk(acName(i), 1); });
   commit('تم الشراء', () => { i.st = 'g'; touch(i, 1); }); reqChk(acName(i));
 }
-
 /* مجموعات الكابلات والشواحن: الحكم على المجموع (فئة + موصل + قدرة) — سطر واحد رشيق + نافذة تفاصيل */
 const gkey = i => [i.kind, i.conn || '', i.tier || '', i.pw || ''].join('|').replace(/\//g, '-');
 const AORD = { r: 0, y: 1, g: 2 }, ALB2 = { g: 'متوفر', y: 'قارب النفاد', r: 'نفد' };

@@ -8,19 +8,22 @@ VW.st_fld = () => ({
   h: (can('fields') ? '<p class="m">الأزرق = ظاهر. اضغط لإخفاء الحقل أو إظهاره.</p>' : '<p class="m">التعديل للمدير فقط.</p>')
     + Object.keys(FLD).map(s => `<h3>${FLDN[s] || s}</h3><div>${FLD[s].map(([k, l]) => `<button class="tag ${hd(s, k) ? '' : 'on'}" onclick="fTog('${s}','${k}')">${l}</button>`).join('')}</div>`).join('')
 });
-const tg = (l, g) => [l, "go('st_tg',{g:'" + g + "'})", () => S.tags[g].length];
+const tg = (l, g) => [l, "go('st_tg',{g:'" + g + "'})", () => (S.tags[g] || []).length];
 const CATS = {   // ملف الصيانة يضيف CATS.rp
   ph: ['الهواتف', [tg('الماركات', 'brand'), tg('الألوان', 'color'), tg('السعات', 'cap'), tg('RAM', 'ram'), ['حدود الهواتف حسب فئة السعر', "go('st_pt')", () => ptCfg().map(x => x[0].split(' ')[0] + ' ' + x[2]).join(' · ')], ['الحد العام (عند عدم وجود سعر): «قارب النفاد» عند عدد', "limEd('low')", () => lim('low') + ' فأقل'], ['ألوان الماركات وحدودها', "go('st_br')"]], 'phones'],
   gl: ['الأنتي كاس', [tg('أنواع الزجاج', 'glass'), ['حد «قارب النفاد» لكل نوع زجاج', "go('st_gl')", () => (lim('gmin') - 1) + ' فأقل'], ['كم تُحسب المستويات (غامق / أخضر / فاتح / قليل)', "go('st_gl2')"], ['ماركات قائمة الأنتي كاس (إخفاء الهواتف الصغيرة)', "go('st_glb')", () => S.tags.brand.filter(b => !glBrHid(b)).length + ' / ' + S.tags.brand.length]], null],
-  cs: ['البوشيط', [tg('الألوان', 'color'), ['الحد العام لكل لون: «قارب النفاد» عند', "limEd('cl')", () => lim('cl') + ' فأقل']], 'case'],
+  cs: ['البوشيط', [tg('الألوان', 'color'), ['الحد العام لكل لون: «قارب النفاد» عند', "limEd('cl')", () => lim('cl') + ' فأقل'], ['الكمية الافتراضية عند الشراء', "limEd('csBuy')", () => lim('csBuy') + ' قطع']], 'case'],
   ac: ['الإكسسوارات', [tg('الأنواع', 'kind'), tg('الموصلات', 'conn'), tg('الفئات السعرية', 'tier'), tg('القدرات (واط)', 'pw'), ['الحد العام للقطع بعدد: «قليل» عند', "limEd('acl')", () => lim('acl') + ' فأقل'], ['الحد العام للمجموعات (كابل/شاحن) عند', "limEd('agl')", () => lim('agl') + ' فأقل'], ['إعداد كل نوع (الخاصيات، العرض، الحد)', "go('st_ak')"]], 'acc']
 };
 VW.st_c = () => { const c = CATS[V.c] || CATS.ph; return { t: c[0], h: c[1].map(([l, fn, n]) => row(l, fn, n ? n() : '')).join('') + (c[2] ? row('خانات مخصصة لهذا القسم', "go('st_fx',{fs:'" + c[2] + "'})", S.fields.filter(f => f.sec == c[2]).length || '') : '') }; };
 MORE.push(
-  { g: 'sec', o: 10, l: 'الهواتف', fn: "go('st_c',{c:'ph'})" }, { g: 'sec', o: 20, l: 'الأنتي كاس', fn: "go('st_c',{c:'gl'})" },
-  { g: 'sec', o: 30, l: 'البوشيط', fn: "go('st_c',{c:'cs'})" }, { g: 'sec', o: 40, l: 'الإكسسوارات', fn: "go('st_c',{c:'ac'})" },
-  { g: 'look', o: 20, l: 'تلوين البطاقات', fn: "go('st_col')" }, { g: 'look', o: 30, l: 'الحقول في النماذج', fn: "go('st_fld')" },
-  { g: 'look', o: 40, l: 'الخانات المخصصة', fn: "go('st_fx')", n: () => S.fields.length || '' }
+  { g: 'sec', o: 10, l: 'الهواتف', d: 'الماركات والألوان والسعات وألوان الماركات وحدود النفاد', fn: "go('st_c',{c:'ph'})" },
+  { g: 'sec', o: 20, l: 'الأنتي كاس', d: 'أنواع الزجاج والمستويات والحدود', fn: "go('st_c',{c:'gl'})" },
+  { g: 'sec', o: 30, l: 'البوشيط', d: 'الألوان وحدود النفاد وكمية الشراء الافتراضية', fn: "go('st_c',{c:'cs'})" },
+  { g: 'sec', o: 40, l: 'الإكسسوارات', d: 'الأنواع والموصلات والفئات وحدود كل نوع', fn: "go('st_c',{c:'ac'})" },
+  { g: 'work', o: 91, adv: 1, l: 'تلوين البطاقات', d: 'ألوان خفيفة للتمييز بين الماركات والأقسام', fn: "go('st_col')" },
+  { g: 'work', o: 92, adv: 1, l: 'الحقول في النماذج', d: 'اختر الحقول التي تظهر عند إضافة هاتف أو غيره', fn: "go('st_fld')" },
+  { g: 'work', o: 93, adv: 1, l: 'الخانات المخصصة', d: 'أضف خانة خاصة بك (مثل: الضمان) لأي قسم', fn: "go('st_fx')", n: () => S.fields.length || '' }
 );
 /* حدود الأنتي كاس */
 function glTyEd(j) {
@@ -57,6 +60,27 @@ function brEd(j) { const b = S.tags.brand[j]; ceOpen({ t: 'b', n: b, c: BC(b), l
 function cmEd(s) { ceOpen({ t: 's', n: SN3[s], m: CM(s), c: SCOL(s), mo: s == 'acc' ? [['s', 'لون واحد للقسم'], ['o', 'بدون']] : [['b', 'حسب الماركة'], ['s', 'لون واحد للقسم'], ['o', 'بدون']] }, v => { if (!v) return; upd(() => { S.cfg.cm = S.cfg.cm || {}; S.cfg.cm[s] = v.m; S.cfg.scol = S.cfg.scol || {}; S.cfg.scol[s] = v.c; }); }); }
 VW.st_col = () => ({ t: 'الألوان', h: '<p class="m">ألوان خفيفة على خلفية البطاقات للتمييز بسرعة.</p>' + ['phones', 'glass', 'case', 'acc'].map(s => { const m = CM(s), c = m == 's' ? SCOL(s) : ''; return `<button class="card row2" onclick="cmEd('${s}')"><b>${SN3[s]}</b><span class="m">${MN[m]}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') + row('ألوان الماركات وحدودها', "go('st_br')") });
 VW.st_br = () => ({ t: 'ألوان الماركات', h: '<p class="m">اللون + حد «قارب على النفاد» لكل ماركة (اختياري، يتقدم على فئة السعر).</p>' + S.tags.brand.map((b, j) => { const c = BC(b), l = (S.cfg.bl || {})[b]; return `<button class="card row2" onclick="brEd(${j})"><b>${esc(b)}</b><span class="m">${l != null ? 'حد ' + l + ' فأقل' : ''}</span>${c ? `<span class="dotl" style="background:${c}"></span>` : ''}</button>`; }).join('') });
+/* اختيار لون الدائرة المخصّص لأي لون في وسم الألوان */
+function colHexEd(i) {
+  if (!can('tags')) return toast('للمدير فقط');
+  const name = S.tags.color[i]; if (!name) return;
+  const cur = (S.cfg.colHex && S.cfg.colHex[name]) || csHex(name) || '';
+  const inP = PAL.includes(cur), hex = /^#[0-9a-f]{6}$/i.test(cur);
+  $('sh').innerHTML = `<div class="bar"></div><h3>لون الدائرة: ${esc(name)}</h3>`
+    + `<div class="row2" style="justify-content:center;margin:8px 0"><span class="csd" style="background:${csBg(name)};color:${csInk(name)}">3</span></div>`
+    + `<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center">${PAL.map(c => `<button type="button" class="sw ${cur == c ? 'on' : ''}" style="background:${c};margin:2px" onclick="finish('${c}')"></button>`).join('')}</div>`
+    + `<div class="row2" style="margin-top:8px"><label class="sw ${cur && !inP && cur != 'pat' ? 'on' : ''}" style="display:inline-block;position:relative;overflow:hidden;background:${cur && !inP && cur != 'pat' ? cur : 'conic-gradient(#ef4444,#eab308,#22c55e,#06b6d4,#3b82f6,#d946ef,#ef4444)'}"><input type="color" value="${hex ? cur : '#3b82f6'}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0;border:0;cursor:pointer" onchange="finish(this.value)"></label><span class="m f1">أو اختر أي درجة</span><button type="button" class="tag ${cur == 'pat' ? 'on' : ''}" onclick="finish('pat')">شفاف</button><button type="button" class="tag" onclick="finish('__AUTO__')">تلقائي</button></div>`
+    + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button></div>`;
+  sheetOpen(v => {
+    if (v === null) return;
+    upd(() => {
+      S.cfg.colHex = { ...(S.cfg.colHex || {}) };
+      if (v === '__AUTO__') delete S.cfg.colHex[name];
+      else S.cfg.colHex[name] = v;
+      if (!Object.keys(S.cfg.colHex).length) delete S.cfg.colHex;
+    });
+  });
+}
 /* إعداد كل نوع إكسسوار: صفحة مستقلة (ما يظهر + خاصيات + العرض + الحد) */
 const akProps = k => S.fields.filter(f => f.sec == 'acc' && (f.kinds || []).includes(k));
 function akTog(j, key) {
@@ -140,6 +164,7 @@ function tgCount(g, val) {
     (S.rp || []).forEach(r => { if ((r.fault || '').split('،').map(s => s.trim()).includes(val)) n++; });
     (S.guide || []).forEach(d => { if (d.f === val) n++; });
   }
+  if (g == 'rpchk') (S.rp || []).forEach(r => { if (Array.isArray(r.chk) && r.chk.includes(val)) n++; });
   return n;
 }
 function tgReplace(g, oldV, newV) {
@@ -149,6 +174,10 @@ function tgReplace(g, oldV, newV) {
       if (i[g] === oldV) i[g] = newV;
       if (g == 'color' && i.sec == 'case') (i.v || []).forEach(x => { if (x.c === oldV) x.c = newV; });
     });
+  }
+  if (g == 'color' && S.cfg && S.cfg.colHex && S.cfg.colHex[oldV] !== undefined) {
+    if (newV && S.cfg.colHex[newV] === undefined) S.cfg.colHex[newV] = S.cfg.colHex[oldV];
+    delete S.cfg.colHex[oldV];
   }
   if (g == 'brand') {
     S.gg.forEach(x => { if (x.br) Object.keys(x.br).forEach(m => { if (x.br[m] === oldV) { if (newV) x.br[m] = newV; else delete x.br[m]; } }); });
@@ -196,6 +225,12 @@ function tgReplace(g, oldV, newV) {
     });
     (S.guide || []).forEach(d => { if (d.f === oldV && newV) d.f = newV; });
   }
+  if (g == 'rpchk') {
+    (S.rp || []).forEach(r => {
+      if (!Array.isArray(r.chk) || !r.chk.includes(oldV)) return;
+      r.chk = [...new Set(r.chk.map(x => x === oldV ? newV : x).filter(Boolean))];
+    });
+  }
 }
 window.tgRen = (g, i) => {
   if (!can('tags')) return toast('للمدير فقط');
@@ -238,13 +273,14 @@ window.tgDel = (g, i) => {
   });
 };
 VW.st_tg = () => {
-  const g = V.g, ed = can('tags');
+  const g = V.g, ed = can('tags'), isCol = g == 'color';
   return {
     t: TG[g],
-    h: (ed ? '<p class="m">اضغط على الاسم لتعديله في كل القطع، أو × لحذفه/دمجه.</p>' : '<p class="m">التعديل للمدير فقط.</p>')
-      + `<div>${S.tags[g].map((t, i) => {
+    h: (ed ? `<p class="m">اضغط على الاسم لتعديله في كل القطع، أو × لحذفه/دمجه.${isCol ? ' واضغط الدائرة الملوّنة لتخصيص لونها في البطاقات.' : ''}</p>` : '<p class="m">التعديل للمدير فقط.</p>')
+      + `<div>${(S.tags[g] || []).map((t, i) => {
         const c = tgCount(g, t);
-        return `<span class="tag">${ed ? `<span onclick="tgRen('${g}',${i})">${esc(t)}</span>` : esc(t)}${c ? `<small class="m" style="font-size:.75rem">(${c})</small>` : ''}${ed ? `<b onclick="tgDel('${g}',${i})" style="padding-inline-start:4px">×</b>` : ''}</span>`;
+        const dot = isCol ? `<button type="button" class="tg-dot" style="background:${csBg(t)}" ${ed ? `onclick="colHexEd(${i})"` : 'disabled'} title="لون الدائرة"></button>` : '';
+        return `<span class="tag">${dot}${ed ? `<span onclick="tgRen('${g}',${i})">${esc(t)}</span>` : esc(t)}${c ? `<small class="m" style="font-size:.75rem">(${c})</small>` : ''}${ed ? `<b onclick="tgDel('${g}',${i})" style="padding-inline-start:4px">×</b>` : ''}</span>`;
       }).join('')}</div>`
       + (ed ? `<button class="btn" onclick="tgAdd('${g}')">+ إضافة</button>` : '')
   };
