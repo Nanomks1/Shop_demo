@@ -1,7 +1,4 @@
-/* ============================================================
-   repair.js — الصيانة، التذاكر (#A101)، قطع الغيار، الضمان،
-   دليل أسعار الإصلاح، وطلبات الزبائن.
-   ============================================================ */
+/* repair.js — الصيانة، التذاكر، قطع الغيار، الضمان، دليل الأسعار، وطلبات الزبائن */
 const RK = ['شاشة مكسورة', 'مطفأ لا يشتغل', 'ترك شريحة SIM', 'ترك كارت ميموري', 'معه بوشيط', 'بدون غطاء', 'البصمة لا تعمل', 'بدون SIM'];
 const rpChkTags = () => (S.tags && Array.isArray(S.tags.rpchk) && S.tags.rpchk.length) ? S.tags.rpchk : RK;
 const TB = { in: 'في المحل', rd: 'جاهز', nf: 'لم تُصلَّح', dn: 'الأرشيف' };
@@ -30,7 +27,6 @@ LM.push(
 );
 const isLateRp = r => r.st == 'rd' && Math.floor((Date.now() - (r.t1 || r.t0)) / 864e5) > lim('rpLate');
 const isSlowRp = r => r.st == 'in' && Math.floor((Date.now() - (r.t0 || Date.now())) / 864e5) >= lim('rpSlow');
-/* تاريخ مختصر للبطاقة الخارجية */
 const fdS = t => {
   if (!t) return '';
   const d = new Date(t), now = new Date(), p = n => String(n).padStart(2, '0');
@@ -67,7 +63,6 @@ const rImg = r => r.img && r.img.startsWith('data:') ? r.img : (IMG[r.id] || '')
 const rpText = r => [r.tk ? r.tk + ' #' + r.tk : '', r.st == 'in' && LOC[r.loc] ? LOC[r.loc] : '', r.part || '', r.ret ? 'راجع ضمان' : '', r.name, r.tel, r.dev, r.fault, r.note || '', r.dnote || '', (r.chk || []).join(' '), fxTxt(r), r.imei || ''].join(' ');
 FLD.rp = [['cap', 'السعر المتفق'], ['dep', 'العربون'], ['war', 'ضمان الإصلاح'], ['loc', 'مكان الهاتف (عند المعلم / الرف)'], ['need', 'خاصو قطعة غيار'], ['lock', 'PIN'], ['pat', 'نمط القفل'], ['img', 'الصورة'], ['chk', 'حالة الجهاز'], ['imei', 'IMEI'], ['note', 'الملاحظة']];
 FLDN.rp = 'الصيانة';
-/* ---------- رقم التذكرة القصير (#A101 .. #Z999) ---------- */
 const tkCode = n => { n = Math.max(1, Math.floor(+n || 1)) - 1; return String.fromCharCode(65 + (Math.floor(n / 899) % 26)) + (101 + (n % 899)); };
 const tkParse = c => { const m = String(c || '').trim().match(/^#?([A-Z])(\d{3})$/i); return m ? (m[1].toUpperCase().charCodeAt(0) - 65) * 899 + (+m[2] - 100) : 0; };
 function tkMax() {
@@ -87,7 +82,6 @@ function fixDupTk() {
   const mx = tkMax(); if ((S.cfg.tkSeq || 0) < mx) { S.cfg.tkSeq = mx; chg = 1; }
   return chg;
 }
-/* ---------- فحص ديون الزبون وأجهزته الأخرى + قطع الغيار ---------- */
 function rpDebts(tel, name) { return typeof dbtCustOpen == 'function' ? dbtCustOpen(tel, name) : []; }
 const rpDebtSum = L => L.reduce((a, d) => a + (typeof dRem == 'function' ? dRem(d) : Math.max(0, (+d.amt || 0))), 0);
 function rpOtherOpen(tel, name, excludeId) {
@@ -101,7 +95,6 @@ function rpOtherOpen(tel, name, excludeId) {
 }
 window.rpPartLines = () => (S.rp || []).filter(r => r.st == 'in' && r.part && r.part.trim()).map(r => ({ id: r.id, s: `${r.part.trim()} — (${r.dev || r.name}${r.tk ? ' #' + r.tk : ''})` }));
 window.rpPartDone = id => { const r = rf(id); if (r && r.part) commit('وصلت قطعة الغيار: ' + r.part, () => { r.part = ''; r.lb = S.me; }); };
-/* ---------- الضمان والتنظيف ---------- */
 function warInfo(r) {
   const w = +r.war || 0; if (!w || r.res == 'fail' || r.res == 'ref') return null;
   if (r.st != 'dn' || !r.t2) return { active: true, daysLeft: w, label: `الضمان المقرر: ${w} يوم` };
@@ -121,7 +114,6 @@ function cleanOldRpMedia() {
   if (chg) save();
 }
 cleanOldRpMedia();
-/* ---------- بطاقة الصيانة الهادئة (بلا صناديق داخل صناديق وبلا قصّ للتواريخ والأسماء) ---------- */
 function rc(r) {
   const n = Math.floor((Date.now() - r.t0) / 864e5), w = r.st == 'rd' ? Math.floor((Date.now() - (r.t1 || r.t0)) / 864e5) : 0;
   const i = r.id, im = rImg(r), wi = warInfo(r), slow = isSlowRp(r), late = w > lim('rpLate'), stB = rpStInfo(r);
@@ -165,15 +157,13 @@ function rc(r) {
   return `<div class="card cmp ${bCls}">`
     + `<div class="rp-head" onclick="rpOpen('${i}')"><div class="rp-who">${r.tk ? `<span class="tk-b ${stB.cls}">#${esc(r.tk)}</span>` : ''}<span class="rp-nm">${esc(r.name)}</span><span class="rp-st-txt ${stB.cls}">· ${esc(stB.txt)}</span>${retB}</div>${prHtml}</div>`
     + `<div class="rp-body">${im ? `<img class="rp-th" onclick="event.stopPropagation();rpZoom('${i}')" src="${im}">` : ''}<div class="rp-dev" onclick="rpOpen('${i}')"><bdi>${esc(r.dev || 'هاتف')}</bdi> <span>— ${esc(r.fault)}</span></div>${telHtml}</div>`
-    + infoBox
-    + statusRow
+    + infoBox + statusRow
     + (r.note ? `<div class="rnote" onclick="rNote('${i}')" title="اضغط لتعديل الملاحظة">${I('chat')}<span>${esc(r.note)}</span></div>` : '')
     + (r.st == 'dn' && r.dnote ? `<div class="m">ملاحظة التسليم: ${esc(r.dnote)}</div>` : '')
     + (typeof dbtRp == 'function' ? dbtRp(r) : '')
     + (oSum > 0 ? `<div class="rs rp-click" onclick="go('dbt')">${I('alert')} تنبيه: على هذا الزبون دين مفتوح (${oSum} درهم)</div>` : '')
     + actsRow + `</div>`;
 }
-/* ---------- نافذة تفاصيل التذكرة السفلية (رأس واضح ومربعا تاريخ متناظران) ---------- */
 const rpGo = (fn, id, arg2) => { finish(null); setTimeout(() => window[fn](id, arg2), 380); };
 function rpCanSaveGuide(r) {
   if (!can('price') || !r || !r.dev || !r.fault || !sn1(r.cap)) return false;
@@ -245,7 +235,6 @@ function rpSheetR(id) {
     + `</div>`
     + `<div class="acts">${can('del') ? `<button class="btn s del" onclick="rpGo('rDel','${r.id}')">${I('trash')} حذف التذكرة</button>` : ''}<button class="btn s" onclick="finish(null)">إغلاق النافذة</button></div>`;
 }
-/* ---------- قائمة الصيانة والفلاتر والبحث الذكي ---------- */
 function rpList() {
   const q = nz(V.q || ''), tab = V.tab || 'in', sf = V.sf || '';
   const matchR = (r, ignoreTab) => (ignoreTab || V.all || tabOf(r) == tab) && inR(tOf(r)) && (!q || nzOf(r, rpText).includes(q));
@@ -314,7 +303,6 @@ VW.rp = () => {
       + `</div><div id="rl">${rpList()}</div>`
   };
 };
-/* ---------- إجراءات الحالة وقطعة الغيار والإرجاع والاتصال ---------- */
 window.rSt = function (id, x) {
   const r = rf(id); if (!r) return;
   if (x == 'ok' && !sn1(r.cap)) {
@@ -375,7 +363,6 @@ window.rLoc = function (id, k) {
 };
 window.rCL = function (id) { const r = rf(id); if (r) commit('تم تسجيل الاتصال', () => (r.calls = r.calls || []).push('اتصال ' + fd(Date.now()) + ' ' + S.me)); };
 window.rDel = function (id) { const r = rf(id); if (r) del('rp', id, (r.tk ? '#' + r.tk + ' ' : '') + r.name + ' — ' + r.dev); };
-/* ---------- إرفاق سلعة من المخزون عند التسليم ---------- */
 function rpAddonOpts(dev) {
   const out = [{ k: '', l: '— بدون إرفاق سلعة —' }], nd = nz(dev || '');
   if (nd.length >= 2) {
@@ -417,7 +404,6 @@ function applyRpAddon(opt) {
   }
   return '';
 }
-/* ---------- التسليم الذكي ---------- */
 window.rDV = function (id, pre) {
   const r = rf(id); if (!r) return;
   const pr = pre || {}, cap = sn1(r.cap) ? +dg(r.cap) : null, dep = sn1(r.dep) ? +dg(r.dep) : 0;
@@ -478,7 +464,6 @@ window.rDV = function (id, pre) {
     }
   });
 };
-/* ---------- واتساب يدوي فقط (مع دعم قوالب المدير) ---------- */
 window.rWA = function (id) {
   const r = rf(id); if (!r) return;
   const send = tel => {
@@ -505,7 +490,6 @@ window.rWA = function (id) {
     r.tel = v.t.trim(); save(); render(); send(r.tel);
   });
 };
-/* ---------- إكمال الأجهزة فقط (بلا اقتراح أسماء زبائن أثناء الكتابة) ---------- */
 function rpSugData() {
   const devs = new Set();
   [...(S.rp || []), ...(S.used || [])].forEach(x => { if (x.dev) devs.add(x.dev.trim()); });
@@ -516,7 +500,6 @@ function rpSugData() {
 delete SUG.rn;
 SUG.rd = () => rpSugData().devs.slice(0, 50);
 function rpDatalists() { return ''; }
-/* ---------- نافذة الاستلام والتعديل ---------- */
 window.rEd = function (id) {
   const rec = id ? rf(id) : {};
   if (id && rec && rec.st == 'dn' && !can('rpDone')) return toast('تعديل الصيانة المسلّمة للمدير فقط');
@@ -630,7 +613,6 @@ function pickRpFault(j) {
   let p = el.value.split('،').map(s => s.trim()).filter(Boolean); p = p.includes(f) ? p.filter(x => x !== f) : [...p, f];
   el.value = p.join('، '); syncRpTags(); suggestGuidePrice();
 }
-/* دقة مطابقة الموديل في دليل الأسعار */
 function rpStripBrand(s) {
   let cur = String(s || '').trim();
   const o = S.tags.brand.find(x => x && cur.toLowerCase().startsWith(String(x).toLowerCase()));
@@ -703,7 +685,6 @@ window.rpZoom = function (id) {
   $('sh').innerHTML = `<div class="bar"></div><h3>${esc((r.tk ? '#' + r.tk + ' — ' : '') + r.name + ' — ' + r.dev)}</h3><img src="${src}" class="rp-zoom-im"><div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>`;
   sheetOpen(() => { });
 };
-/* ---------- دليل أسعار الإصلاح (مع أزرار الماركات والأعطال السريعة) ---------- */
 const gdCard = g => `<div class="card cmp"><div class="ph-top"><b class="ph-nm"><bdi>${esc(g.m)}</bdi></b><div class="ph-pr-wrap">${prBadge(g.p)}${g.p2 ? `<span class="m">أصلي:</span>${prBadge(g.p2)}` : ''}</div></div><div class="row2" style="margin-top:4px;flex-wrap:wrap"><span class="m f1">${esc(g.f)}${g.n ? ' · ' + esc(g.n) : ''}</span>${can('price') ? `<button class="btn s sm" onclick="gdEd('${g.id}')">تعديل</button><button class="btn s sm del" onclick="gdDel('${g.id}')">حذف</button>` : ''}</div></div>`;
 const gdList = (q, flt) => {
   const n = nz(q || ''), fn = nz(flt || '');
@@ -750,7 +731,6 @@ window.gdSave = () => {
   finish({ m, f, p, p2, n });
 };
 function gdDel(id) { const g = S.guide.find(x => x.id == id); if (g) del('guide', id, g.m + ' ' + g.f); }
-/* ---------- طلبات الزبائن («زبون سأل ولم نجد») ---------- */
 function rq() {
   ask('تسجيل طلب زبون (سأل ولم نجد)', [
     { k: 't', l: 'السلعة أو الموديل المطلوب (مثال: بوشيط A54 / شاشة iPhone 13)', v: '' },
@@ -806,7 +786,6 @@ VW.req = () => ({
     + `<input class="rp-srch" placeholder="ابحث في الطلبات: موديل، سلعة، أو رقم..." value="${esc(V.q || '')}" oninput="V.q=this.value;$('rql').innerHTML=rqList()">`
     + `</div><div id="rql">${rqList()}</div>`
 });
-/* ---------- ربط الباركود/IMEI والأرشفة والإعدادات ---------- */
 function bcNewRp() { $('sh').innerHTML = ''; const rec = { imei: BCODE }; sheetOpen(v => rDone(v, rec)); rForm(rec); }
 BCX.push(() => `<button class="btn s sm" onclick="bcNewRp()">${I('tool')} + استلام صيانة</button>`);
 BCM.push(c => { const nc = nz(c); return S.rp.filter(r => r.imei && nz(r.imei).includes(nc)).map(r => rc(r)).join(''); });
@@ -815,4 +794,28 @@ const rpArchLbl = () => (RP_ARCH_O.find(x => x[0] == rpArchDays()) || [0, rpArch
 function rpArchEd() {
   if (!isAdmin()) return toast('للمدير فقط');
   ask('مدة أرشفة الصيانات المسلّمة', [{ k: 'd', l: 'أرشفة الصيانات الأقدم من', t: 'sel', o: RP_ARCH_O.map(x => x[1]), v: rpArchLbl() }]).then(v => {
-    const o = v && RP_ARCH_O.
+    const o = v && RP_ARCH_O.find(x => x[1] == v.d);
+    if (o) upd(() => { S.cfg.rpArchD = o[0]; });
+  });
+}
+const rpOld = () => { const n = Date.now(), base = rpArchDays(); return S.rp.filter(r => r.st == 'dn' && r.t2 && n - r.t2 > Math.max(base, (+r.war || 0) + 30) * 864e5); };
+function rpArch() {
+  if (!isAdmin()) return toast('للمدير فقط');
+  const a = rpOld(), lb = rpArchLbl(); if (!a.length) return toast('لا توجد صيانات مسلّمة أقدم من ' + lb);
+  sure('حذف ' + a.length + ' صيانة مسلّمة منذ أكثر من ' + lb + ' (انتهى ضمانها) من كل الأجهزة؟ يُفضّل أخذ ملف نسخة احتياطية قبل ذلك. تُحفظ نسخة تلقائية داخل الهاتف أولاً.', 'أرشفة').then(y => {
+    if (!y) return;
+    snapPre().then(() => { const ids = new Set(a.map(x => x.id)); S.rp = S.rp.filter(x => !ids.has(x.id)); save(); render(); toast('تمت أرشفة ' + a.length + ' صيانة'); });
+  });
+}
+CATS.rp = ['الصيانة', [
+  tg('أعطال الصيانة', 'fault'),
+  tg('حالة الاستلام والأمانات', 'rpchk'),
+  ['دليل أسعار الإصلاح', "go('gd')"],
+  ['مدة الضمان الافتراضية', "limEd('rpWar')", () => lim('rpWar') ? lim('rpWar') + ' يوم' : 'بدون ضمان'],
+  ['تنبيه «متأخر في المحل» بعد', "limEd('rpSlow')", () => lim('rpSlow') + ' أيام'],
+  ['تنبيه «منسي في الجاهز» بعد', "limEd('rpLate')", () => lim('rpLate') + ' يوم'],
+  ['مدة حفظ الصورة والرمز بعد التسليم', "limEd('rpKeep')", () => lim('rpKeep') + ' يوم'],
+  ['مدة أرشفة الصيانات القديمة', 'rpArchEd()', () => rpArchLbl()],
+  ['أرشفة الصيانات المسلّمة القديمة الآن', 'rpArch()', () => rpOld().length + ' صيانة']
+], 'rp'];
+MORE.push({ g: 'sec', o: 50, l: 'الصيانة', d: 'الأعطال، الأمانات، الضمان الافتراضي، حدود التأخير، حفظ الصور والأرشفة', fn: "go('st_c',{c:'rp'})" });
