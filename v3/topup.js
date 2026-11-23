@@ -37,31 +37,39 @@
     else svT = setTimeout(save, 150);   // الحفظ بعد الرسم حتى لا يتأخر الضغط
   }
   const gvOf = n => Math.max(cf().gm[n], cf().cl[n] + 1);
+  /* ملخص حالة التعبئة للتقرير: عدد غير المسجّل وهل اكتملت أرصدة اليوم */
+  window.tpSummary = () => {
+    const t = tally(), done = phDone(), tot = OPS.length * PH.length;
+    return { u: t.u, done, tot, stalePh: done < tot };
+  };
   /* ---------- أسطر التقرير: [القسم, النص, الحالة, دالة «تم»] ---------- */
   window.tpLines = () => {
     const L = [];
     each((op, k, n, s) => {
       if (s != 'r' && s != 'y') return;
-      const v = val(op, k, n), id = rid(op, k, n);
-      L.push(['التعبئة', k == 'p' ? op + ' — رصيد الهاتف ' + dm(v) : op + ' — بطاقة ' + n + ' — ' + (v <= 0 ? 'نفد' : (rec(op, k, n) || {}).est ? 'قارب النفاد' : 'باقي ' + v), s, `tpFix('${id}')`]);
+      const v = val(op, k, n), id = rid(op, k, n), r0 = rec(op, k, n);
+      const tm = k == 'p' && r0 && r0.at ? ' (' + (isToday(r0.at) ? 'اليوم ' + pad(new Date(r0.at).getHours()) + ':' + pad(new Date(r0.at).getMinutes()) : agoTxt(r0.at)) + ')' : '';
+      L.push(['التعبئة', k == 'p' ? op + ' — رصيد الهاتف ' + dm(v) + tm : op + ' — بطاقة ' + n + ' — ' + (v <= 0 ? 'نفد' : (r0 || {}).est ? 'قارب النفاد' : 'باقي ' + v), s, `tpFix('${id}')`]);
     });
     return L;
   };
-  /* «تم» في التقرير: هاتف ← الرصيد الجديد · بطاقة ← الكمية التي وصلت (مع حفظ فوري وتراجع) */
+  /* «تم» في التقرير: هاتف ← الرصيد الجديد · بطاقة ← الكمية التي وصلت (مع حفظ فوري وتراجع وسجل الوصول) */
   window.tpFix = id => {
     const p = id.split('_'), op = p[1], k = p[2][0], n = +p[2].slice(1);
-    const snapTp = () => JSON.stringify(T());
+    const snapTp = () => JSON.stringify(T()), snapRin = () => JSON.stringify(S.cfg.rin || []);
     if (k == 'p') ask(op + ' — الهاتف', [{ k: 'v', l: 'الرصيد الجديد بعد التعبئة (درهم)', t: 'tel' }], 'تم').then(v => {
       const x = v && num(v.v); if (x == null) return;
-      const prev = snapTp();
+      const prev = snapTp(), prevRin = snapRin();
+      if (typeof rcLogIn == 'function') rcLogIn('tp', id, '', 'تعبئة ' + op + ' — رصيد الهاتف', dm(x));
       put(op, 'p', n, x, 0, true); render();
-      toast('تم تحديث الرصيد', () => { S.tp = JSON.parse(prev); });
+      toast('تم تحديث الرصيد', () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
     });
     else ask(op + ' — بطاقة ' + n, [{ k: 'v', l: 'الكمية التي وصلت', t: 'tel' }], 'تم الشراء').then(v => {
       const x = v && num(v.v); if (!(x > 0)) return;
-      const prev = snapTp();
-      put(op, 'c', n, (val(op, 'c', n) || 0) + Math.round(x), 0, true); render();
-      toast('تمت الإضافة', () => { S.tp = JSON.parse(prev); });
+      const add = Math.round(x), prev = snapTp(), prevRin = snapRin();
+      if (typeof rcLogIn == 'function') rcLogIn('tp', id, '', 'تعبئة ' + op + ' — بطاقة ' + n, '+' + add);
+      put(op, 'c', n, (val(op, 'c', n) || 0) + add, 0, true); render();
+      toast('تمت الإضافة', () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
     });
   };
   /* ---------- التحديث في مكانه بلا إعادة رسم (حتى لا تُغلق لوحة المفاتيح) ---------- */
@@ -114,7 +122,7 @@
         + '<div class="tpl">هاتف التعبئة</div>' + PH.map(n => row1(op, 'p', n)).join('')
         + '<div class="tpl">بطاقات التعبئة — اضغط الحالة أو اكتب العدد</div>' + CARDS.map(n => row1(op, 'c', n)).join('') + '</div>';
     });
-    h += `<div class="row2" style="margin-top:12px"><button class="btn s" onclick="reportSectionFilter='topup';go('rep')">عرض في التقرير</button></div>`;
+    h += `<div class="row2" style="margin-top:12px"><button class="btn s" onclick="go('rep',{rf:'topup'})">عرض في التقرير</button></div>`;
     return { t: 'التعبئة', h, a: paint };
   };
   /* ---------- الحدود ---------- */

@@ -61,7 +61,7 @@ const inR = t => {
 const PI = s => { const p = i => [20 + 40 * (i % 3), 20 + 40 * Math.floor(i / 3)]; return (s.length > 1 ? `<polyline fill="none" stroke="#3b82f6" stroke-width="4" points="${s.map(i => p(i).join(',')).join(' ')}"/>` : '') + [...Array(9).keys()].map(i => `<circle cx="${p(i)[0]}" cy="${p(i)[1]}" r="${s.includes(i) ? 7 : 5}" fill="${s[0] == i ? '#22c55e' : s.includes(i) ? '#3b82f6' : '#94a3b8'}"/>`).join(''); };
 const rImg = r => r.img && r.img.startsWith('data:') ? r.img : (IMG[r.id] || '');
 const rpText = r => [r.tk ? r.tk + ' #' + r.tk : '', r.st == 'in' && LOC[r.loc] ? LOC[r.loc] : '', r.part || '', r.ret ? 'راجع ضمان' : '', r.name, r.tel, r.dev, r.fault, r.note || '', r.dnote || '', (r.chk || []).join(' '), fxTxt(r), r.imei || ''].join(' ');
-FLD.rp = [['cap', 'السعر المتفق'], ['dep', 'العربون'], ['war', 'ضمان الإصلاح'], ['loc', 'مكان الهاتف (عند المعلم / الرف)'], ['need', 'خاصو قطعة غيار'], ['lock', 'PIN'], ['pat', 'نمط القفل'], ['img', 'الصورة'], ['chk', 'حالة الجهاز'], ['imei', 'IMEI'], ['note', 'الملاحظة']];
+FLD.rp = [['cap', 'السعر المتفق'], ['dep', 'العربون'], ['war', 'ضمان الإصلاح'], ['loc', 'مكان الهاتف (عند المعلم / الرف)'], ['lock', 'PIN'], ['pat', 'نمط القفل'], ['img', 'الصورة'], ['chk', 'حالة الجهاز'], ['imei', 'IMEI'], ['note', 'الملاحظة']];
 FLDN.rp = 'الصيانة';
 const tkCode = n => { n = Math.max(1, Math.floor(+n || 1)) - 1; return String.fromCharCode(65 + (Math.floor(n / 899) % 26)) + (101 + (n % 899)); };
 const tkParse = c => { const m = String(c || '').trim().match(/^#?([A-Z])(\d{3})$/i); return m ? (m[1].toUpperCase().charCodeAt(0) - 65) * 899 + (+m[2] - 100) : 0; };
@@ -93,8 +93,6 @@ function rpOtherOpen(tel, name, excludeId) {
     return nm.length >= 4 && nz(x.name) === nm;
   });
 }
-window.rpPartLines = () => (S.rp || []).filter(r => r.st == 'in' && r.part && r.part.trim()).map(r => ({ id: r.id, s: `${r.part.trim()} — (${r.dev || r.name}${r.tk ? ' #' + r.tk : ''})` }));
-window.rpPartDone = id => { const r = rf(id); if (r && r.part) commit('وصلت قطعة الغيار: ' + r.part, () => { r.part = ''; r.lb = S.me; }); };
 function warInfo(r) {
   const w = +r.war || 0; if (!w || r.res == 'fail' || r.res == 'ref') return null;
   if (r.st != 'dn' || !r.t2) return { active: true, daysLeft: w, label: `الضمان المقرر: ${w} يوم` };
@@ -134,20 +132,20 @@ function rc(r) {
   let callRowHtml = '';
   if (r.st == 'rd' && (r.calls || []).length) {
     const pc = rpParseCall(r.calls[r.calls.length - 1]);
-    callRowHtml = `<div class="rp-meta-line"><span>آخر تواصل: <bdi class="ltr">${esc(pc.dt)}</bdi></span><span><b class="rp-warn-inline">${arCnt(r.calls.length, 'اتصال', 'اتصالان', 'اتصالات', 'اتصالاً')}</b>${pc.by ? ` · <b><bdi>${esc(pc.by)}</bdi></b>` : ''}</span></div>`;
+    callRowHtml = `<div class="rp-meta-line"><span>آخر تواصل: <bdi class="ltr">${esc(pc.dt)}</bdi></span><span><span class="rp-warn-inline">${arCnt(r.calls.length, 'اتصال', 'اتصالان', 'اتصالات', 'اتصالاً')}</span>${pc.by ? ` · <b><bdi>${esc(pc.by)}</bdi></b>` : ''}</span></div>`;
   }
   const infoBox = `<div class="rp-meta" onclick="rpOpen('${i}')"><div class="rp-meta-line"><span>${dateLabel}</span>${whoName ? `<b><bdi>${esc(whoName)}</bdi></b>` : ''}</div>${callRowHtml}</div>`;
   let statusRow = '';
   if (r.st == 'in') {
     const locBtns = shown('rp', 'loc') ? Object.keys(LOC).map(k => `<button class="tag rp-mini ${r.loc == k ? 'on' : ''}" onclick="rLoc('${i}','${k}')">${LOC[k]}</button>`).join('') : '';
-    const partBtn = shown('rp', 'need') ? (r.part ? `<button class="tag rp-mini part on" onclick="rPart('${i}')">${I('tool')} خاصو: ${esc(r.part)}</button>` : `<button class="tag rp-mini" onclick="rPart('${i}')">+ خاصو قطعة</button>`) : '';
     const lockInd = (r.lock || (r.pat || []).length > 1) ? `<button class="tag rp-mini" onclick="rpOpen('${i}')" title="عرض القفل">${I('lock')} القفل</button>` : '';
-    if (locBtns || partBtn || lockInd) statusRow = `<div class="rp-tags">${locBtns}${partBtn}${lockInd}</div>`;
+    if (locBtns || lockInd) statusRow = `<div class="rp-tags">${locBtns}${lockInd}</div>`;
   } else if (r.st == 'dn') {
     const tstBadge = r.tst ? `<span class="rp-badge ok">${I('check')} جُرِّب مع الزبون</span>` : '';
     const wiBadge = wi ? `<span class="rp-badge ${wi.active ? 'ok' : ''}">${I('shield')} ${esc(wi.label)}</span>` : '';
     if (tstBadge || wiBadge) statusRow = `<div class="rp-tags">${tstBadge}${wiBadge}</div>`;
   }
+  const noteTxt = [r.note, r.part ? 'قطعة: ' + r.part : ''].filter(Boolean).join(' · ');
   const moreBtn2 = `<button class="btn s sm rp-icb" onclick="rpOpen('${i}')" title="تفاصيل وخيارات">⋯</button>`;
   const actsRow = r.st == 'in'
     ? `<div class="sub"><button class="btn sm" onclick="rSt('${i}','ok')">${I('check')} مصلوح</button><button class="btn s sm" onclick="rSt('${i}','fail')">غير مصلوح</button><button class="btn s sm" onclick="rSt('${i}','ref')">رفض</button>${moreBtn2}</div>`
@@ -158,7 +156,7 @@ function rc(r) {
     + `<div class="rp-head" onclick="rpOpen('${i}')"><div class="rp-who">${r.tk ? `<span class="tk-b ${stB.cls}">#${esc(r.tk)}</span>` : ''}<span class="rp-nm">${esc(r.name)}</span><span class="rp-st-txt ${stB.cls}">· ${esc(stB.txt)}</span>${retB}</div>${prHtml}</div>`
     + `<div class="rp-body">${im ? `<img class="rp-th" onclick="event.stopPropagation();rpZoom('${i}')" src="${im}">` : ''}<div class="rp-dev" onclick="rpOpen('${i}')"><bdi>${esc(r.dev || 'هاتف')}</bdi> <span>— ${esc(r.fault)}</span></div>${telHtml}</div>`
     + infoBox + statusRow
-    + (r.note ? `<div class="rnote" onclick="rNote('${i}')" title="اضغط لتعديل الملاحظة">${I('chat')}<span>${esc(r.note)}</span></div>` : '')
+    + (noteTxt ? `<div class="rnote" onclick="rNote('${i}')" title="اضغط لتعديل الملاحظة">${I('chat')}<span>${esc(noteTxt)}</span></div>` : '')
     + (r.st == 'dn' && r.dnote ? `<div class="m">ملاحظة التسليم: ${esc(r.dnote)}</div>` : '')
     + (typeof dbtRp == 'function' ? dbtRp(r) : '')
     + (oSum > 0 ? `<div class="rs rp-click" onclick="go('dbt')">${I('alert')} تنبيه: على هذا الزبون دين مفتوح (${oSum} درهم)</div>` : '')
@@ -211,7 +209,7 @@ function rpSheetR(id) {
     + (r.dep ? `<div class="m" style="margin-top:6px">العربون المقبوض: <b>${esc(dh(r.dep))}</b>${sn1(r.cap) && sn1(r.dep) ? ` · المتبقي: <b>${Math.max(0, +dg(r.cap) - +dg(r.dep))} درهم</b>` : ''}</div>` : '')
     + (r.st == 'dn' ? `<div class="m" style="margin-top:4px">المبلغ المقبوض عند التسليم: <b>${esc(dh(r.paid))}</b></div>` : '')
     + ((r.chk || []).length ? `<div class="m" style="margin-top:4px">حالة الاستلام / الأمانات: <b>${esc(r.chk.join('، '))}</b></div>` : '')
-    + (r.part ? `<div class="rs" style="margin-top:4px">خاصو قطعة غيار: ${esc(r.part)}</div>` : '')
+    + (r.part ? `<div class="m" style="margin-top:4px">ملاحظة قديمة (قطعة): <b>${esc(r.part)}</b></div>` : '')
     + (wi ? `<div class="m" style="margin-top:4px"><b>${I('shield')} ${esc(wi.label)}</b></div>` : '')
     + (r.imei ? `<div class="m" style="margin-top:4px">IMEI: <bdi class="ltr">${esc(r.imei)}</bdi></div>` : '')
     + fxShow(r)
@@ -227,7 +225,6 @@ function rpSheetR(id) {
     + `<div class="cs-acts">`
     + (canEd ? `<button class="btn s" onclick="rpGo('rEd','${r.id}')">${I('edit')} تعديل التذكرة</button>` : '')
     + (canEd ? `<button class="btn s" onclick="rpGo('rNote','${r.id}')">${I('plus')} ${r.note ? 'تعديل الملاحظة' : 'ملاحظة سريعة'}</button>` : '')
-    + (r.st == 'in' && shown('rp', 'need') ? `<button class="btn s" onclick="rpGo('rPart','${r.id}')">${I('tool')} ${r.part ? 'القطعة المطلوبة' : 'خاصو قطعة'}</button>` : '')
     + (r.st == 'in' ? `<button class="btn s" onclick="rpGo('rCL','${r.id}')">${I('phone')} سجّل اتصالاً</button>` : '')
     + (r.st == 'rd' ? `<button class="btn s" onclick="rpGo('rSt','${r.id}','in')">${I('undo')} إرجاع «في المحل»</button>` : '')
     + (r.st == 'dn' ? `<button class="btn s" onclick="rpGo('rRet','${r.id}')">${I('undo')} إرجاع للصيانة</button>` : '')
@@ -247,7 +244,6 @@ function rpList() {
     if (sf == 'late' && (tab == 'rd' || tab == 'nf')) a = a.filter(isLateRp);
     else if (sf == 'war' && tab == 'dn') a = a.filter(r => { const w = warInfo(r); return w && w.active; });
     else if ((sf == 'm' || sf == 's') && tab == 'in') a = a.filter(r => r.loc == sf);
-    else if (sf == 'part' && tab == 'in') a = a.filter(r => r.part && r.part.trim());
     else if (sf == 'slow' && tab == 'in') a = a.filter(isSlowRp);
   }
   if (tab == 'in' && sf == 'slow') a.sort((x, y) => tOf(x) - tOf(y));
@@ -263,13 +259,11 @@ function rpSubFiltersHtml(tab) {
   if (tab == 'in') {
     const mCnt = shown('rp', 'loc') ? S.rp.filter(r => r.st == 'in' && r.loc == 'm').length : 0;
     const sCnt = shown('rp', 'loc') ? S.rp.filter(r => r.st == 'in' && r.loc == 's').length : 0;
-    const pCnt = shown('rp', 'need') ? S.rp.filter(r => r.st == 'in' && r.part && r.part.trim()).length : 0;
     const wCnt = S.rp.filter(isSlowRp).length;
-    if (!mCnt && !sCnt && !pCnt && !wCnt && !sf) return '';
+    if (!mCnt && !sCnt && !wCnt && !sf) return '';
     return `<div class="sec-tags rp-sub-tags">`
       + (mCnt || sf == 'm' ? `<button class="tag ${sf == 'm' ? 'on' : ''}" onclick="V.sf=V.sf=='m'?'':'m';render()">عند المعلم (${mCnt})</button>` : '')
       + (sCnt || sf == 's' ? `<button class="tag ${sf == 's' ? 'on' : ''}" onclick="V.sf=V.sf=='s'?'':'s';render()">في الرف (${sCnt})</button>` : '')
-      + (pCnt || sf == 'part' ? `<button class="tag ${sf == 'part' ? 'on' : ''}" onclick="V.sf=V.sf=='part'?'':'part';render()">${I('tool')} خاصو قطعة (${pCnt})</button>` : '')
       + (wCnt || sf == 'slow' ? `<button class="tag ${sf == 'slow' ? 'on' : ''}" onclick="V.sf=V.sf=='slow'?'':'slow';render()">${I('alert')} متأخر +${lim('rpSlow')} أيام (${wCnt})</button>` : '')
       + `</div>`;
   }
@@ -321,18 +315,6 @@ window.rSt = function (id, x) {
     if (x == 'in') { r.st = 'in'; r.res = ''; }
     else { r.st = 'rd'; r.res = x; r.t1 = Date.now(); r.part = ''; }
     r.loc = ''; r.lb = S.me;
-  });
-};
-window.rPart = function (id) {
-  const r = rf(id); if (!r) return;
-  const defPart = r.part || [r.fault, r.dev].filter(Boolean).join(' ');
-  $('sh').innerHTML = `<div class="bar"></div><h3>قطعة غيار مطلوبة — ${esc((r.tk ? '#' + r.tk + ' ' : '') + r.name)}</h3>`
-    + `<p class="m">تظهر هذه القطعة تلقائياً في «التقرير اليومي» للمعلم حتى يشتريها، وتختفي بمجرد إصلاح الهاتف أو مسحها.</p>`
-    + `<label>اسم القطعة المطلوبة<input id="rp_pt" value="${esc(defPart)}" placeholder="مثال: افيشور Samsung A15"></label>`
-    + `<div class="acts">${r.part ? `<button class="btn s del" onclick="finish('')">وصلت / مسح</button>` : '<button class="btn s" onclick="finish(null)">إلغاء</button>'}<button class="btn" onclick="finish($('rp_pt').value.trim())">حفظ في التقرير</button></div>`;
-  sheetOpen(v => {
-    if (v === null) return;
-    commit(v ? 'أُضيفت القطعة للتقرير اليومي' : 'تم مسح القطعة المطلوبة', () => { r.part = v; r.lb = S.me; });
   });
 };
 window.rRet = function (id) {

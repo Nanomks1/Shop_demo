@@ -208,17 +208,68 @@ function csQuickNote(id) {
   const i = find(id);
   ask('بوشيط ' + i.name, [{ k: 'rem', l: 'شنو باقي عندنا فالمحل؟ (مثال: غير الأسود)', v: i.rem || '' }, { k: 'need', l: 'شنو خاص يجيب المعلم؟ (مثال: فضي / كحلي)', v: i.need || '' }]).then(v => { if (v) commit('تم التحديث', () => { i.rem = v.rem.trim(); i.need = v.need.trim(); i.by = S.me; }); });
 }
-/* ---------- الشراء: يُضاف العدد للألوان الناقصة (أو لكل الألوان إن لم يوجد ناقص) ---------- */
-function csBuyApply(i, n) {
-  csN(i); i.v = i.v || [];
-  if (!i.v.length) i.v.push({ id: uid(), g: '', c: '', n });
-  else { const t = i.v.filter(x => csVSt(i, x) != 'g'); (t.length ? t : i.v).forEach(x => x.n += n); }
-  i.need = ''; touch(i, 1);
+/* ---------- وصول البضاعة من التقرير (✓): خانة رقم لكل لون بلا تخمين ولا إعادة رسم ---------- */
+let CSB = { id: '', clN: 0, clR: 0 };
+function csBuyTog(w) {
+  if (w == 'n') { CSB.clN = CSB.clN ? 0 : 1; const b = $('csb_fn'); if (b) b.classList.toggle('on', !!CSB.clN); }
+  else { CSB.clR = CSB.clR ? 0 : 1; const b = $('csb_fr'); if (b) b.classList.toggle('on', !!CSB.clR); }
+}
+function csBuyAddRow() {
+  const box = $('csb_ex'), it = find(CSB.id); if (!box || !it) return;
+  const used = new Set((csN(it).v || []).map(x => x.c || ''));
+  box.querySelectorAll('.buy-sel').forEach(s => used.add(s.value));
+  const cols = [...S.tags.color.filter(c => !used.has(c)), ...S.tags.color.filter(c => used.has(c))];
+  const opts = cols.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') + '<option value="">عام</option>';
+  box.insertAdjacentHTML('beforeend', `<div class="buy-row"><select class="buy-sel">${opts}</select><input type="tel" inputmode="numeric" class="buy-inp buy-ninp" placeholder="0"><button type="button" class="rp-xbtn" onclick="this.parentElement.remove()" aria-label="إزالة">${I('close')}</button></div>`);
+}
+function csBuySave() {
+  const adds = [], news = [];
+  document.querySelectorAll('#sh .buy-inp[data-vid]').forEach(el => {
+    const n = ci(el.value); if (n > 0) adds.push({ vid: el.dataset.vid, n });
+  });
+  document.querySelectorAll('#csb_ex .buy-row').forEach(r => {
+    const sel = r.querySelector('.buy-sel'), inp = r.querySelector('.buy-ninp');
+    const n = inp ? ci(inp.value) : 0;
+    if (n > 0) news.push({ c: sel ? sel.value : '', n });
+  });
+  if (!adds.length && !news.length && !CSB.clN && !CSB.clR) return toast('أدخل الكمية التي وصلت للون واحد على الأقل');
+  finish({ adds, news, clN: CSB.clN, clR: CSB.clR });
 }
 function buyC(id) {
   const i = find(id); if (!i) return;
-  const bad = (csN(i).v || []).filter(x => csVSt(i, x) != 'g'), lbl = bad.length ? bad.map(x => x.c || 'عام').join(' + ') : 'كل الألوان';
-  qty(`بوشيط ${i.name} (${lbl})`, lim('csBuy'), n => { csBuyApply(i, n); reqChk('بوشيط ' + i.name, 1); });
+  csN(i);
+  const V0 = i.v || [];
+  CSB = { id: i.id, clN: 0, clR: 0 };
+  const rows = V0.map(x => `<div class="buy-row">${csDot(x, csVSt(i, x), x.n)}<div class="buy-info"><b>${esc(x.c || 'عام')}</b><small class="m">المتوفر: ${x.n}</small></div><input type="tel" inputmode="numeric" class="buy-inp" data-vid="${x.id}" placeholder="0"></div>`).join('')
+    || '<p class="m">لا توجد ألوان مسجّلة بعد — اضغط «+ إضافة لون جديد وصل» أدناه.</p>';
+  const flags = (i.need || i.rem)
+    ? `<div class="buy-flags">`
+      + (i.need ? `<button type="button" id="csb_fn" class="tag" onclick="csBuyTog('n')">وصل المطلوب — مسح «خاصنا: ${esc(i.need)}»</button>` : '')
+      + (i.rem ? `<button type="button" id="csb_fr" class="tag" onclick="csBuyTog('r')">مسح ملاحظة «باقي: ${esc(i.rem)}»</button>` : '')
+      + `</div>`
+    : '';
+  $('sh').innerHTML = `<div class="bar"></div><h3>وصول بوشيط: ${esc(i.name)}</h3>`
+    + `<p class="m">اكتب الكمية التي وصلت لكل لون (اترك ما لم يصل فارغاً).</p>`
+    + rows + `<div id="csb_ex"></div>`
+    + `<button type="button" class="btn s sm" style="margin-top:8px" onclick="csBuyAddRow()">+ إضافة لون جديد وصل</button>`
+    + flags
+    + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="csBuySave()">حفظ الوصول</button></div>`;
+  sheetOpen(v => {
+    if (!v) return;
+    const it = find(id); if (!it) return;
+    const hadAdd = v.adds.length || v.news.length;
+    commit('تم تسجيل وصول بوشيط ' + it.name, () => {
+      csN(it); it.v = it.v || [];
+      const parts = [];
+      v.adds.forEach(({ vid, n }) => { const x = it.v.find(y => y.id == vid); if (x) { x.n += n; parts.push('+' + n + ' ' + (x.c || 'عام')); } });
+      v.news.forEach(({ c, n }) => { const x = it.v.find(y => y.c == c); if (x) x.n += n; else it.v.push({ id: uid(), g: '', c, n }); parts.push('+' + n + ' ' + (c || 'عام')); });
+      if (v.clN) { it.need = ''; if (!parts.length) parts.push('مسح تنبيه «خاصنا»'); }
+      if (v.clR) { it.rem = ''; if (!parts.length) parts.push('مسح ملاحظة «باقي»'); }
+      touch(it, 1);
+      if (typeof rcLogIn == 'function' && parts.length) rcLogIn('case', it.id, it.id, 'بوشيط ' + it.name, parts.join('، '));
+    });
+    if (hadAdd) reqChk('بوشيط ' + it.name, 1);
+  });
 }
 /* تحويل البيانات القديمة عند الإقلاع (يُحفظ مع أول حفظ عادي) */
 S.items.forEach(i => { if (i.sec == 'case') csN(i); });

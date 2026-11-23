@@ -41,7 +41,8 @@ function phLimG(g) {
 const phGSt = g => g.tot <= 0 ? 'r' : g.tot <= phLimG(g) ? 'y' : 'g';
 const phLim = i => phLimG(phGroup(i));
 const phSt = i => phGSt(phGroup(i));
-const stkL = () => ph().filter(i => i.cnt > 0).sort((a, b) => (a.brand + a.name).localeCompare(b.brand + b.name));
+const stkL = () => ph().filter(i => av(i) > 0).sort((a, b) => (a.brand + a.name).localeCompare(b.brand + b.name));
+const stkGroups = () => phGroupsOf(ph().filter(i => av(i) > 0)).sort((a, b) => (a.brand + a.name).localeCompare(b.brand + b.name));
 const stkN = i => [i.brand, i.name, i.color, i.ram, i.cap].filter(Boolean).join(' ');
 /* ---------- بطاقة الموديل: دوائر الألوان (اضغط الدائرة ثم − بيع / + إضافة · ضغطة مطولة = تصحيح العدد) ---------- */
 let PHS = '', PLT = 0, PLF = 0;

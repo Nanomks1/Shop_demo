@@ -211,14 +211,60 @@ function glRm(gid) {
   });
 }
 const gl2 = i => { const g = S.gg.find(x => x.id == i.gid); return g ? `<div class="card"><b>زجاج <bdi>${esc(i.ty)}</bdi>: ${glModsH(gMods(g, i.ty))}</b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi> · آخر تأكيد ${agoTxt(cfTime(i))}</div></div>` : ''; };
+/* وصول الأنتي كاس من التقرير (✓): كمية أو مستوى لكل موديل دون مسح بقية الموديلات */
+let GLB = { gid: '', ty: '', ms: [], lv: {} };
+function glBuyIn(k) {
+  if (GLB.lv[k]) {
+    GLB.lv[k] = '';
+    document.querySelectorAll(`#sh .lvb[data-gk="${k}"]`).forEach(b => b.classList.remove('on'));
+  }
+}
+function glBuyLv(k, l) {
+  GLB.lv[k] = GLB.lv[k] == l ? '' : l;
+  const inp = document.querySelector(`#sh .buy-inp[data-gk="${k}"]`);
+  if (GLB.lv[k] && inp) inp.value = '';
+  document.querySelectorAll(`#sh .lvb[data-gk="${k}"]`).forEach(b => b.classList.toggle('on', b.dataset.lv == GLB.lv[k]));
+}
+function glBuySave() {
+  const chg = [];
+  GLB.ms.forEach((m, k) => {
+    const inp = document.querySelector(`#sh .buy-inp[data-gk="${k}"]`), n = inp ? ci(inp.value) : 0, l = GLB.lv[k] || '';
+    if (n > 0) chg.push({ m, n });
+    else if (l) chg.push({ m, l });
+  });
+  if (!chg.length) return toast('أدخل كمية وصلت أو اختر مستوى لموديل واحد على الأقل');
+  finish(chg);
+}
 function buyG(id) {
-  let i = find(id);
-  const g = i ? S.gg.find(x => x.id == i.gid) : S.gg.find(x => x.id == id);
+  const i0 = find(id), g = i0 ? S.gg.find(x => x.id == i0.gid) : S.gg.find(x => x.id == id);
   if (!g) return;
-  if (!i) i = glGet(g.id, gFirstTy(g) || 'عادي');
-  const ms = gMods(g, i.ty);
-  commit('تم الشراء', () => { i.lv = i.lv || {}; i.stock = i.stock || {}; for (const l of ['c', 'b', 'a']) { ms.forEach(m => { if (mval(i, m) < lvN(l)) { i.lv[m] = l; delete i.stock[m]; } }); if (gSt(i, g, i.ty) == 'g') break; } touch(i, 1); });
-  reqChk(ms.join(' '));
+  const ty = i0 ? i0.ty : (gFirstTy(g) || 'عادي'), cur = i0 || { stock: {}, lv: {}, ty }, ms = gMods(g, ty), T = GT();
+  GLB = { gid: g.id, ty, ms, lv: {} };
+  const rows = ms.map((m, k) => {
+    const lv0 = (cur.lv || {})[m], curN = mval(cur, m);
+    const curTxt = lv0 !== undefined ? (lv0 == 'r' ? 'نفد' : '≈' + curN) : String(curN);
+    const lvs = [['a', `<bdi class="ltr">${T.a}+</bdi>`], ['b', `<bdi class="ltr">${T.b}+</bdi>`], ['c', `<bdi class="ltr">${T.c}+</bdi>`], ['y', 'قليل']].map(([l, lb]) => `<button type="button" class="lvb" data-gk="${k}" data-lv="${l}" style="--lc:${LC[l]};--lt:${l == 'c' ? '#14532d' : '#fff'}" onclick="glBuyLv(${k},'${l}')">${lb}</button>`).join('');
+    return `<div class="gm"><div class="buy-row"><div class="buy-info"><b><bdi>${esc(m)}</bdi></b><small class="m">الحالي: <bdi class="ltr">${curTxt}</bdi></small></div><input type="tel" inputmode="numeric" class="buy-inp" data-gk="${k}" placeholder="كمية وصلت" oninput="glBuyIn(${k})"></div><div class="lvs">${lvs}</div></div>`;
+  }).join('');
+  $('sh').innerHTML = `<div class="bar"></div><h3>وصول أنتي كاس (${esc(ty)})</h3>`
+    + `<p class="m">اكتب الكمية التي وصلت (تُضاف للمتوفر) أو اختر المستوى الجديد للموديل الذي وصل فقط — بقية الموديلات لا تتغير.</p>`
+    + rows
+    + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="glBuySave()">حفظ الوصول</button></div>`;
+  sheetOpen(chg => {
+    if (!chg || !chg.length) return;
+    const lvLbl = { a: T.a + '+', b: T.b + '+', c: T.c + '+', y: 'قليل' };
+    commit('تم تسجيل وصول أنتي كاس ' + ty, () => {
+      const r = glGet(g.id, ty), parts = [];
+      r.stock = r.stock || {}; r.lv = r.lv || {};
+      chg.forEach(x => {
+        if (x.n > 0) { r.stock[x.m] = mval(r, x.m) + x.n; delete r.lv[x.m]; parts.push(x.m + ' +' + x.n); }
+        else if (x.l) { r.lv[x.m] = x.l; delete r.stock[x.m]; parts.push(x.m + ' ← ' + (lvLbl[x.l] || x.l)); }
+      });
+      touch(r, 1);
+      if (typeof rcLogIn == 'function' && parts.length) rcLogIn('glass', g.id + '|' + ty, g.id + '|' + ty, 'أنتي كاس ' + ty + ': ' + ms.join(' / '), parts.join('، '));
+    });
+    reqChk(ms.join(' '), 1);
+  });
 }
 /* نافذة أنواع الزجاج لكل موديل داخل المجموعة */
 let GE = null;

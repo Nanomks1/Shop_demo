@@ -1,4 +1,4 @@
-/* repairform.js — الصيانة (2/3): قطع الغيار والأمانات، نموذج الاستلام، الكاميرا، الحفظ والتسليم. يُحمَّل بعد repair.js وقبل repairguide.js */
+/* repairform.js — الصيانة (2/3): الأمانات، نموذج الاستلام، الكاميرا، الحفظ والتسليم. يُحمَّل بعد repair.js وقبل repairguide.js */
 function rpAddonOpts(dev) {
   const out = [{ k: '', l: '— بدون إرفاق سلعة —' }], nd = nz(dev || '');
   if (nd.length >= 2) {
@@ -145,7 +145,7 @@ function rForm(rec) {
   ZR = rec; ZP = [...(rec.pat || [])]; ZK = [...(rec.chk || [])]; ZI = rec.img || ''; ZW = rec.id ? +(rec.war ?? 0) : +(rec.war ?? lim('rpWar')); ZL = rec.loc || '';
   fsInit([], {}, 'rp', rec);
   const shownImg = ZI.startsWith('data:') ? ZI : (rec.id && IMG[rec.id]) || '';
-  const tkShow = rec.tk || '', moreOpen = (rec.imei || +rec.war || rec.part || (rec.pat && rec.pat.length > 1)) ? ' open' : '';
+  const tkShow = rec.tk || '', moreOpen = (rec.imei || +rec.war || (rec.pat && rec.pat.length > 1)) ? ' open' : '';
   $('sh').innerHTML = `<div class="bar"></div><div class="row2"><h3 class="rp-fh">${rec.id ? 'تعديل صيانة' : 'استلام هاتف'}</h3>${tkShow ? `<span class="tk-b" title="اكتب هذا الرقم على ملصق الهاتف">#${esc(tkShow)}</span>` : '<span class="m">رقم التذكرة يظهر بعد الحفظ</span>'}</div>`
     + `<div class="row2"><label class="f1">اسم الزبون<input id="r_n" autocomplete="off" value="${esc(rec.name || '')}" oninput="rH(1)"></label><label class="f1">رقم الهاتف (اختياري)<input id="r_t" type="tel" value="${esc(rec.tel || '')}" placeholder="بدون رقم إن تعذّر" oninput="rH()"></label></div><div id="rh" class="m"></div>`
     + `<label>نوع الهاتف (اكتب أو اختر الماركة تحته)<input id="r_v" data-sug="rd" value="${esc(rec.dev || '')}" placeholder="مثال: Samsung A15" oninput="syncRpTags();checkDeviceHistory();suggestGuidePrice()"></label>`
@@ -158,9 +158,8 @@ function rForm(rec) {
     + `<div${hh('rp', 'chk')}><label>حالة الجهاز والأمانات عند الاستلام</label><div id="rk" class="rp-chip-box"></div></div>`
     + `<div${hh('rp', 'img')}><div class="row2"><label class="f1">صورة الهاتف (اختياري)</label><button type="button" class="btn s sm" onclick="rCam()">التقاط صورة</button><button type="button" class="btn s sm" onclick="$('r_i').click()">من المعرض</button><button type="button" id="r_imx" class="btn s sm del" onclick="rImDel()" ${shownImg ? '' : 'hidden'}>حذف</button></div><img id="r_im" class="rp-sheet-im" ${shownImg ? `src="${shownImg}"` : 'hidden'}><input id="r_i" type="file" accept="image/*" hidden onchange="rIM(this.files[0])"></div>`
     + `<label${hh('rp', 'note')}>ملاحظة (اختياري) — تظهر بارزة على البطاقة<textarea id="r_o" rows="2">${esc(rec.note || '')}</textarea></label>`
-    + `<details class="card rp-det"${moreOpen}><summary><b>تفاصيل إضافية</b> <span class="m">(نمط القفل، خاصو قطعة، الضمان، IMEI)</span></summary>`
+    + `<details class="card rp-det"${moreOpen}><summary><b>تفاصيل إضافية</b> <span class="m">(نمط القفل، الضمان، IMEI)</span></summary>`
     + `<div${hh('rp', 'pat')}><label>نمط القفل (ارسمه بإصبعك)</label><div class="row2"><svg id="zsv" viewBox="0 0 120 120" width="135" class="rp-pat-pad" onpointerdown="ZD=1;rP(event,1)" onpointermove="if(ZD)rP(event)" onpointerup="ZD=0" onpointercancel="ZD=0">${PI(ZP)}</svg><button type="button" class="btn s sm" onclick="ZP=[];$('zsv').innerHTML=PI(ZP)">مسح النمط</button></div></div>`
-    + `<label${hh('rp', 'need')}>خاصو قطعة غيار (تظهر تلقائياً في التقرير اليومي للمعلم)<input id="r_part" value="${esc(rec.part || '')}" placeholder="مثال: افيشور Samsung A15"></label>`
     + `<label${hh('rp', 'war')}>ضمان الإصلاح (يبدأ من تاريخ التسليم)<div class="rp-chip-box">${WAR_OPTS.map(([d, l]) => `<button type="button" class="tag war-tg ${ZW === d ? 'on' : ''}" onclick="setRpWar(${d})">${l}</button>`).join('')}</div><input id="r_war" type="tel" value="${ZW || ''}" placeholder="أو اكتب عدد أيام الضمان (0 = بدون ضمان)" oninput="setRpWar(+dg(this.value)||0,1)"></label>`
     + `<label${hh('rp', 'imei')}>IMEI / الرقم التسلسلي (اختياري)<div class="row2"><input id="r_imei" class="f1" value="${esc(rec.imei || '')}" placeholder="امسح باركود العلبة أو *#06#"><button type="button" class="btn s sm" onclick="scanIntoInput('r_imei')">${I('scan')} مسح</button></div></label>`
     + `<div id="fx"></div></details>`
@@ -288,7 +287,7 @@ function rSave(moreSame) {
   const out = fxAtt({
     name: n, tel: rawTel, dev: v, fault: f,
     cap: $('r_c').value.trim(), dep: $('r_d').value.trim(),
-    loc: ZL, part: ($('r_part') ? $('r_part').value.trim() : (ZR.part || '')),
+    loc: ZL,
     lock: $('r_l').value.trim(), pat: ZP, chk: ZK, img: ZI,
     note: $('r_o').value.trim(), imei: $('r_imei').value.trim(),
     war: Math.max(0, Math.floor(+dg($('r_war').value) || 0)),

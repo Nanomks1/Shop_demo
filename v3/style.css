@@ -295,7 +295,6 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .rp-cnt-b{display:inline-flex;align-items:center;padding:.1em .45em;border-radius:6px;background:var(--wn-bg);color:var(--wn-t);font-size:var(--t-xs);font-weight:700;white-space:nowrap}
 .rp-tags{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:7px}
 .tag.rp-mini{margin:0;padding:.22em .55em;font-size:var(--t-xs);min-height:1.75rem}
-.tag.rp-mini.part.on{background:var(--wn-bg);color:var(--wn-t);border-color:var(--wn-bd)}
 .rp-badge{display:inline-flex;align-items:center;gap:3px;padding:.14em .5em;border-radius:7px;font-size:var(--t-xs);font-weight:700;background:var(--inp);border:1px solid var(--b);color:var(--t);white-space:nowrap}
 .rp-badge.ok{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok-t)}
 .rp-badge.bad{background:var(--al-bg);border-color:var(--al-bd);color:var(--al-t)}
@@ -332,7 +331,7 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .dbt-who b{font-size:var(--t-lg);font-weight:800}
 .dbt-amt{display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-inline-start:auto}
 .dbt-orig{font-size:var(--t-xs);color:var(--m);font-weight:600;white-space:nowrap}
-/* ---- التقرير اليومي (إصلاح الاتجاه وفصل الاسم عن الحالة) ---- */
+/* ---- التقرير اليومي ونوافذ تسجيل وصول البضاعة وسجل الوصول ---- */
 .rsum .qpill{cursor:default}
 .rsum .al .qn{color:var(--al-t)}.rsum .wn .qn{color:var(--wn-t)}
 .rsent{font-size:var(--t-sm);color:var(--m);margin:-2px 4px 8px;text-align:center}
@@ -344,12 +343,29 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .rrow .rt{flex:1;min-width:0;line-height:1.4;word-break:normal;overflow-wrap:break-word}
 .rrow.r .rt,.rrow.r .rt-line1{font-weight:700}
 .rt-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rt-tap{cursor:pointer}
 .rt-line1{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-weight:700;font-size:var(--t-md)}
 .rt-sub{font-size:var(--t-xs);color:var(--m);font-weight:500}
 .rt-st{display:inline-flex;align-items:center;padding:.15em .52em;border-radius:7px;font-size:var(--t-xs);font-weight:800;white-space:nowrap;flex:none;background:var(--wn-bg);color:var(--wn-t);border:1px solid var(--wn-bd)}
 .rt-st.r{background:var(--al-bg);color:var(--al-t);border-color:var(--al-bd)}
 .rck{flex:none;min-width:calc(2.1rem * var(--ds));min-height:calc(2.1rem * var(--ds));border-radius:8px;border:1.5px solid var(--p);background:var(--ab);color:var(--pt);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .1s ease}
 .rck.s{min-width:1.95rem;min-height:2rem;border-radius:8px;color:var(--m);background:var(--inp);border-color:var(--b);font-size:var(--t-sm)}
+.rin-b{display:inline-flex;align-items:center;padding:.08em .45em;border-radius:6px;background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-t);font-size:var(--t-xs);font-weight:700;white-space:nowrap}
+.rin-box{border-inline-start:4px solid #10b981}
+.rin-row{display:flex;align-items:center;gap:8px;padding:.42rem 2px;border-bottom:1px solid var(--bl);cursor:pointer}
+.rin-row:last-child{border-bottom:0}
+.rin-row b{display:block;font-size:var(--t-md);font-weight:700}
+.rin-meta{display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex:none;font-size:var(--t-xs);color:var(--m)}
+.rin-meta small{font-weight:700;color:var(--t)}
+.buy-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bl)}
+.buy-row:last-of-type{border-bottom:0}
+.buy-info{flex:1 1 auto;min-width:0}
+.buy-info b{display:block;font-size:var(--t-md);font-weight:700;word-break:normal;overflow-wrap:break-word}
+.buy-info small{display:block;font-size:var(--t-xs)}
+.buy-inp{width:5.4rem!important;min-width:4.4rem;flex:none;text-align:center;font-weight:800;direction:ltr}
+.buy-sel{flex:1 1 auto;min-width:0}
+.buy-flags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--b)}
+.buy-flags .tag{margin:0;width:100%;justify-content:center;text-align:center}
 .sch{color:var(--sc)!important;display:flex;align-items:center;gap:5px}
 [data-md=d] .sch{color:color-mix(in srgb,var(--sc) 58%,#fff)!important}
 .rlist.sx{border-inline-start:5px solid var(--sc)}

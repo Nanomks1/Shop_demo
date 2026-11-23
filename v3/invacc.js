@@ -118,8 +118,22 @@ function acDone(v, r) {
 }
 function buyA(id) {
   const i = find(id); if (!i) return;
-  if (typeof i.cnt == 'number') return qty(acTitle(i), Math.max(1, acLim(i) + 1 - i.cnt), n => { i.cnt += n; touch(i, 1); reqChk(acName(i), 1); });
-  commit('تم الشراء', () => { i.st = 'g'; touch(i, 1); }); reqChk(acName(i));
+  if (typeof i.cnt == 'number') return qty(acTitle(i) + ' (المتوفر: ' + i.cnt + ')', '', n => {
+    i.cnt += n; touch(i, 1);
+    if (typeof rcLogIn == 'function') rcLogIn('acc', i.id, i.id, acTitle(i), '+' + n);
+    reqChk(acName(i), 1);
+  });
+  $('sh').innerHTML = `<div class="bar"></div><h3>وصول: ${esc(acTitle(i))}</h3>`
+    + `<p class="m">حدّد الحالة الجديدة لهذا الإكسسوار:</p>`
+    + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn s" onclick="finish('y')">قليل</button><button class="btn" onclick="finish('g')">متوفر الآن</button></div>`;
+  sheetOpen(st => {
+    if (!st) return;
+    commit('تم تسجيل وصول ' + acTitle(i), () => {
+      i.st = st; touch(i, 1);
+      if (typeof rcLogIn == 'function') rcLogIn('acc', i.id, i.id, acTitle(i), ALB[st] || st);
+    });
+    reqChk(acName(i), 1);
+  });
 }
 /* مجموعات الكابلات والشواحن: الحكم على المجموع (فئة + موصل + قدرة) — سطر واحد رشيق + نافذة تفاصيل */
 const gkey = i => [i.kind, i.conn || '', i.tier || '', i.pw || ''].join('|').replace(/\//g, '-');
@@ -168,7 +182,70 @@ function agOpen(e) {
   if (!SH) sheetOpen(() => { });
 }
 const agLv = (e, l) => { const d = agD(e); if (d) { agSet(d, g => { g.lv = l; delete g.cnt; }, true, true); if (l != 'r') reqChk(d.title); } };
-const agBuy = e => { const d = agD(e); if (d) { agSet(d, g => { g.lv = 'g'; delete g.cnt; }, true, true); reqChk(d.title); } };
+/* وصول مجموعات الكابلات/الشواحن من التقرير (✓): إدخال الكمية الفعلية أو اختيار الحالة صراحة */
+let AGB = { e: '', lv: '' };
+function agBuyIn(src) {
+  if (AGB.lv) {
+    AGB.lv = '';
+    if ($('agb_g')) $('agb_g').classList.remove('on');
+    if ($('agb_y')) $('agb_y').classList.remove('on');
+  }
+  if (src == 'm' && $('agb_n')) $('agb_n').value = '';
+  if (src == 'g') document.querySelectorAll('#sh .buy-inp[data-mid]').forEach(el => { el.value = ''; });
+}
+function agBuyLv(s) {
+  AGB.lv = AGB.lv == s ? '' : s;
+  if (AGB.lv) {
+    if ($('agb_n')) $('agb_n').value = '';
+    document.querySelectorAll('#sh .buy-inp[data-mid]').forEach(el => { el.value = ''; });
+  }
+  if ($('agb_g')) $('agb_g').classList.toggle('on', AGB.lv == 'g');
+  if ($('agb_y')) $('agb_y').classList.toggle('on', AGB.lv == 'y');
+}
+function agBuySave() {
+  const adds = [];
+  document.querySelectorAll('#sh .buy-inp[data-mid]').forEach(el => {
+    const n = ci(el.value); if (n > 0) adds.push({ mid: el.dataset.mid, n });
+  });
+  const genN = $('agb_n') ? ci($('agb_n').value) : 0;
+  if (!adds.length && !genN && !AGB.lv) return toast('أدخل الكمية التي وصلت أو اختر الحالة');
+  finish({ adds, genN, lv: AGB.lv });
+}
+function agBuy(e) {
+  const d = agD(e); if (!d) return;
+  AGB = { e, lv: '' };
+  const M = d.mem.filter(i => typeof i.cnt == 'number');
+  const curTxt = d.tot !== null ? `المجموع الحالي: ${d.est ? '≈' : ''}${d.tot}` : `الحالة الحالية: ${ALB2[d.st]}`;
+  const mRows = M.map(m => `<div class="buy-row"><div class="buy-info"><b>${esc(m.brand || 'عام')}</b><small class="m">المتوفر: ${m.cnt}</small></div><input type="tel" inputmode="numeric" class="buy-inp" data-mid="${m.id}" placeholder="0" oninput="agBuyIn('m')"></div>`).join('');
+  $('sh').innerHTML = `<div class="bar"></div><h3>وصول: ${esc(d.title)}</h3>`
+    + `<p class="m">${esc(curTxt)} · الحد «قارب» عند ${d.lim} فأقل.</p>`
+    + (mRows ? `<label>الكمية التي وصلت حسب الماركة</label>${mRows}` : '')
+    + `<label>${M.length ? 'أو كمية وصلت للمجموع العام (تُضاف للمجموع الحالي)' : 'الكمية التي وصلت (تُضاف للمجموع الحالي)'}<input id="agb_n" type="tel" inputmode="numeric" placeholder="فارغ إن اخترت الحالة أدناه" oninput="agBuyIn('g')"></label>`
+    + `<label>أو حدّد الحالة التقديرية بدون عدّ</label><div class="row2"><button type="button" id="agb_g" class="tag f1" onclick="agBuyLv('g')">متوفر الآن</button><button type="button" id="agb_y" class="tag f1" onclick="agBuyLv('y')">قارب النفاد</button></div>`
+    + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="agBuySave()">حفظ الوصول</button></div>`;
+  sheetOpen(v => {
+    if (!v) return;
+    const d2 = agD(e); if (!d2) return;
+    if (v.adds.length) {
+      commit('تم تسجيل وصول ' + d2.title, () => {
+        const parts = [];
+        v.adds.forEach(({ mid, n }) => { const it = find(mid); if (it) { it.cnt += n; touch(it, 1); parts.push((it.brand || 'عام') + ' +' + n); } });
+        if (typeof rcLogIn == 'function' && parts.length) rcLogIn('ag', e, e, d2.title, parts.join('، '));
+      });
+    } else if (v.genN > 0) {
+      agSet(d2, g => {
+        g.cnt = (d2.tot || 0) + v.genN; delete g.lv;
+        if (typeof rcLogIn == 'function') rcLogIn('ag', e, e, d2.title, '+' + v.genN);
+      }, true, true);
+    } else if (v.lv) {
+      agSet(d2, g => {
+        g.lv = v.lv; delete g.cnt;
+        if (typeof rcLogIn == 'function') rcLogIn('ag', e, e, d2.title, ALB2[v.lv] || v.lv);
+      }, true, true);
+    }
+    reqChk(d2.title, 1);
+  });
+}
 function agCnt(e) { const d = agD(e); if (d) ask('المجموع التقريبي — ' + d.title, [{ k: 'n', l: 'العدد تقريباً', t: 'tel', v: d.tot ?? '' }]).then(v => { if (v && v.n.trim() !== '') { agSet(d, g => { g.cnt = ci(v.n); delete g.lv; }, true, true); if (+dg(v.n) > 0) reqChk(d.title, 1); } }); }
 function agLimEd(e) {
   const d = agD(e); if (!d) return; if (!isAdmin()) return toast('للمدير فقط');
