@@ -30,7 +30,7 @@ function asShopEd() {
     if (!v) return;
     const n = v.n.trim();
     upd(() => {
-      if (!n || n == 'محل عزيز') delete S.cfg.shop;
+      if (!n || n == 'المحل') delete S.cfg.shop;
       else S.cfg.shop = n;
     });
   });

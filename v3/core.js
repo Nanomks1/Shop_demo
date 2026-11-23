@@ -123,7 +123,7 @@ function load(chk) {
   return { ...d, ...o, tags: { ...d.tags, ...o.tags }, perm: { ...d.perm, ...o.perm }, cfg: { ...d.cfg, ...o.cfg } };
 }
 let S = load(1);
-const shopName = () => (S && S.cfg && S.cfg.shop && String(S.cfg.shop).trim()) || 'محل عزيز';
+const shopName = () => (S && S.cfg && S.cfg.shop && String(S.cfg.shop).trim()) || 'المحل';
 const offDays = () => (S && S.cfg && Array.isArray(S.cfg.offDays)) ? S.cfg.offDays : ((S && S.cfg && S.cfg.rc && Array.isArray(S.cfg.rc.nd)) ? S.cfg.rc.nd : []);
 const isOffDay = (d = new Date()) => offDays().includes(d.getDay());
 let V = { v: 'home' }, Q = '', QP = 0, SH = false, SHR = null, ARM = 0, TT;
