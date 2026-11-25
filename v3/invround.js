@@ -97,7 +97,7 @@ function jlCompactRow(i) {
   if (i.sec == 'case') {
     const s = csSt(i), gSum = (csN(i).v || []).map(x => `<bdi>${esc(x.c || 'عام')} ${x.n}</bdi>`).join(' · ') || 'لا ألوان';
     const chips = typeof csChipsHtml == 'function' ? csChipsHtml(i, true) : '';
-    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csOpen('${i.id}')"><b>بوشيط <bdi>${esc(i.name)}</bdi></b><div class="m">${gSum}${i.price ? ' · <bdi>' + esc(fmtDh(i.price)) + '</bdi>' : ''} · ${dBadge}</div></div>`
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csOpen('${i.id}')"><b>بوشيط <bdi>${esc(csNm(i))}</bdi></b><div class="m">${gSum}${i.price ? ' · <bdi>' + esc(fmtDh(i.price)) + '</bdi>' : ''} · ${dBadge}</div></div>`
       + `<div class="jl-acts">${chips}<button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div></div></div>`;
   }
   if (i.sec == 'acc') {
@@ -207,7 +207,7 @@ window.priceLookupHtml = function (q) {
   });
   css.forEach(c => {
     const s = csSt(c), gSum = typeof csGSummaryTxt == 'function' ? csGSummaryTxt(c) : 'المتوفر ' + csTot(c);
-    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="csLimEd('${c.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('ccase')} بوشيط <b><bdi>${esc(c.name)}</bdi></b> <small class="m">(${esc(gSum)})</small></span><b class="cmp-pr">${esc(c.price ? fmtDh(c.price) : 'حدّد السعر')}</b></div>`;
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="csLimEd('${c.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('ccase')} بوشيط <b><bdi>${esc(csNm(c))}</bdi></b> <small class="m">(${esc(gSum)})</small></span><b class="cmp-pr">${esc(c.price ? fmtDh(c.price) : 'حدّد السعر')}</b></div>`;
   });
   ags.forEach(d => {
     rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="agOpen('${encodeURIComponent(d.id)}')"><span class="dotl" style="background:${DT[d.st]}"></span><span class="rt" style="font-size:.88rem">${I('cacc')} <b>${esc(d.title)}</b> <small class="m">(${d.tot !== null ? (d.est ? '≈' : '') + d.tot : ALB2[d.st]})</small></span><b class="cmp-pr">${esc(d.tier ? fmtDh(d.tier) : '—')}</b></div>`;

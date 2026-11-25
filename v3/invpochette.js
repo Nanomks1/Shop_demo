@@ -1,6 +1,7 @@
 /* ============================================================
    invpochette.js — البوشيط: موديل = سطر واحد، واللون هو الهوية
-   كل لون دائرة بعدده، وحدّها يلوَّن بالحالة (أحمر نفد / برتقالي قارب).
+   كل لون دائرة بعدده، وحدّها يلوَّن بالحالة (أحمر نفد / برتقالي قارب / متقطع موقوف).
+   خيارات المدير: S.cfg.csx (حكم الحالة، بيع بنقرة، عدّاد نفد، نوع البوشيط...) وأنواع S.cfg.cst.
    يُحمَّل بعد invglass.js.
    ============================================================ */
 /* ---------- ألوان الدوائر (الأسماء تُطابَق بعد التطبيع nz + تخصيصات المدير S.cfg.colHex) ---------- */
@@ -43,48 +44,143 @@ function csInk(c) {
   const n = parseInt(m[1], 16);
   return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? '#111827' : '#fff';
 }
-/* ---------- البيانات: كل نوع = لون واحد {id, g:'', c, n} ----------
-   تحويل تلقائي مرة واحدة للبيانات القديمة (رجالي/نسائي): تُدمج الأعداد في اللون نفسه. */
-function csN(i) {
-  const V0 = i.v;
-  if (!V0 || !V0.some(x => x.g)) { if (i.glim) delete i.glim; return i; }
-  const out = [];
-  V0.forEach(x => {
-    const c = x.c || '', y = out.find(z => z.c == c);
-    if (y) y.n += x.n; else out.push({ id: x.id, g: '', c, n: x.n });
+/* ---------- خيارات البوشيط القابلة للضبط من إعدادات المدير (صفحة st_csx) ----------
+   md: حكم حالة الموديل: 0 لكل لون (الأسوأ يحكم) · 1 بالمجموع · 2 بالألوان الأساسية ★ فقط */
+const CSXD = { s1: 0, oc: 1, dc: 1, ty: 0, ge: 0, md: 0 };
+const csx = k => { const v = (S.cfg.csx || {})[k]; return v === undefined ? CSXD[k] : v; };
+const CSXL = [
+  ['s1', 'بيع بنقرة واحدة على دائرة اللون (مع تراجع؛ الإضافة من الشريط أو النافذة)'],
+  ['oc', 'عدّاد «نفد X مرات هذا الشهر» لكل موديل ولون'],
+  ['dc', 'السماح لكل الموظفين بحذف لون عدده 0 (مع تراجع)'],
+  ['ty', 'تفعيل «نوع البوشيط» (سيليكون، شفاف، كتاب...) عند إضافة موديل'],
+  ['ge', 'السماح بإضافة لون بلا اسم («عام»)']
+];
+const CSMD = ['لكل لون (أي لون ينفد يحمّر الموديل)', 'بمجموع الألوان', 'بالألوان الأساسية ★ فقط'];
+const CST0 = ['سيليكون', 'شفاف', 'كتاب', 'مقوّى'];
+const csTypes = () => Array.isArray(S.cfg.cst) ? S.cfg.cst : CST0;
+Object.assign(DL0, { ctl: 4 });
+LM.push(['ctl', 'بوشيط (وضع المجموع): «قارب النفاد» عند مجموع فأقل']);
+function csxTog(k) { if (!isAdmin()) return toast('للمدير فقط'); upd(() => { S.cfg.csx = S.cfg.csx || {}; S.cfg.csx[k] = csx(k) ? 0 : 1; }); }
+function csxMode() { if (!isAdmin()) return toast('للمدير فقط'); upd(() => { S.cfg.csx = S.cfg.csx || {}; S.cfg.csx.md = (csx('md') + 1) % 3; }); }
+VW.st_csx = () => ({
+  t: 'خيارات البوشيط',
+  h: '<p class="m">اضغط على الخيار لتشغيله أو إيقافه.</p>'
+    + row('حكم حالة الموديل', 'csxMode()', CSMD[csx('md')])
+    + '<p class="m">لكل لون: أي لون ينفد يجعل الموديل أحمر. بالمجموع: يُحكم بمجموع قطع الموديل. الأساسية: تُحكم الألوان المعلَّمة ★ فقط (من ⋯ بجانب اللون).</p>'
+    + CSXL.map(([k, l]) => row(l, `csxTog('${k}')`, csx(k) ? 'مفعّل ✓' : 'متوقف')).join('')
+});
+VW.st_cst = () => ({
+  t: 'أنواع البوشيط',
+  h: '<p class="m">تظهر عند إضافة موديل جديد إن فُعّل «نوع البوشيط».</p><div>'
+    + csTypes().map((t, i) => `<span class="tag">${esc(t)}<b onclick="csTyDel(${i})">×</b></span>`).join('')
+    + '</div><button class="btn" onclick="csTyAdd()">+ إضافة نوع</button>'
+});
+function csTyAdd() {
+  if (!isAdmin()) return toast('للمدير فقط');
+  ask('نوع بوشيط جديد', [{ k: 'n', l: 'الاسم', v: '' }]).then(v => {
+    const n = v && v.n.trim(); if (!n) return;
+    const a = csTypes(); if (a.some(x => nz(x) == nz(n))) return toast('موجود بالفعل');
+    upd(() => { S.cfg.cst = [...a, n]; });
   });
-  i.v = out; delete i.glim;
+}
+function csTyDel(i) {
+  if (!isAdmin()) return toast('للمدير فقط');
+  const a = csTypes();
+  sure('حذف النوع «' + a[i] + '» من القائمة؟ (الموديلات المسجلة به تحتفظ باسمه)', 'حذف').then(y => { if (y) upd(() => { S.cfg.cst = a.filter((_, k) => k != i); }); });
+}
+/* ---------- البيانات: كل نوع = لون واحد {id, g:'', c, n, mn?, stp?, stpN?, ot?} ----------
+   csN: تحويل رجالي/نسائي القديم + دمج الألوان المكررة (بعد دمج/تسمية وسم لون). */
+function csN(i) {
+  let V0 = i.v;
+  if (!V0) return i;
+  if (V0.some(x => x.g)) {
+    const out = [];
+    V0.forEach(x => {
+      const c = x.c || '', y = out.find(z => z.c == c);
+      if (y) y.n += x.n; else out.push({ id: x.id, g: '', c, n: x.n });
+    });
+    i.v = V0 = out;
+  }
+  if (i.glim) delete i.glim;
+  if (V0.length > 1) {
+    const k = x => nz(x.c || '');
+    if (new Set(V0.map(k)).size < V0.length) {
+      const out = [];
+      V0.forEach(x => {
+        const y = out.find(z => k(z) == k(x));
+        if (y) { y.n += x.n; if (x.mn) y.mn = 1; if (!x.stp) { delete y.stp; delete y.stpN; } } else out.push(x);
+      });
+      i.v = out;
+    }
+  }
   return i;
 }
+const csNm = i => i.name + (i.ty ? ' · ' + i.ty : '');
 const csTot = i => (csN(i).v || []).reduce((a, x) => a + x.n, 0);
-const csLim = i => i.lim ?? lim('cl');
-const csVSt = (i, x) => x.n <= 0 ? 'r' : x.n <= csLim(i) ? 'y' : 'g';
+const csIsP = x => !!x.stp && x.n <= (x.stpN || 0);   // لون موقوف: يعود تلقائياً إذا زاد عدده
+const csHasMain = i => (i.v || []).some(x => x.mn);
+const csLim = i => i.lim ?? lim(csx('md') == 1 ? 'ctl' : 'cl');
+/* حالة اللون: r نفد · y قارب · g متوفر · z صفر غير منبِّه · p موقوف */
+const csVSt = (i, x) => {
+  if (csIsP(x)) return 'p';
+  const md = csx('md');
+  if (md == 1 || (md == 2 && !x.mn && csHasMain(i))) return x.n <= 0 ? 'z' : 'g';
+  return x.n <= 0 ? 'r' : x.n <= csLim(i) ? 'y' : 'g';
+};
 const csSt = i => {
   const V0 = csN(i).v || [];
   if (!V0.length) return 'r';
-  const ss = V0.map(x => csVSt(i, x));
-  if (ss.includes('r')) return 'r';
-  if (ss.includes('y') || !!(i.need && i.need.trim())) return 'y';
-  return 'g';
+  const act = V0.filter(x => !csIsP(x));
+  let s = 'g';
+  if (act.length) {
+    if (csx('md') == 1) { const t = act.reduce((a, x) => a + x.n, 0); s = t <= 0 ? 'r' : t <= csLim(i) ? 'y' : 'g'; }
+    else { const ss = act.map(x => csVSt(i, x)); s = ss.includes('r') ? 'r' : ss.includes('y') ? 'y' : 'g'; }
+  }
+  if (s == 'g' && i.need && i.need.trim()) s = 'y';
+  return s;
 };
 const csChipCls = (i, x) => { const s = csVSt(i, x); return s == 'r' ? 'low' : s == 'y' ? 'warn' : ''; };
 const csGSummaryTxt = i => (csN(i).v || []).map(x => `${x.c || 'عام'} ${x.n}`).join(' · ') || 'لا ألوان';
-/* ---------- العرض: دوائر الألوان ---------- */
-function csDot(x, st, txt) {
-  const ring = st == 'r' ? `;box-shadow:0 0 0 2px var(--c),0 0 0 4.5px ${DT.r}` : st == 'y' ? `;box-shadow:0 0 0 2px var(--c),0 0 0 4.5px ${DT.y}` : '';
-  return `<span class="csd" style="background:${csBg(x.c)};color:${csInk(x.c)}${ring}">${txt}</span>`;
+/* ---------- عدّاد «نفد» الشهري (مرة واحدة لكل لون خلال 30 دقيقة) ---------- */
+const csYm = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1); };
+const csOcN = i => i.oc && i.oc.m == csYm() ? i.oc.n : 0;
+function csOut(i, x, was) {
+  if (!csx('oc') || was <= 0 || x.n > 0) return;
+  const now = Date.now();
+  if (x.ot && now - x.ot < 18e5) return;
+  if (!i.oc || i.oc.m != csYm()) i.oc = { m: csYm(), n: 0, c: {} };
+  const k = x.c || 'عام';
+  i.oc.n++; i.oc.c[k] = (i.oc.c[k] || 0) + 1; x.ot = now;
 }
-/* شريط الدوائر: الضغط عليه يفتح نافذة الموديل. cmp = بدون أسماء للألوان المعروفة */
-function csChipsHtml(i, cmp) {
+/* ---------- العرض: دوائر الألوان (اضغط الدائرة ثم − بيع / + إضافة · ضغطة مطولة = تصحيح العدد) ---------- */
+let CSSEL = '', CSLT = 0, CSLF = 0;
+function csLPs(id, vid) { CSLF = 0; clearTimeout(CSLT); CSLT = setTimeout(() => { CSLF = 1; if (navigator.vibrate) navigator.vibrate(20); csCnt(id, vid); }, 550); }
+function csLPe() { clearTimeout(CSLT); }
+function csTap(id, vid) {
+  if (CSLF) { CSLF = 0; return; }
+  const i = find(id), x = i && (i.v || []).find(y => y.id == vid); if (!x) return;
+  if (csx('s1') && x.n > 0) return csC(id, vid, -1);
+  CSSEL = CSSEL == vid ? '' : vid; render();
+}
+function csDot(x, st, txt, ia) {
+  const ring = st == 'r' ? `;box-shadow:0 0 0 2px var(--c),0 0 0 4.5px ${DT.r}` : st == 'y' ? `;box-shadow:0 0 0 2px var(--c),0 0 0 4.5px ${DT.y}` : '';
+  const cls = 'csd' + (ia ? ' pc' : '') + (ia && CSSEL == x.id ? ' sel' : '') + (st == 'z' || st == 'p' ? ' z' : '') + (st == 'p' ? ' pz' : '');
+  const ev = ia ? ` onpointerdown="csLPs('${ia}','${x.id}')" onpointerup="csLPe()" onpointerleave="csLPe()" onpointercancel="csLPe()" oncontextmenu="return false" onclick="csTap('${ia}','${x.id}')"` : '';
+  return `<span class="${cls}" style="background:${csBg(x.c)};color:${csInk(x.c)}${ring}"${ev}>${txt}</span>`;
+}
+/* شريط الدوائر. cmp = بدون أسماء للألوان المعروفة · ia = بطاقة تفاعلية (اختيار الدائرة) وإلا الضغط يفتح النافذة */
+function csChipsHtml(i, cmp, ia) {
   const V0 = csN(i).v || [];
   if (!V0.length) return `<div class="cs-sws" onclick="csOpen('${i.id}')"><span class="m">لا ألوان — اضغط للإضافة</span></div>`;
-  return `<div class="cs-sws" onclick="csOpen('${i.id}')">` + V0.map(x => `<span class="csw">${csDot(x, csVSt(i, x), x.n)}${!cmp || !csHex(x.c) ? `<small class="m">${esc(x.c || 'عام')}</small>` : ''}</span>`).join('') + `</div>`;
+  return `<div class="cs-sws"${ia ? '' : ` onclick="csOpen('${i.id}')"`}>` + V0.map(x => `<span class="csw">${csDot(x, csVSt(i, x), x.n, ia ? i.id : '')}${!cmp || !csHex(x.c) ? `<small class="m">${esc(x.c || 'عام')}</small>` : ''}</span>`).join('') + `</div>`;
 }
 function csCard(i) {
-  const s = csSt(i), cmp = isCmp('case') && V.v == 'sec';
+  const s = csSt(i), cmp = isCmp('case') && V.v == 'sec', sel = (csN(i).v || []).find(x => x.id == CSSEL), oc = csOcN(i);
   const pr = i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : '';
-  const nt = (i.need ? `<div class="cs-nt" style="color:${DT.r}">خاصنا: ${esc(i.need)}</div>` : '') + (i.rem ? `<div class="cs-nt m">باقي: ${esc(i.rem)}</div>` : '');
-  return cardH(`<div class="row2" style="gap:8px;flex-wrap:wrap"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csOpen('${i.id}')"><b>${esc(i.name)}</b>${nt}</div>${pr}${csChipsHtml(i, cmp)}</div>${cmp ? '' : fxShow(i)}`, colOf(i), 'cmp');
+  const nt = (i.need ? `<div class="cs-nt" style="color:${DT.r}">خاصنا: ${esc(i.need)}</div>` : '') + (i.rem ? `<div class="cs-nt m">باقي: ${esc(i.rem)}</div>` : '')
+    + (csx('oc') && oc >= 2 ? `<div class="cs-nt m">نفد ${oc} مرات هذا الشهر</div>` : '');
+  const bar = sel ? `<div class="phsel"><span class="csd" style="background:${csBg(sel.c)};color:${csInk(sel.c)}"></span><b class="f1">${esc(sel.c || 'عام')}</b><button class="btn s sm sell" onclick="csC('${i.id}','${sel.id}',-1)">− بيع</button><span class="cn">${sel.n}</span><button class="btn sm" onclick="csC('${i.id}','${sel.id}',1)">+ إضافة</button><button class="tag" onclick="csVMenu('${i.id}','${sel.id}')">⋯</button></div>` : '';
+  return cardH(`<div class="row2" style="gap:8px;flex-wrap:wrap"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csOpen('${i.id}')"><b>${esc(i.name)}</b>${i.ty ? ` <span class="phk c">${esc(i.ty)}</span>` : ''}${nt}</div>${pr}${csChipsHtml(i, cmp, 1)}</div>${bar}${cmp ? '' : fxShow(i)}`, colOf(i), 'cmp');
 }
 function csView() {
   const allCs = S.items.filter(i => i.sec == 'case'), totPcs = allCs.reduce((s, i) => s + csTot(i), 0), lowCnt = allCs.filter(i => csSt(i) != 'g').length;
@@ -100,63 +196,174 @@ function csView() {
       + (pg.items.map(csCard).join('') + pg.more || emptyBox('لا توجد موديلات بوشيط في هذا الفلتر', 'اضغط على «+ إضافة موديل بوشيط» في الأعلى لإضافة أول موديل'))
   };
 }
+/* ---------- تعديل مع «تراجع» (يُحدّث نافذة الموديل إن كانت مفتوحة) ---------- */
+function csDo(id, label, fn) {
+  const i = find(id); if (!i) return;
+  const b = JSON.stringify(i);
+  fn(i); save(); render();
+  toast(label, () => {
+    const j = find(id); if (!j) return;
+    const o = JSON.parse(b);
+    Object.keys(j).forEach(k => delete j[k]); Object.assign(j, o);
+    csShR(id);
+  });
+}
+const csShR = id => { if (SH && $('sh') && $('sh').querySelector(`h3[data-cs="${id}"]`)) csSheetR(id); };
 /* ---------- نافذة الموديل: − / + لكل لون ---------- */
-let CQ = '', CSCODE = '', CSD = {}, CSUP = 0;   // CSUP = موديل زادت كميته أثناء النافذة (لفحص طلبات الزبائن عند الإغلاق)
+let CQ = '', CSCODE = '', CSD = {}, CSUP = 0, CSVMC = 0;   // CSUP = موديل زادت كميته أثناء النافذة (لفحص طلبات الزبائن عند الإغلاق)
 function csClosed() { const id = CSUP; CSUP = 0; const i = id && find(id); if (i) reqChk('بوشيط ' + i.name, 1); }
 const csGo = (f, id) => { finish(null); setTimeout(() => window[f](id), 450); };
+const csGoV = (f, id, vid) => { finish(null); setTimeout(() => window[f](id, vid), 450); };
 function csOpen(id) { if (!find(id)) return; CSUP = 0; csSheetR(id); sheetOpen(csClosed); }
 function csSheetR(id) {
   const i = find(id); if (!i) return;
-  const V0 = csN(i).v || [];
-  const rows = V0.map(x => `<div class="cs-vr">${csDot(x, csVSt(i, x), '')}<b>${esc(x.c || 'عام')}</b>`
-    + (x.n <= 0 && can('del') ? `<button class="tag" style="margin:0;color:${DT.r}" onclick="csX('${i.id}','${x.id}')">× حذف اللون</button>` : '')
-    + `<button class="btn s cs-sb" onclick="csS('${i.id}','${x.id}',-1)">−</button><span class="cn">${x.n}</span><button class="btn cs-sb" onclick="csS('${i.id}','${x.id}',1)">+</button></div>`).join('')
+  const V0 = csN(i).v || [], md = csx('md'), oc = csOcN(i);
+  const rows = V0.map(x => `<div class="cs-vr">${csDot(x, csVSt(i, x), '')}<b>${esc(x.c || 'عام')}${csIsP(x) ? ' <small class="m">متوقف</small>' : ''}${x.mn && md == 2 ? ' ★' : ''}</b>`
+    + `<button class="btn s cs-sb" onclick="csS('${i.id}','${x.id}',-1)">−</button><span class="cn">${x.n}</span><button class="btn cs-sb" onclick="csS('${i.id}','${x.id}',1)">+</button><button class="tag" onclick="csVMenu('${i.id}','${x.id}')">⋯</button></div>`).join('')
     || '<p class="m">لا توجد ألوان بعد: اضغط «+ لون».</p>';
-  $('sh').innerHTML = `<div class="bar"></div><h3>${esc(i.name)}</h3>`
-    + `<p class="m">«قارب» عند ${csLim(i)} فأقل لكل لون${i.price ? ' · ' + esc(fmtPr(i.price)) : ''}</p>`
+  const lt = md == 1 ? `«قارب» عند مجموع ${csLim(i)} فأقل` : md == 2 ? `«قارب» عند ${csLim(i)} فأقل للألوان الأساسية ★ فقط${csHasMain(i) ? '' : ' (لم تُحدَّد: تُحسب كل الألوان)'}` : `«قارب» عند ${csLim(i)} فأقل لكل لون`;
+  $('sh').innerHTML = `<div class="bar"></div><h3 data-cs="${i.id}">${esc(csNm(i))}</h3>`
+    + `<p class="m">${lt}${i.price ? ' · ' + esc(fmtPr(i.price)) : ''}</p>`
+    + (csx('oc') && oc ? `<p class="m">نفد هذا الشهر ${oc} مرات (${Object.entries(i.oc.c).map(([k, n]) => esc(k) + ' ' + n).join('، ')})</p>` : '')
     + rows
     + (i.need ? `<div class="rs row2" style="margin-top:8px;gap:6px"><span class="dotl" style="background:${DT.r}"></span><span style="flex:1">خاصنا: ${esc(i.need)}</span><button class="tag" style="margin:0;color:${DT.r}" onclick="csClrNeed('${i.id}');csSheetR('${i.id}')">× مسح</button></div>` : '')
     + (i.rem ? `<div class="m" style="margin-top:6px"><span class="dotl" style="background:${DT.g}"></span> باقي: ${esc(i.rem)}</div>` : '')
-    + `<div class="cs-acts"><button class="btn s" onclick="csAddView('${i.id}')">+ لون</button><button class="btn s" onclick="csGo('csLimEd','${i.id}')">الحد والسعر</button><button class="btn s" onclick="csGo('csQuickNote','${i.id}')">باقي / خاصنا</button>`
+    + `<div class="cs-acts"><button class="btn s" onclick="csAddView('${i.id}')">+ لون</button><button class="btn s" onclick="csGo('csLimEd','${i.id}')">الحد والسعر</button><button class="btn s" onclick="csGo('csQuickNote','${i.id}')">باقي / خاصنا</button><button class="btn s" onclick="csGo('csRen','${i.id}')">تعديل الاسم</button>`
+    + (csx('ty') || i.ty ? `<button class="btn s" onclick="csGo('csTypeEd','${i.id}')">النوع${i.ty ? ': ' + esc(i.ty) : ''}</button>` : '')
     + (S.fields.some(f => f.sec == 'case') ? `<button class="btn s" onclick="csGo('csFx','${i.id}')">خانات</button>` : '')
     + `<button class="btn s del" onclick="csGo('csDel','${i.id}')">حذف الموديل</button></div>`
     + `<div class="acts"><button class="btn" onclick="finish(null)">تم</button></div>`;
 }
 function csC(id, vid, d) {
   const it = find(id), x = it && (it.v || []).find(y => y.id == vid); if (!x) return;
-  upd(() => { x.n = Math.max(0, x.n + d); touch(it); });
+  if (d < 0 && x.n <= 0) return toast('العدد 0 بالفعل');
+  csDo(id, (d < 0 ? 'بيع ' : 'إضافة ') + csNm(it) + ' (' + (x.c || 'عام') + ') ' + (d < 0 ? '−1' : '+1'), r => {
+    const y = r.v.find(z => z.id == vid), was = y.n;
+    y.n = Math.max(0, y.n + d); if (d < 0) csOut(r, y, was); touch(r);
+  });
   if (d > 0) reqChk('بوشيط ' + it.name);
+  csShR(id);
 }
-function csS(id, vid, d) { csC(id, vid, d); if (d > 0) CSUP = id; csSheetR(id); }
+function csS(id, vid, d) { if (d > 0) CSUP = id; csC(id, vid, d); }
+/* قائمة اللون ⋯ : إيقاف · أساسي · تصحيح العدد · حذف */
+function csVMenu(id, vid) {
+  const i = find(id), x = i && (i.v || []).find(y => y.id == vid); if (!x) return;
+  CSVMC = SH ? 0 : 1;
+  if (!SH) sheetOpen(csClosed);
+  const canDel = x.n <= 0 && (can('del') || csx('dc'));
+  $('sh').innerHTML = `<div class="bar"></div><h3 data-csm="${i.id}">${esc(csNm(i))} — ${esc(x.c || 'عام')}</h3><p class="m">العدد الآن ${x.n}${csIsP(x) ? ' · موقوف' : ''}</p>`
+    + `<button class="btn s" onclick="csStp('${i.id}','${x.id}')">${csIsP(x) ? 'إعادة اللون للشراء' : 'إيقاف شراء هذا اللون (يخرج من التقرير)'}</button>`
+    + (csx('md') == 2 ? `<button class="btn s" onclick="csMain('${i.id}','${x.id}')">${x.mn ? 'ليس لوناً أساسياً' : '★ لون أساسي'}</button>` : '')
+    + `<button class="btn s" onclick="csGoV('csCnt','${i.id}','${x.id}')">تصحيح العدد</button>`
+    + (canDel ? `<button class="btn s del" onclick="csX('${i.id}','${x.id}')">× حذف اللون</button>` : '')
+    + `<button class="btn" onclick="csVBack('${i.id}')">رجوع</button>`;
+}
+const csVBack = id => { if (CSVMC) finish(null); else csSheetR(id); };
+function csStp(id, vid) {
+  const i = find(id), x = i && (i.v || []).find(y => y.id == vid); if (!x) return;
+  const on = !csIsP(x);
+  csDo(id, on ? 'أُوقف اللون (يخرج من التقرير ويعود إذا زاد عدده)' : 'أُعيد اللون للشراء', r => {
+    const y = r.v.find(z => z.id == vid);
+    if (on) { y.stp = 1; y.stpN = y.n; } else { delete y.stp; delete y.stpN; }
+    touch(r);
+  });
+  csVBack(id);
+}
+function csMain(id, vid) {
+  csDo(id, 'تم تحديث اللون الأساسي', r => { const y = r.v.find(z => z.id == vid); if (y.mn) delete y.mn; else y.mn = 1; touch(r); });
+  csVBack(id);
+}
+function csCnt(id, vid) {
+  const i = find(id), x = i && (i.v || []).find(y => y.id == vid); if (!x) return;
+  ask('تصحيح العدد: ' + csNm(i) + ' — ' + (x.c || 'عام'), [{ k: 'n', l: 'العدد الفعلي الآن (بدل ' + x.n + ')', t: 'number', v: x.n }], 'تصحيح').then(v => {
+    if (!v || String(v.n).trim() === '') return;
+    const n = ci(v.n), old = x.n; if (n === old) return;
+    csDo(id, 'تصحيح العدد: ' + csNm(i) + ' (' + (x.c || 'عام') + ') ← ' + n, r => { const y = r.v.find(z => z.id == vid); y.n = n; csOut(r, y, old); touch(r, 1); });
+    if (n > old) reqChk('بوشيط ' + i.name, 1);
+  });
+}
 function csX(id, vid) {
-  if (!can('del')) return toast('الحذف للمدير فقط');
-  const r = find(id); if (!r) return;
-  commit('تم حذف اللون', () => { r.v = r.v.filter(x => x.id != vid); touch(r); });
-  csSheetR(id);
+  const r = find(id), x = r && (r.v || []).find(y => y.id == vid); if (!x) return;
+  if (!(can('del') || csx('dc'))) return toast('الحذف للمدير فقط');
+  if (x.n > 0) return toast('اجعل العدد 0 أولاً');
+  csDo(id, 'تم حذف اللون ' + (x.c || 'عام'), r2 => { r2.v = r2.v.filter(y => y.id != vid); touch(r2); });
+  csVBack(id);
 }
-function csDel(id) { const i = find(id); if (i) del('items', id, i.name); }
+function csDel(id) { const i = find(id); if (i) del('items', id, csNm(i)); }
 function csClrNeed(id) {
   const i = find(id); if (!i || !i.need) return;
   commit('تم مسح تنبيه «خاصنا»', () => { i.need = ''; i.by = S.me; });
 }
-/* ---------- الإضافة: ابحث أولاً، ثم اللون والعدد ---------- */
+/* ---------- تعديل الاسم (ودمج موديلين مكررين) والنوع ---------- */
+function csRen(id) {
+  const i = find(id); if (!i) return;
+  ask('تعديل اسم الموديل', [{ k: 'n', l: 'اسم الموديل', v: i.name }]).then(v => {
+    if (!v) return;
+    const n = v.n.trim(); if (!n || n == i.name) return;
+    const o = S.items.find(x => x !== i && x.sec == 'case' && nz(x.name) == nz(n) && (x.ty || '') == (i.ty || ''));
+    if (!o) return commit('تم تعديل الاسم', () => { i.name = n; touch(i); });
+    setTimeout(() => sure('يوجد بوشيط «' + csNm(o) + '» بالفعل. دمجهما في سطر واحد؟ (تُجمع أعداد الألوان)', 'دمج', false).then(y => { if (y) csMergeInto(i.id, o.id); }), 450);
+  });
+}
+function csMergeInto(srcId, dstId) {
+  const s = find(srcId), d = find(dstId); if (!s || !d || s === d) return;
+  const bd = JSON.stringify(d);
+  csN(s); csN(d); d.v = d.v || [];
+  (s.v || []).forEach(x => { const y = d.v.find(z => nz(z.c || '') == nz(x.c || '')); if (y) y.n += x.n; else d.v.push({ ...x }); });
+  if (!d.price && s.price) d.price = s.price;
+  if (!d.code && s.code) d.code = s.code;
+  if (!d.need && s.need) d.need = s.need;
+  if (!d.rem && s.rem) d.rem = s.rem;
+  touch(d, 1);
+  const o = S.items.splice(S.items.indexOf(s), 1)[0], t = { id: uid(), coll: 'items', obj: o, label: csNm(o), t: Date.now() };
+  S.trash.push(t); save(); render();
+  toast('تم الدمج في «' + csNm(d) + '»', () => {
+    const dd = find(dstId); if (dd) { Object.keys(dd).forEach(k => delete dd[k]); Object.assign(dd, JSON.parse(bd)); }
+    restore(t.id, 1);
+  });
+}
+function csTypeEd(id) {
+  const i = find(id); if (!i) return; const T = csTypes();
+  $('sh').innerHTML = `<div class="bar"></div><h3>نوع: ${esc(i.name)}</h3>`
+    + T.map((t, k) => `<button class="btn s" onclick="csSetTy('${i.id}',${k})">${esc(t)}${i.ty == t ? ' ✓' : ''}</button>`).join('')
+    + `<button class="btn s" onclick="csSetTy('${i.id}',-1)">بدون نوع</button><button class="btn s" onclick="finish(null)">إلغاء</button>`;
+  sheetOpen(csClosed);
+}
+function csSetTy(id, k) {
+  const i = find(id); if (!i) return; const ty = k < 0 ? '' : csTypes()[k] || '';
+  if (S.items.some(x => x !== i && x.sec == 'case' && nz(x.name) == nz(i.name) && (x.ty || '') == ty)) return toast('يوجد موديل بنفس الاسم والنوع');
+  finish(null);
+  commit('تم تغيير النوع', () => { if (ty) i.ty = ty; else delete i.ty; touch(i); });
+}
+/* ---------- الإضافة: ابحث أولاً، ثم (النوع) واللون والعدد ---------- */
 function csAdd() {
   CQ = ''; CSD = {};
-  $('sh').innerHTML = `<div class="bar"></div><h3>إضافة بوشيط</h3>${invModelDatalist()}<label>ابحث أولاً: موديل الهاتف<input data-sug="mn" oninput="csF(this.value)"></label><div id="pr"></div><button class="btn s" onclick="finish(null)">إلغاء</button>`;
+  $('sh').innerHTML = `<div class="bar"></div><h3>إضافة بوشيط</h3><label>ابحث أولاً: موديل الهاتف<input data-sug="mn" oninput="csF(this.value)"></label><div id="pr"></div><button class="btn s" onclick="finish(null)">إلغاء</button>`;
   sheetOpen(csClosed); csF('');
 }
 function csF(q) {
-  CQ = q.trim(); const n = nz(q), m = S.items.filter(i => i.sec == 'case' && (!n || nzHit(nz(i.name), q, n))).sort((a, b) => b.at - a.at).slice(0, 6);
-  $('pr').innerHTML = m.map(i => `<button class="card row2" onclick="csPick('${i.id}')"><b>${esc(i.name)}</b><span class="m">${esc(csGSummaryTxt(i))}</span></button>`).join('') + `<button class="btn" onclick="csNew()">+ موديل جديد${CQ ? ' «' + esc(CQ) + '»' : ''}</button>`;
+  CQ = q.trim(); const n = nz(q), m = S.items.filter(i => i.sec == 'case' && (!n || nzHit(nz(i.name + ' ' + (i.ty || '')), q, n))).sort((a, b) => b.at - a.at).slice(0, 6);
+  $('pr').innerHTML = m.map(i => `<button class="card row2" onclick="csPick('${i.id}')"><b>${esc(csNm(i))}</b><span class="m">${esc(csGSummaryTxt(i))}</span></button>`).join('') + `<button class="btn" onclick="csNew()">+ موديل جديد${CQ ? ' «' + esc(CQ) + '»' : ''}</button>`;
 }
 function csPick(id) { CSD = { id }; csAddView(id); }
 function csNew() {
   if (!CQ) return toast('اكتب اسم الموديل');
-  const d = S.items.find(i => i.sec == 'case' && nz(i.name) == nz(CQ)); if (d) return csPick(d.id);
-  CSD = { name: CQ }; csAddView(null);
+  const T = csTypes();
+  if (csx('ty') && T.length) {
+    $('sh').innerHTML = `<div class="bar"></div><h3>نوع البوشيط — ${esc(CQ)}</h3>`
+      + T.map((t, k) => `<button class="btn s" onclick="csNew2(${k})">${esc(t)}</button>`).join('')
+      + `<button class="btn s" onclick="csNew2(-1)">بدون نوع</button><button class="btn s" onclick="finish(null)">إلغاء</button>`;
+    return;
+  }
+  csNew2(-1);
+}
+function csNew2(k) {
+  const ty = k < 0 ? '' : csTypes()[k] || '';
+  const d = S.items.find(i => i.sec == 'case' && nz(i.name) == nz(CQ) && (i.ty || '') == ty); if (d) return csPick(d.id);
+  CSD = { name: CQ, ty }; csAddView(null);
 }
 function csAddView(id) {
-  const i = id ? find(id) : null, nm = i ? i.name : CSD.name; if (!nm) return;
+  const i = id ? find(id) : null, nm = i ? csNm(i) : CSD.name + (CSD.ty ? ' · ' + CSD.ty : ''); if (!nm) return;
   fsInit([['color', 'اللون']], {}); FS.sugC = () => colSugCs(id);
   $('sh').innerHTML = `<div class="bar"></div><h3>${esc(nm)} — إضافة لون</h3><div id="cc"></div>`
     + `<div class="row2" style="gap:8px"><label style="flex:1">العدد<input id="cq" type="number" value="${i ? 1 : lim('csBuy')}"></label>${i ? '' : `<label style="flex:1">السعر (اختياري)<input id="cpr" type="tel" placeholder="مثال: 30"></label>`}</div>`
@@ -167,16 +374,19 @@ function csAddOk(more) {
   const c = FS.v.color || '', n = ci($('cq').value), pr = $('cpr') ? $('cpr').value.trim() : '';
   let i = CSD.id ? find(CSD.id) : null;
   if (!i && !CSD.name) return;
+  if (!c && !csx('ge')) return toast('اختر اللون أولاً');
+  if (i && !n) return toast('اكتب عدداً أكبر من 0');
   upd(() => {
     if (!i) {
       const now = Date.now();
       i = { id: uid(), sec: 'case', name: CSD.name, v: [], by: S.me, at: now, cf: now };
+      if (CSD.ty) i.ty = CSD.ty;
       if (CSCODE) { i.code = CSCODE; CSCODE = ''; }
       S.items.push(i); CSD = { id: i.id };
     }
     if (pr && can('price')) i.price = pr;
     csN(i); i.v = i.v || [];
-    const x = i.v.find(y => y.c == c);
+    const x = i.v.find(y => nz(y.c || '') == nz(c));
     if (x) x.n += n; else i.v.push({ id: uid(), g: '', c, n });
     touch(i, 1);
   });
@@ -192,9 +402,9 @@ function csFx(id) {
 }
 function csLimEd(id) {
   const i = find(id);
-  ask('الحد والسعر — بوشيط ' + i.name, [
+  ask('الحد والسعر — بوشيط ' + csNm(i), [
     { k: 'p', l: 'سعر البيع (درهم — اختياري)', t: 'tel', v: i.price || '' },
-    { k: 'n', l: `«قارب النفاد» عند عدد فأقل لكل لون (فارغ = الحد العام ${lim('cl')})`, t: 'tel', v: i.lim ?? '' }
+    { k: 'n', l: `«قارب النفاد» عند عدد فأقل ${csx('md') == 1 ? 'للمجموع' : 'لكل لون'} (فارغ = الحد العام ${lim(csx('md') == 1 ? 'ctl' : 'cl')})`, t: 'tel', v: i.lim ?? '' }
   ]).then(v => {
     if (!v) return; const n = v.n.trim();
     upd(() => {
@@ -206,7 +416,7 @@ function csLimEd(id) {
 }
 function csQuickNote(id) {
   const i = find(id);
-  ask('بوشيط ' + i.name, [{ k: 'rem', l: 'شنو باقي عندنا فالمحل؟ (مثال: غير الأسود)', v: i.rem || '' }, { k: 'need', l: 'شنو خاص يجيب المعلم؟ (مثال: فضي / كحلي)', v: i.need || '' }]).then(v => { if (v) commit('تم التحديث', () => { i.rem = v.rem.trim(); i.need = v.need.trim(); i.by = S.me; }); });
+  ask('بوشيط ' + csNm(i), [{ k: 'rem', l: 'شنو باقي عندنا فالمحل؟ (مثال: غير الأسود)', v: i.rem || '' }, { k: 'need', l: 'شنو خاص يجيب المعلم؟ (مثال: فضي / كحلي)', v: i.need || '' }]).then(v => { if (v) commit('تم التحديث', () => { i.rem = v.rem.trim(); i.need = v.need.trim(); i.by = S.me; }); });
 }
 /* ---------- وصول البضاعة من التقرير (✓): خانة رقم لكل لون بلا تخمين ولا إعادة رسم ---------- */
 let CSB = { id: '', clN: 0, clR: 0 };
@@ -248,7 +458,7 @@ function buyC(id) {
       + (i.rem ? `<button type="button" id="csb_fr" class="tag" onclick="csBuyTog('r')">مسح ملاحظة «باقي: ${esc(i.rem)}»</button>` : '')
       + `</div>`
     : '';
-  $('sh').innerHTML = `<div class="bar"></div><h3>وصول بوشيط: ${esc(i.name)}</h3>`
+  $('sh').innerHTML = `<div class="bar"></div><h3>وصول بوشيط: ${esc(csNm(i))}</h3>`
     + `<p class="m">اكتب الكمية التي وصلت لكل لون (اترك ما لم يصل فارغاً).</p>`
     + rows + `<div id="csb_ex"></div>`
     + `<button type="button" class="btn s sm" style="margin-top:8px" onclick="csBuyAddRow()">+ إضافة لون جديد وصل</button>`

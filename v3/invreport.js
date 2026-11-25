@@ -77,8 +77,10 @@ function invLines(notes = true) {
   });
   S.items.filter(i => i.sec == 'case' && csSt(i) != 'g').forEach(i => {
     const V0 = csN(i).v || [], fm = x => csEmo(x.c) + ' ' + (x.c || 'عام') + ' ' + (x.n <= 0 ? 'نفد' : x.n);
-    const bad = V0.filter(x => csVSt(i, x) != 'g').map(fm), ok = V0.filter(x => csVSt(i, x) == 'g').map(fm);
-    L.push(['البوشيط', i.name + (V0.length ? (bad.length ? ' — ناقص: ' + bad.join('، ') : '') + (ok.length ? ' — متوفر: ' + ok.join('، ') : '') : ' — نفد') + (notes && i.rem ? ' — باقي: ' + i.rem : '') + (notes && i.need ? ' — خاصنا: ' + i.need : ''), csSt(i), `buyC('${i.id}')`]);
+    const bad = V0.filter(x => ['r', 'y'].includes(csVSt(i, x))).map(fm), ok = V0.filter(x => x.n > 0 && csVSt(i, x) == 'g').map(fm);
+    const body = !V0.length ? ' — نفد' : csx('md') == 1 ? ' — المجموع ' + V0.filter(x => !csIsP(x)).reduce((a, x) => a + x.n, 0) + (ok.length ? ' (' + ok.join('، ') + ')' : '')
+      : (bad.length ? ' — ناقص: ' + bad.join('، ') : '') + (ok.length ? ' — متوفر: ' + ok.join('، ') : '');
+    L.push(['البوشيط', csNm(i) + body + (notes && i.rem ? ' — باقي: ' + i.rem : '') + (notes && i.need ? ' — خاصنا: ' + i.need : ''), csSt(i), `buyC('${i.id}')`]);
   });
   S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && acSt(i) != 'g').forEach(i => L.push(['الإكسسوارات', acName(i) + (typeof i.cnt == 'number' ? ' — العدد ' + i.cnt : '') + (i.note ? ' — ' + i.note : ''), acSt(i), `buyA('${i.id}')`]));
   agList().filter(d => d.st != 'g').forEach(d => L.push(['الإكسسوارات', d.title + (d.tot !== null ? ' — المجموع ' + (d.est ? '≈' : '') + d.tot : d.st == 'r' ? ' — نفد' : ' — قارب النفاد') + (notes && d.g && d.g.note ? ' — ' + d.g.note : ''), d.st, `agBuy('${encodeURIComponent(d.id)}')`]));

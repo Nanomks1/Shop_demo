@@ -513,3 +513,8 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .gl-cnt{gap:4px}.gl-single{margin-top:6px}.gl-trow{margin-top:4px}.gl-br{font-weight:500}
 .gl-moreb{width:100%;justify-content:center;margin-top:4px}
 .gl-q{width:100%;margin:6px 0}
+/* ---- v91: دوائر البوشيط الموقوفة / صفر غير منبِّه ---- */
+.csd.z{opacity:.45}
+.csd.pz{border-style:dashed}
+.cs-vr .tag{margin:0}
+.phsel .tag{margin:0}

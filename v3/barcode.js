@@ -82,7 +82,7 @@ async function scanIntoInput(inputId) {   // مسح داخل نموذج مفتو
   }).catch(e => { stopInlineScan(); toast(camErr(e), 0, 15000); });
 }
 HK.hide.push(() => { stopInlineScan(); bcStop(); });
-const bcLbl = i => i.sec == 'phones' ? i.brand + ' ' + i.name : i.sec == 'case' ? i.name : acName(i);
+const bcLbl = i => i.sec == 'phones' ? i.brand + ' ' + i.name : i.sec == 'case' ? csNm(i) : acName(i);
 const isImei = c => /^\d{14,17}$/.test(c);
 /* اختيار سريع للون/نوع البوشيط عند البيع السريع بالباركود إذا كان له عدة ألوان متوفرة */
 function bcPickCsVar(it) {
@@ -96,7 +96,7 @@ function bcPickCsVar(it) {
       if (!vid) return;
       const v = (it.v || []).find(x => x.id == vid); if (!v || v.n <= 0) return;
       const lbl = [v.g, v.c].filter(Boolean).join(' · ') || 'عام';
-      commit(`بيع سريع (−1): بوشيط ${it.name} (${lbl})`, () => { v.n = Math.max(0, v.n - 1); touch(it); S.cfg.bcQuick = Date.now(); });
+      commit(`بيع سريع (−1): بوشيط ${csNm(it)} (${lbl})`, () => { const w = v.n; v.n = Math.max(0, v.n - 1); csOut(it, v, w); touch(it); S.cfg.bcQuick = Date.now(); });
     });
   }, 350);
 }
@@ -120,7 +120,7 @@ function bcQuickSell(it) {
     if (!avs.length) return !toast('نفد هذا البوشيط بالفعل');
     if (avs.length > 1) { bcPickCsVar(it); return true; }
     const v = avs[0];
-    commit('بيع سريع (−1): بوشيط ' + it.name, () => { v.n = Math.max(0, v.n - 1); touch(it); });
+    commit('بيع سريع (−1): بوشيط ' + csNm(it), () => { const w = v.n; v.n = Math.max(0, v.n - 1); csOut(it, v, w); touch(it); });
     return true;
   }
   return false;
