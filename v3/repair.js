@@ -234,7 +234,7 @@ function rpSheetR(id) {
 }
 function rpList() {
   const q = nz(V.q || ''), tab = V.tab || 'in', sf = V.sf || '';
-  const matchR = (r, ignoreTab) => (ignoreTab || V.all || tabOf(r) == tab) && inR(tOf(r)) && (!q || nzOf(r, rpText).includes(q));
+  const matchR = (r, ignoreTab) => (ignoreTab || V.all || tabOf(r) == tab) && inR(tOf(r)) && (!q || nzHit(nzOf(r, rpText), V.q, q));
   let a = S.rp.filter(r => matchR(r, false)), autoAll = false;
   if (!V.all && !a.length && q) {
     const anyTab = S.rp.filter(r => matchR(r, true));

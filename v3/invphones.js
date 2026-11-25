@@ -243,7 +243,7 @@ function phAdd() {
   sheetOpen(v => phDone(v, PR)); phF('');
 }
 function phF(q) {
-  PQ = q.trim(); const n = nz(q), m = ph().filter(i => !n || nz(i.brand + i.name + i.color).includes(n)).sort((a, b) => b.at - a.at).slice(0, 6);
+  PQ = q.trim(); const n = nz(q), m = ph().filter(i => !n || nzHit(nz(i.brand + i.name + i.color), q, n)).sort((a, b) => b.at - a.at).slice(0, 6);
   $('pr').innerHTML = m.map(i => `<button class="card row2" onclick="phPick('${i.id}')"><b>${esc(i.brand + ' ' + i.name)}</b><span class="m">${esc([i.color, i.cap].filter(Boolean).join(' · '))} · ${i.cnt}</span></button>`).join('') + `<button class="btn" onclick="phForm({name:PQ})">+ هاتف جديد${PQ ? ' «' + esc(PQ) + '»' : ''}</button>`;
 }
 function phPick(id) {

@@ -19,9 +19,9 @@ let SC = '', SQ_T = 0;   // نطاق البحث الحالي + مؤقت تهدئ
 const scopeChips = () => [['', 'الكل'], ...SRCH.map(p => [p.k, p.l])].map(([k, l]) => `<button class="tag ${SC == k ? 'on' : ''}" onclick="scSet('${k}')">${l}</button>`).join('');
 /* مصادر بحث إضافية: الصيانة، طلبات الزبائن، دليل أسعار الإصلاح */
 SRCH.push(
-  { k: 'rp', l: 'صيانة', run: n => S.rp.filter(r => nzOf(r, rpText).includes(n)).sort((x, y) => (y.t0 || 0) - (x.t0 || 0)).slice(0, 20).map(rc) },
-  { k: 'req', l: 'طلبات الزبائن', run: n => S.req.filter(q => nz(q.t).includes(n)).slice(0, 20).map(q => typeof rqCard == 'function' ? rqCard(q) : `<div class="card"><div class="m">${fd(q.at)} · ${esc(q.by || '')}</div><div>${esc(q.t)}</div><div class="sub">${rqTel(q.t) ? `<button class="btn s sm" onclick="rqWA('${q.id}')">واتساب</button>` : ''}<button class="btn s sm" onclick="rqD('${q.id}')">مسح</button></div></div>`) },
-  { k: 'gd', l: 'أسعار الإصلاح', run: n => S.guide.filter(g => nz(g.m + ' ' + g.f + ' ' + (g.n || '')).includes(n)).slice(0, 20).map(gdCard) }
+  { k: 'rp', l: 'صيانة', run: (n, Q) => S.rp.filter(r => nzHit(nzOf(r, rpText), Q, n)).sort((x, y) => (y.t0 || 0) - (x.t0 || 0)).slice(0, 20).map(rc) },
+  { k: 'req', l: 'طلبات الزبائن', run: (n, Q) => S.req.filter(q => nzHit(nz(q.t), Q, n)).slice(0, 20).map(q => typeof rqCard == 'function' ? rqCard(q) : `<div class="card"><div class="m">${fd(q.at)} · ${esc(q.by || '')}</div><div>${esc(q.t)}</div><div class="sub">${rqTel(q.t) ? `<button class="btn s sm" onclick="rqWA('${q.id}')">واتساب</button>` : ''}<button class="btn s sm" onclick="rqD('${q.id}')">مسح</button></div></div>`) },
+  { k: 'gd', l: 'أسعار الإصلاح', run: (n, Q) => S.guide.filter(g => nzHit(nz(g.m + ' ' + g.f + ' ' + (g.n || '')), Q, n)).slice(0, 20).map(gdCard) }
 );
 function scSet(k) { SC = k; const b = $('sc'); if (b) b.innerHTML = scopeChips(); sq(Q, 1); }
 function srch(q) {
@@ -148,7 +148,7 @@ function stQ(q) {
   const n = nz(q), g = $('stg'), r = $('str'); if (!g || !r) return;
   g.style.display = n ? 'none' : '';
   if (!n) { r.innerHTML = ''; return; }
-  const seen = {}, L = stItems().filter(x => { const k = x.l + x.fn; if (seen[k]) return false; seen[k] = 1; return nz(x.l + ' ' + x.kw + ' ' + x.p).includes(n); });
+  const seen = {}, L = stItems().filter(x => { const k = x.l + x.fn; if (seen[k]) return false; seen[k] = 1; return nzHit(nz(x.l + ' ' + x.kw + ' ' + x.p), q, n); });
   r.innerHTML = L.map(x => `<button class="card row2 st-row" onclick="${x.fn}"><b class="st-lbl">${esc(x.l)}</b><span class="m st-val">${esc(x.p)}</span></button>`).join('') || '<p class="m">لا نتائج</p>';
 }
 VW.st = () => {

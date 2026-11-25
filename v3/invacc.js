@@ -14,9 +14,6 @@ const acLim = i => i.lim ?? kc(i.kind).lim ?? lim('acl');
 const acSt = i => typeof i.cnt == 'number' ? (i.cnt <= 0 ? 'r' : i.cnt <= acLim(i) ? 'y' : 'g') : i.st;
 const ALB = { g: 'متوفر', y: 'قارب', r: 'نفد' };
 /* تنبيه «زبون سأل عنها» يُؤجَّل إلى ما بعد إغلاق النافذة (reqChk يتجاهله والنافذة مفتوحة) */
-/* ---- بحث متعدد الكلمات: المترادفات المركّبة أولاً ثم كل كلمة على حدة وبأي ترتيب ---- */
-const nzWords = q => { nzDict(); let s = nzRaw(q); for (const k of _alKeys) s = s.split(k).join(_alMap[k]); return s.split(/\s+/).map(w => w.replace(/[-_]/g, '')).filter(Boolean); };
-const nzHit = (h, q, n) => { const w = nzWords(q); return w.length > 1 ? w.every(x => h.includes(x)) : h.includes(n != null ? n : nz(q)); };
 const agTxt = d => [d.kind, d.conn, d.pw, d.tier, ...d.mem.map(i => [i.brand, fxIn(i), i.note].filter(Boolean).join(' '))].filter(Boolean).join(' ');
 const acStale = t => !!t && Date.now() - t > lim('stale') * 864e5;
 const acTierTxt = i => i.tier && String(i.price || '') !== String(i.tier) ? 'فئة ' + i.tier : '';

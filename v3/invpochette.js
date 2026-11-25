@@ -146,7 +146,7 @@ function csAdd() {
   sheetOpen(csClosed); csF('');
 }
 function csF(q) {
-  CQ = q.trim(); const n = nz(q), m = S.items.filter(i => i.sec == 'case' && (!n || nz(i.name).includes(n))).sort((a, b) => b.at - a.at).slice(0, 6);
+  CQ = q.trim(); const n = nz(q), m = S.items.filter(i => i.sec == 'case' && (!n || nzHit(nz(i.name), q, n))).sort((a, b) => b.at - a.at).slice(0, 6);
   $('pr').innerHTML = m.map(i => `<button class="card row2" onclick="csPick('${i.id}')"><b>${esc(i.name)}</b><span class="m">${esc(csGSummaryTxt(i))}</span></button>`).join('') + `<button class="btn" onclick="csNew()">+ موديل جديد${CQ ? ' «' + esc(CQ) + '»' : ''}</button>`;
 }
 function csPick(id) { CSD = { id }; csAddView(id); }

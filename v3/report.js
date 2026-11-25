@@ -341,7 +341,7 @@
     if (!nq && tin.length) h += rinBoxHtml(tin);
     let anyRow = false;
     B.forEach(b => {
-      const src = nq ? b.ls.filter(l => nz(l.s).includes(nq)) : b.ls;
+      const src = nq ? b.ls.filter(l => nzHit(nz(l.s), rq, nq)) : b.ls;
       let x = '';
       if (b.k == 'req') x = src.map(l => {
         const ph = typeof rqTel == 'function' ? rqTel(l.s) : '';
@@ -361,7 +361,7 @@
     });
     if ((F == 'all' || F == 'phones') && c.st && !c.hs.includes('phones')) {
       const gs0 = typeof stkGroups == 'function' ? stkGroups() : [];
-      const gs = nq ? gs0.filter(g => nz([g.brand, g.name, g.ram, g.cap, g.items.map(x => x.color).join(' ')].join(' ')).includes(nq)) : gs0;
+      const gs = nq ? gs0.filter(g => nzHit(nz([g.brand, g.name, g.ram, g.cap, g.items.map(x => x.color).join(' ')].join(' ')), rq, nq)) : gs0;
       if (gs.length) {
         anyRow = true;
         h += '<h3>الهواتف المتوفرة <span class="m">(' + gs.length + ')</span></h3><div class="card rlist">' + gs.map(g => stkGroupRow(g, c.pr)).join('') + '</div>';

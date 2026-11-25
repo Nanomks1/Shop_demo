@@ -2,7 +2,7 @@
 const gdCard = g => `<div class="card cmp"><div class="ph-top"><b class="ph-nm"><bdi>${esc(g.m)}</bdi></b><div class="ph-pr-wrap">${prBadge(g.p)}${g.p2 ? `<span class="m">أصلي:</span>${prBadge(g.p2)}` : ''}</div></div><div class="row2" style="margin-top:4px;flex-wrap:wrap"><span class="m f1">${esc(g.f)}${g.n ? ' · ' + esc(g.n) : ''}</span>${can('price') ? `<button class="btn s sm" onclick="gdEd('${g.id}')">تعديل</button><button class="btn s sm del" onclick="gdDel('${g.id}')">حذف</button>` : ''}</div></div>`;
 const gdList = (q, flt) => {
   const n = nz(q || ''), fn = nz(flt || '');
-  return S.guide.filter(g => (!fn || nz(g.f).includes(fn)) && (!n || nz(g.m + ' ' + g.f + ' ' + (g.n || '')).includes(n))).sort((a, b) => a.m.localeCompare(b.m)).map(gdCard).join('') || emptyBox('لا توجد تسعيرات مطابقة', can('price') ? 'اضغط على «+ إضافة تسعيرة» في الأعلى لإضافة سعر إصلاح جديد' : '');
+  return S.guide.filter(g => (!fn || nz(g.f).includes(fn)) && (!n || nzHit(nz(g.m + ' ' + g.f + ' ' + (g.n || '')), q, n))).sort((a, b) => a.m.localeCompare(b.m)).map(gdCard).join('') || emptyBox('لا توجد تسعيرات مطابقة', can('price') ? 'اضغط على «+ إضافة تسعيرة» في الأعلى لإضافة سعر إصلاح جديد' : '');
 };
 VW.gd = () => {
   const gf = V.gf || '';
@@ -89,7 +89,7 @@ function rqCard(q) {
 }
 function rqList() {
   const n = nz(V.q || '');
-  const L = (S.req || []).slice().sort((a, b) => (b.at || 0) - (a.at || 0)).filter(q => !n || nz(q.t).includes(n));
+  const L = (S.req || []).slice().sort((a, b) => (b.at || 0) - (a.at || 0)).filter(q => !n || nzHit(nz(q.t), V.q, n));
   return L.map(rqCard).join('') || emptyBox('لا توجد طلبات زبائن مسجلة حالياً', 'اضغط على «+ تسجيل طلب زبون» لتدوين أي سلعة سأل عنها زبون ولم يجدها');
 }
 VW.req = () => ({

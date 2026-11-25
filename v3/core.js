@@ -94,6 +94,9 @@ function nzDict() {
 const nz = s => { nzDict(); s = nzRaw(s); for (const k of _alKeys) s = s.split(k).join(_alMap[k]); return s.replace(/[\s\-_]/g, ''); };
 const NZC = new WeakMap();   // ذاكرة مؤقتة خارج البيانات (لا تُحفظ ولا تُزامَن)
 const nzOf = (o, fn) => { let c = NZC.get(o); if (!c || c.v !== ST.ver) { c = { v: ST.ver, s: nz(fn(o)) }; NZC.set(o, c); } return c.s; };
+/* ---- بحث متعدد الكلمات: المترادفات المركّبة أولاً ثم كل كلمة على حدة وبأي ترتيب ---- */
+const nzWords = q => { nzDict(); let s = nzRaw(q); for (const k of _alKeys) s = s.split(k).join(_alMap[k]); return s.split(/\s+/).map(w => w.replace(/[-_]/g, '')).filter(Boolean); };
+const nzHit = (h, q, n) => { const w = nzWords(q); return w.length > 1 ? w.every(x => h.includes(x)) : h.includes(n != null ? n : nz(q)); };
 /* ---------- الحالة ---------- */
 const DEF = {
   me: '', users: [], pin: '',

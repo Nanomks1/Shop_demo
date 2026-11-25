@@ -201,10 +201,10 @@ const usedCard = u => {
     + `<div class="rp-meta"><div class="rp-meta-line"><span><bdi class="ltr">${fd(u.at)}</bdi>${inInv ? ' · ' + I('check') + ' أُدخل للمخزون' : ''}</span><b><bdi>${esc(u.by || '')}</bdi></b></div></div>`
     + `<div class="sub">${inInv ? '' : `<button class="btn s sm" onclick="usInv('${u.id}')">إدخال للمخزون</button>`}<button class="btn s sm" onclick="usEd('${u.id}')">تعديل</button><button class="btn s sm del rp-icb" onclick="usDel('${u.id}')">حذف</button></div></div>`;
 };
-const usMatch = (u, n) => nz([u.dev, u.name, u.cin, u.tel, u.imei, u.note, u.repTxt].join(' ')).includes(n);
+const usMatch = (u, n, q) => nzHit(nz([u.dev, u.name, u.cin, u.tel, u.imei, u.note, u.repTxt].join(' ')), q, n);
 function usListHtml() {
   const L = S.used.slice().sort((a, b) => b.at - a.at), n = nz(V.q || '');
-  const F = n ? L.filter(u => usMatch(u, n)) : L;
+  const F = n ? L.filter(u => usMatch(u, n, V.q)) : L;
   if (!F.length) return emptyBox(n ? 'لا توجد سجلات مطابقة' : 'لا توجد سجلات شراء مستعمل بعد', n ? '' : 'اضغط على «+ تسجيل شراء هاتف مستعمل» في الأعلى');
   const limN = V.lim || 40, rem = F.length - limN;
   return F.slice(0, limN).map(usedCard).join('') + (rem > 0 ? `<button class="btn s" onclick="V.lim=(V.lim||40)+40;usF()">عرض المزيد (+${Math.min(40, rem)} من ${rem} متبقية)</button>` : '');
@@ -347,7 +347,7 @@ const dbtCard = d => {
 function dbtListHtml() {
   const tab = V.tab || 'o', q = nz(V.q || '');
   const L = tab == 'o' ? S.debt.filter(d => !d.paid).sort((a, b) => b.at - a.at) : S.debt.filter(d => d.paid).sort((a, b) => b.paid - a.paid);
-  const F = q ? L.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(q)) : L;
+  const F = q ? L.filter(d => nzHit(nz([d.name, d.tel, d.why].join(' ')), V.q, q)) : L;
   if (!F.length) return emptyBox(q ? 'لا توجد ديون مطابقة' : 'لا توجد ديون مسجلة هنا');
   const limN = V.lim || 40, rem = F.length - limN;
   return F.slice(0, limN).map(dbtCard).join('') + (rem > 0 ? `<button class="btn s" onclick="V.lim=(V.lim||40)+40;dbtF()">عرض المزيد (+${Math.min(40, rem)} من ${rem} متبقية)</button>` : '');
@@ -391,7 +391,7 @@ VW.stat = () => {
 };
 /* ---------- التسجيل في البحث والباركود ---------- */
 SRCH.push(
-  { k: 'used', l: 'مستعمل', run: n => S.used.filter(u => usMatch(u, n)).slice(0, 20).map(usedCard) },
-  { k: 'debt', l: 'ديون', run: n => S.debt.filter(d => nz([d.name, d.tel, d.why].join(' ')).includes(n)).slice(0, 20).map(dbtCard) }
+  { k: 'used', l: 'مستعمل', run: (n, Q) => S.used.filter(u => usMatch(u, n, Q)).slice(0, 20).map(usedCard) },
+  { k: 'debt', l: 'ديون', run: (n, Q) => S.debt.filter(d => nzHit(nz([d.name, d.tel, d.why].join(' ')), Q, n)).slice(0, 20).map(dbtCard) }
 );
 BCM.push(c => { const n = nz(c); return S.used.filter(u => u.imei && nz(u.imei).includes(n)).map(usedCard).join(''); });
