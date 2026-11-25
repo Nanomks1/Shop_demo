@@ -112,7 +112,8 @@ function bcQuickSell(it) {
       commit('بيع سريع (−1): ' + bcLbl(it) + ' ← بقي ' + (it.cnt - 1), () => { it.cnt = Math.max(0, it.cnt - 1); touch(it); });
       return true;
     } else {
-      toast('هذا الإكسسوار بدون عدد رقمي — حُدِّثت البطاقة أمامك');
+      const r2 = $('res'); if (r2) r2.innerHTML = itemCard(it);
+      toast('هذا الإكسسوار بدون عدد رقمي — حدّد حالته من البطاقة');
     }
   } else if (it.sec == 'case' && (it.v || []).length) {
     const avs = it.v.filter(x => x.n > 0);

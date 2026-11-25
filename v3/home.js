@@ -28,12 +28,12 @@ function srch(q) {
   const n = nz(q); if (!n) return '';
   const o = [];
   if (!SC && n.length >= 2 && typeof window.priceLookupHtml == 'function') {
-    const topCard = window.priceLookupHtml(n);
+    const topCard = window.priceLookupHtml(q);
     if (topCard) o.push(topCard);
   }
   SRCH.forEach(p => {
     if (SC ? SC != p.k : p.k == 'prc') return;
-    const r = p.run(n);
+    const r = p.run(n, q);
     if (r.length) o.push((SC ? '' : `<h3>${p.l} <span class="m">(${r.length})</span></h3>`) + r.join(''));
   });
   return o.join('') || emptyBox('لا توجد نتائج مطابقة لبحثك');

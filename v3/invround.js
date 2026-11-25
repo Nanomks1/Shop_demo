@@ -62,7 +62,7 @@ function jlSecSummary(sec, staleCnt) {
   const phCnt = ph().reduce((s, i) => s + (+i.cnt || 0), 0), csCnt = S.items.filter(i => i.sec == 'case').reduce((s, i) => s + csTot(i), 0);
   return P(phCnt, 'قطع الهواتف') + P(csCnt, 'قطع البوشيط') + stP;
 }
-const itemCard = i => i._jl == 'ag' ? agCard(i.d) : i._jl == 'tp' ? jlTpCard(i.r) : i.sec == 'phones' ? phCard(i) : i.sec == 'case' ? csCard(i) : i.sec == 'acc' ? acCard(i) : i.sec == 'glass' ? gl2(i) : '';
+const itemCard = i => i._jl == 'ag' ? agCard(i.d) : i._jl == 'tp' ? jlTpCard(i.r) : i.sec == 'phones' ? phCard(i) : i.sec == 'case' ? csCard(i) : i.sec == 'acc' ? (gkc(i.kind).g ? agItemCard(i) : acCard(i)) : i.sec == 'glass' ? gl2(i) : '';
 function jlTpCard(r) {
   return `<div class="card"><div class="row2"><b>تعبئة <bdi>${esc(r.op)}</bdi> — بطاقة ${r.n} درهم</b><span class="m">${r.val <= 0 ? 'نفد' : r.est ? `<bdi class="ltr">≈${r.val}</bdi>` : 'العدد ' + r.val}</span></div><div class="m">آخر تأكيد ${agoTxt(cfTime(r))}</div><div class="sub"><button class="btn s sm" onclick="go('tp')">فتح شاشة التعبئة</button></div></div>`;
 }
@@ -129,7 +129,7 @@ function rCfTp(id) {
 const jlCurSec = () => V.js || V.jk || 'all';
 function jlFiltered() {
   const allMode = V.jm == 'all', sec = jlCurSec(), q = nz(V.jq || '');
-  return rnd(allMode).filter(i => (sec == 'all' || jlSecOf(i) == sec) && (!q || nz(jlTextOf(i)).includes(q)));
+  return rnd(allMode).filter(i => (sec == 'all' || jlSecOf(i) == sec) && (!q || nzHit(nz(jlTextOf(i)), V.jq, q)));
 }
 function jlListHtml() {
   const L = jlFiltered(), limN = V.jlim || 40, a = L.slice(0, limN), rem = L.length - a.length;
@@ -184,12 +184,13 @@ HOME.after.push(() => {
 /* ============================ كاشف الأثمنة الفوري الموحّد (بأيقونات SVG الملوّنة) ============================ */
 window.priceLookupHtml = function (q) {
   const n = nz(q); if (n.length < 2) return '';
-  const phs = ph().filter(i => nzOf(i, nzText).includes(n)).slice(0, 6);
-  const gls = S.gg.filter(g => g.models.some(m => nz(((g.br || {})[m] || '') + m).includes(n))).slice(0, 4);
-  const css = S.items.filter(i => i.sec == 'case' && nzOf(i, nzText).includes(n)).slice(0, 4);
-  const gds = (S.guide || []).filter(g => nz(g.m + ' ' + g.f + ' ' + (g.n || '')).includes(n)).slice(0, 6);
-  const acs = S.items.filter(i => i.sec == 'acc' && nzOf(i, nzText).includes(n)).slice(0, 5);
-  const cats = (phs.length ? 1 : 0) + (gls.length ? 1 : 0) + (css.length ? 1 : 0) + (gds.length ? 1 : 0) + (acs.length ? 1 : 0);
+  const phs = ph().filter(i => nzHit(nzOf(i, nzText), q, n)).slice(0, 6);
+  const gls = S.gg.filter(g => g.models.some(m => nzHit(nz(((g.br || {})[m] || '') + m), q, n))).slice(0, 4);
+  const css = S.items.filter(i => i.sec == 'case' && nzHit(nzOf(i, nzText), q, n)).slice(0, 4);
+  const gds = (S.guide || []).filter(g => nzHit(nz(g.m + ' ' + g.f + ' ' + (g.n || '')), q, n)).slice(0, 6);
+  const acs = S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && nzHit(nzOf(i, nzText), q, n)).slice(0, 5);
+  const ags = agList().filter(d => nzHit(nz(agTxt(d)), q, n)).slice(0, 4);
+  const cats = (phs.length ? 1 : 0) + (gls.length ? 1 : 0) + (css.length ? 1 : 0) + (gds.length ? 1 : 0) + (acs.length || ags.length ? 1 : 0);
   if (!cats) return '';
   let rows = '';
   phs.forEach(i => {
@@ -209,6 +210,9 @@ window.priceLookupHtml = function (q) {
     const s = csSt(c), gSum = typeof csGSummaryTxt == 'function' ? csGSummaryTxt(c) : 'المتوفر ' + csTot(c);
     rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="csLimEd('${c.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('ccase')} بوشيط <b><bdi>${esc(c.name)}</bdi></b> <small class="m">(${esc(gSum)})</small></span><b class="cmp-pr">${esc(c.price ? fmtDh(c.price) : 'حدّد السعر')}</b></div>`;
   });
+  ags.forEach(d => {
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="agOpen('${encodeURIComponent(d.id)}')"><span class="dotl" style="background:${DT[d.st]}"></span><span class="rt" style="font-size:.88rem">${I('cacc')} <b>${esc(d.title)}</b> <small class="m">(${d.tot !== null ? (d.est ? '≈' : '') + d.tot : ALB2[d.st]})</small></span><b class="cmp-pr">${esc(d.tier ? fmtDh(d.tier) : '—')}</b></div>`;
+  });
   acs.forEach(a => {
     const s = acSt(a);
     rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="acEd('${a.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cacc')} <b>${esc(acName(a))}</b></span><b class="cmp-pr">${esc(a.price ? fmtDh(a.price) : '—')}</b></div>`;
@@ -223,5 +227,5 @@ window.priceLookupHtml = function (q) {
 SRCH.unshift({
   k: 'prc',
   l: 'الأثمنة',
-  run: n => { const h = window.priceLookupHtml(n); return h ? [h] : []; }
+  run: (n, q) => { const h = window.priceLookupHtml(q ?? n); return h ? [h] : []; }
 });

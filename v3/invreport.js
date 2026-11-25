@@ -81,14 +81,14 @@ function invLines(notes = true) {
     L.push(['البوشيط', i.name + (V0.length ? (bad.length ? ' — ناقص: ' + bad.join('، ') : '') + (ok.length ? ' — متوفر: ' + ok.join('، ') : '') : ' — نفد') + (notes && i.rem ? ' — باقي: ' + i.rem : '') + (notes && i.need ? ' — خاصنا: ' + i.need : ''), csSt(i), `buyC('${i.id}')`]);
   });
   S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && acSt(i) != 'g').forEach(i => L.push(['الإكسسوارات', acName(i) + (typeof i.cnt == 'number' ? ' — العدد ' + i.cnt : '') + (i.note ? ' — ' + i.note : ''), acSt(i), `buyA('${i.id}')`]));
-  agList().filter(d => d.st != 'g').forEach(d => L.push(['الإكسسوارات', d.title + (d.tot !== null ? ' — المجموع ' + (d.est ? '≈' : '') + d.tot : d.st == 'r' ? ' — نفد' : ' — قارب النفاد'), d.st, `agBuy('${encodeURIComponent(d.id)}')`]));
+  agList().filter(d => d.st != 'g').forEach(d => L.push(['الإكسسوارات', d.title + (d.tot !== null ? ' — المجموع ' + (d.est ? '≈' : '') + d.tot : d.st == 'r' ? ' — نفد' : ' — قارب النفاد') + (notes && d.g && d.g.note ? ' — ' + d.g.note : ''), d.st, `agBuy('${encodeURIComponent(d.id)}')`]));
   return L;
 }
 /* ============================ البحث الموحّد وعرض القسم ============================ */
 SRCH.push(
-  { k: 'phones', l: 'هواتف', run: n => { const ks = new Set(S.items.filter(i => i.sec == 'phones' && nzOf(i, nzText).includes(n)).slice(0, 30).map(phKey)); return phGroupsOf(ph().filter(i => ks.has(phKey(i)))).map(phGCard); } },
-  { k: 'glass', l: 'أنتي كاس', run: n => S.gg.filter(g => g.models.some(m => nz(((g.br || {})[m] || '') + m).includes(n))).slice(0, 15).map(glB) },
-  { k: 'case', l: 'بوشيط', run: n => S.items.filter(i => i.sec == 'case' && nzOf(i, nzText).includes(n)).slice(0, 30).map(csCard) },
-  { k: 'acc', l: 'إكسسوارات', run: n => S.items.filter(i => i.sec == 'acc' && nzOf(i, nzText).includes(n)).slice(0, 30).map(acCard) }
+  { k: 'phones', l: 'هواتف', run: (n, q) => { const ks = new Set(S.items.filter(i => i.sec == 'phones' && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(phKey)); return phGroupsOf(ph().filter(i => ks.has(phKey(i)))).map(phGCard); } },
+  { k: 'glass', l: 'أنتي كاس', run: (n, q) => S.gg.filter(g => g.models.some(m => nzHit(nz(((g.br || {})[m] || '') + m), q, n))).slice(0, 15).map(glB) },
+  { k: 'case', l: 'بوشيط', run: (n, q) => S.items.filter(i => i.sec == 'case' && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(csCard) },
+  { k: 'acc', l: 'إكسسوارات', run: (n, q) => [...agList().filter(d => nzHit(nz(agTxt(d)), q, n)).slice(0, 15).map(agCard), ...S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(acCard)] }
 );
 VW.sec = () => ({ phones: phView, glass: glView, case: csView, acc: acView }[V.k] || phView)();
