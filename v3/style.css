@@ -507,3 +507,9 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .phk.n small{font-size:var(--t-xs);font-weight:600;color:var(--m)}
 .phk.n b{display:inline;font-size:var(--t-md);font-weight:800;color:var(--pt)}
 .phsel .btn.s.sell{background:var(--ab);border-color:var(--p);color:var(--pt)}
+/* الأنتي كاس: ألوان المستويات وعناصر القسم */
+.lv-a{--lc:#15803d;--lt:#fff}.lv-b{--lc:#22c55e;--lt:#fff}.lv-c{--lc:#86efac;--lt:#14532d}.lv-y{--lc:#d97706;--lt:#fff}.lv-r{--lc:#dc2626;--lt:#fff}
+.gl-hash{--lc:var(--b);--lt:var(--t);flex:0 0 2.1rem;opacity:.9}
+.gl-cnt{gap:4px}.gl-single{margin-top:6px}.gl-trow{margin-top:4px}.gl-br{font-weight:500}
+.gl-moreb{width:100%;justify-content:center;margin-top:4px}
+.gl-q{width:100%;margin:6px 0}

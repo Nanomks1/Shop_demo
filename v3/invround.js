@@ -43,8 +43,7 @@ function jlSecSummary(sec, staleCnt) {
     return P(A.length, 'أصناف الهواتف') + P(A.reduce((s, i) => s + (+i.cnt || 0), 0), 'مجموع القطع') + stP;
   }
   if (sec == 'glass') {
-    const tot = S.gg.reduce((s, g) => s + S.tags.glass.reduce((a, t) => { const i = gitem(g.id, t); return a + (i ? gTot(i, g) : 0); }, 0), 0);
-    return P(S.gg.length, 'مجموعات الزجاج') + P('≈' + tot, 'مجموع القطع') + stP;
+    return P(S.gg.length, 'مجموعات الزجاج') + stP;
   }
   if (sec == 'case') {
     const A = S.items.filter(i => i.sec == 'case');
@@ -92,7 +91,7 @@ function jlCompactRow(i) {
   if (i.sec == 'glass') {
     const g = S.gg.find(x => x.id == i.gid); if (!g) return '';
     const s = gSt(i, g, i.ty), j = Math.max(0, S.tags.glass.indexOf(i.ty));
-    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="go('sec',{k:'glass',ty:${j}})"><b>زجاج <bdi>${esc(i.ty)}</bdi>: ${glModsH(gMods(g, i.ty))}</b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi>${i.price ? ' · <bdi>' + esc(fmtDh(i.price)) + '</bdi>' : ''} · ${dBadge}</div></div>`
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="go('sec',{k:'glass',ty:${j}})"><b>زجاج <bdi>${esc(i.ty)}</bdi>: ${glModsH(gMods(g, i.ty))}</b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi>${gPr(i) ? ' · <bdi>' + esc(fmtDh(gPr(i))) + '</bdi>' : ''} · ${dBadge}</div></div>`
       + `<div class="jl-acts"><button class="btn s sm" onclick="go('sec',{k:'glass',ty:${j}})">فتح</button><button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div></div></div>`;
   }
   if (i.sec == 'case') {
@@ -202,7 +201,7 @@ window.priceLookupHtml = function (q) {
       if (!gShow(g, ty)) return;
       const it = gitem(g.id, ty), tot = it ? gTot(it, g) : 0, s = it ? gSt(it, g, ty) : 'r';
       if (tot > 0 || (it && it.price)) {
-        rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="glMin('${g.id}',${j})"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cglass')} زجاج <b>${esc(ty)}</b> <small class="m">(<bdi>${esc(gMods(g, ty).slice(0, 3).join('/'))}</bdi>) · <bdi class="ltr">${it && gEst(it, g) ? '≈' : ''}${tot}</bdi></small></span><b class="cmp-pr">${esc(it && it.price ? fmtDh(it.price) : 'حدّد السعر')}</b></div>`;
+        rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="glMin('${g.id}',${j})"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cglass')} زجاج <b>${esc(ty)}</b> <small class="m">(<bdi>${esc(gMods(g, ty).slice(0, 3).join('/'))}</bdi>) · <bdi class="ltr">${it && gEst(it, g) ? '≈' : ''}${tot}</bdi></small></span><b class="cmp-pr">${esc(gPr(it, ty) ? fmtDh(gPr(it, ty)) : 'حدّد السعر')}</b></div>`;
       }
     });
   });

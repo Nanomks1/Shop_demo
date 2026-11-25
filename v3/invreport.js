@@ -71,7 +71,7 @@ function invLines(notes = true) {
     const tys = S.tags.glass.filter(t => gShow(g, t)), hasAny = tys.some(t => gitem(g.id, t));
     tys.forEach((t, idx) => {
       const i = gitem(g.id, t), ms = gMods(g, t).join(' / ');
-      if (i && gSt(i, g, t) != 'g') L.push(['الأنتي كاس', t + ': ' + ms + ' — المجموع ' + (gEst(i, g) ? '≈' : '') + gTot(i, g), gSt(i, g, t), `buyG('${i.id}')`]);
+      if (i && gSt(i, g, t) != 'g') L.push(['الأنتي كاس', t + ': ' + ms + ' — المجموع ' + (gEst(i, g) ? '≈' : '') + gTot(i, g) + (glx('rp') ? glBrk(i, g, t) : ''), gSt(i, g, t), `buyG('${i.id}')`]);
       else if (!i && !hasAny && idx === 0) L.push(['الأنتي كاس', t + ': ' + ms + ' — المجموع 0', 'r', `buyG('${g.id}')`]);
     });
   });

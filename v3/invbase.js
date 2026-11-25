@@ -19,7 +19,7 @@ const touch = (i, cf) => {
 const sumv = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
 S.fields = S.fields || []; S.gg = S.gg || []; S.ag = S.ag || [];
 /* cl: 2 يعني لكل لون: 0 نفد (أحمر)، 1 أو 2 قارب (برتقالي)، 3 فأكثر متوفر (أخضر) */
-Object.assign(DL0, { rsd: 7, cl: 2, csBuy: 3, gA: 30, gB: 20, gC: 10, gY: 5, acl: 3, agl: 10 });
+Object.assign(DL0, { rsd: 7, cl: 2, csBuy: 3, gA: 30, gB: 20, gC: 10, gY: 3, acl: 3, agl: 10 });
 LM.push(
   ['rsd', 'هاتف: يُعتبر الحجز قديماً بعد (أيام)، 0 = بلا تنبيه'],
   ['csBuy', 'بوشيط: الكمية الافتراضية عند الشراء من التقرير'],
@@ -129,7 +129,7 @@ const sortToolbarHtml = s => {
 const secPanel = (s, tagsHtml) => `<div class="sec-panel"><div class="sec-tags">${tagsHtml}</div>${sortToolbarHtml(s)}</div>`;
 const emptyBox = (title, sub) => `<div class="empty-state"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
 function soSet(s, k) { upd(() => { S.cfg.so = S.cfg.so || {}; S.cfg.so[s] = k; }); }
-const srt = (a, s, nm, lo, at) => { const k = SO(s); return [...a].sort((x, y) => k == 'd' ? (at(y) || 0) - (at(x) || 0) : k == 'l' ? (lo(x) - lo(y)) || String(nm(x)).localeCompare(String(nm(y))) : String(nm(x)).localeCompare(String(nm(y)))); };
+const srt = (a, s, nm, lo, at) => { const k = SO(s); return [...a].sort((x, y) => k == 'd' ? (at(y) || 0) - (at(x) || 0) : k == 'l' ? (lo(x) - lo(y)) || String(nm(x)).localeCompare(String(nm(y)), undefined, { numeric: true }) : String(nm(x)).localeCompare(String(nm(y)), undefined, { numeric: true })); };
 /* ---------- إظهار/إخفاء الحقول في النماذج (يضبطه المدير) ---------- */
 const FLD = {
   phones: [['color', 'اللون'], ['ram', 'RAM'], ['cap', 'السعة'], ['cond', 'الحالة'], ['price', 'السعر'], ['imei', 'IMEI'], ['note', 'الملاحظة'], ['res', 'زر الحجز']],

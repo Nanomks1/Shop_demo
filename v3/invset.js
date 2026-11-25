@@ -11,7 +11,7 @@ VW.st_fld = () => ({
 const tg = (l, g) => [l, "go('st_tg',{g:'" + g + "'})", () => (S.tags[g] || []).length];
 const CATS = {   // ملف الصيانة يضيف CATS.rp
   ph: ['الهواتف', [tg('الماركات', 'brand'), tg('الألوان', 'color'), tg('السعات', 'cap'), tg('RAM', 'ram'), ['حدود الهواتف حسب فئة السعر', "go('st_pt')", () => ptCfg().map(x => x[0].split(' ')[0] + ' ' + x[2]).join(' · ')], ['الحد العام (عند عدم وجود سعر): «قارب النفاد» عند عدد', "limEd('low')", () => lim('low') + ' فأقل'], ['تنبيه الحجز القديم بعد (أيام، 0 = بلا تنبيه)', "limEd('rsd')", () => lim('rsd') ? lim('rsd') + ' يوم' : 'متوقف'], ['ألوان الماركات وحدودها', "go('st_br')"], ['خيارات القسم (تشغيل وإيقاف)', "go('st_phx')", () => PXL.filter(x => phx(x[0])).length + ' / ' + PXL.length]], 'phones'],
-  gl: ['الأنتي كاس', [tg('أنواع الزجاج', 'glass'), ['حد «قارب النفاد» لكل نوع زجاج', "go('st_gl')", () => (lim('gmin') - 1) + ' فأقل'], ['كم تُحسب المستويات (غامق / أخضر / فاتح / قليل)', "go('st_gl2')"], ['ماركات قائمة الأنتي كاس (إخفاء الهواتف الصغيرة)', "go('st_glb')", () => S.tags.brand.filter(b => !glBrHid(b)).length + ' / ' + S.tags.brand.length]], null],
+  gl: ['الأنتي كاس', [tg('أنواع الزجاج', 'glass'), ['حد «قارب النفاد» لكل نوع زجاج', "go('st_gl')", () => (lim('gmin') - 1) + ' فأقل'], ['كم تُحسب المستويات (غامق / أخضر / فاتح / قليل)', "go('st_gl2')"], ['سعر افتراضي لكل نوع زجاج', "go('st_glp')", () => Object.keys(S.cfg.gpr || {}).length + ' / ' + S.tags.glass.length], ['خيارات الأنتي كاس (تشغيل وإيقاف)', "go('st_glx')", () => GXL.filter(x => glx(x[0])).length + ' / ' + GXL.length], ['ماركات قائمة الأنتي كاس (إخفاء الهواتف الصغيرة)', "go('st_glb')", () => S.tags.brand.filter(b => !glBrHid(b)).length + ' / ' + S.tags.brand.length]], null],
   cs: ['البوشيط', [tg('الألوان', 'color'), ['الحد العام لكل لون: «قارب النفاد» عند', "limEd('cl')", () => lim('cl') + ' فأقل'], ['الكمية الافتراضية عند الشراء', "limEd('csBuy')", () => lim('csBuy') + ' قطع']], 'case'],
   ac: ['الإكسسوارات', [tg('الأنواع', 'kind'), tg('الموصلات', 'conn'), tg('الفئات السعرية', 'tier'), tg('القدرات (واط)', 'pw'), ['الحد العام للقطع بعدد: «قليل» عند', "limEd('acl')", () => lim('acl') + ' فأقل'], ['الحد العام للمجموعات (كابل/شاحن) عند', "limEd('agl')", () => lim('agl') + ' فأقل'], ['إعداد كل نوع (الخاصيات، العرض، الحد)', "go('st_ak')"], ['خيارات القسم (تشغيل وإيقاف)', "go('st_acx')", () => AXL.filter(x => acx(x[0])).length + ' / ' + AXL.length]], 'acc']
 };
@@ -199,8 +199,7 @@ function tgReplace(g, oldV, newV) {
       Object.keys(x.ty).forEach(m => { x.ty[m] = [...new Set(x.ty[m].map(t => t === oldV ? newV : t).filter(Boolean))]; if (!x.ty[m].length) delete x.ty[m]; });
       if (!Object.keys(x.ty).length) delete x.ty;
     });
-    const o = S.cfg && S.cfg.gtl;
-    if (o && o[oldV] !== undefined) { if (newV && o[newV] === undefined) o[newV] = o[oldV]; delete o[oldV]; }
+    ['gtl', 'gpr'].forEach(c => { const o = S.cfg && S.cfg[c]; if (o && o[oldV] !== undefined) { if (newV && o[newV] === undefined) o[newV] = o[oldV]; delete o[oldV]; } });
     if (!newV) {
       S.items.filter(i => i.sec == 'glass' && i.ty === oldV).forEach(i => S.trash.push({ id: uid(), coll: 'items', obj: i, label: 'أنتي كاس: ' + oldV, t: Date.now() }));
       S.items = S.items.filter(i => !(i.sec == 'glass' && i.ty === oldV));
