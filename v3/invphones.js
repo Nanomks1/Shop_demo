@@ -12,12 +12,12 @@ const phKey = i => [i.brand, nz(i.name), i.ram || '', i.cap || '', i.cond || 'ج
 function phGroupsOf(arr) {
   const m = new Map();
   arr.forEach(i => {
-    const k = phKey(i); let g = m.get(k);
+    const k = i.cond == 'مستعمل' ? phKey(i) + '|' + i.id : phKey(i); let g = m.get(k);
     if (!g) { g = { key: k, items: [], brand: i.brand, name: i.name, ram: i.ram, cap: i.cap, cond: i.cond || 'جديد', price: '', tot: 0, cnt: 0, rs: 0, at: 0 }; m.set(k, g); }
     g.items.push(i); g.tot += av(i); g.cnt += +i.cnt || 0; g.rs += rsQ(i);
     if (!g.price && i.price) g.price = i.price; if ((i.at || 0) > g.at) g.at = i.at;
   });
-  return [...m.values()];
+  return [...m.values()].map(g => { g.stp = g.items.every(x => x.stp) && g.cnt <= (+g.items[0].stpN || 0); g.rsOld = g.items.some(rsOld); return g; });
 }
 let PGC = { v: -1, n: -1, m: null };
 function phGMap() {
@@ -48,7 +48,16 @@ const stkN = i => [i.brand, i.name, i.color, i.ram, i.cap].filter(Boolean).join(
 let PHS = '', PLT = 0, PLF = 0;
 function phLPs(id) { PLF = 0; clearTimeout(PLT); PLT = setTimeout(() => { PLF = 1; if (navigator.vibrate) navigator.vibrate(20); phCnt(id); }, 550); }
 function phLPe() { clearTimeout(PLT); }
-function phTap(id) { if (PLF) { PLF = 0; return; } PHS = PHS == id ? '' : id; render(); }
+function phTap(id) {
+  if (PLF) { PLF = 0; return; }
+  const i = S.items.find(x => x.id == id);
+  if (phx('s1') && i && av(i) > 0) return phC(id, -1);
+  PHS = PHS == id ? '' : id; render();
+}
+function phStp(id) {
+  const i = find(id); if (!i) return; const g = phGroup(i), on = !g.stp, n = g.cnt;
+  commit(on ? 'أُوقف شراء الموديل (يخرج من التقرير)' : 'أُعيد الموديل للشراء', () => g.items.forEach(x => { x.stp = on ? 1 : 0; if (on) x.stpN = n; else delete x.stpN; touch(x); }));
+}
 function phCnt(id) {
   const i = find(id); if (!i) return;
   ask('تصحيح العدد: ' + stkN(i), [{ k: 'n', l: 'العدد الفعلي الآن (بدل ' + i.cnt + ')', t: 'number', v: i.cnt }], 'تصحيح').then(v => {
@@ -69,13 +78,24 @@ function phGCard(g) {
   const mem = memBadge(g.ram, g.cap);
   const condB = g.cond != 'جديد' ? `<span class="phk c">${esc(g.cond)}</span>` : '';
   const totB = g.items.length > 1 ? `<span class="tot-b">المجموع <b>${g.cnt}</b></span>` : '';
-  const rsB = g.rs ? `<span class="rs">· محجوز ${g.rs}</span>` : '';
+  const rsB = g.rs ? `<span class="rs">· محجوز ${g.rs}${g.rsOld ? ' ⚠' : ''}</span>` : '';
+  const stpB = g.stp ? `<span class="phk c">متوقف</span>` : '';
   const bar = sel ? `<div class="phsel"><span class="csd" style="background:${csBg(sel.color)};color:${csInk(sel.color)}"></span><b class="f1">${esc(sel.color || 'عام')}</b><button class="btn s sm sell" onclick="phC('${sel.id}',-1)">− بيع</button><span class="cn">${sel.cnt}</span><button class="btn sm" onclick="phC('${sel.id}',1)">+ إضافة</button><button class="tag" style="margin:0" onclick="phOpen('${sel.id}')">⋯</button></div>` : '';
   return cardH(
     `<div class="ph-top" onclick="phGO('${f0.id}')"><b class="ph-nm"><bdi>${esc(g.brand + ' ' + g.name)}</bdi></b><div class="ph-pr-wrap">${g.price ? prBadge(g.price) : ''}<span class="dotl" style="background:${DT[s]}"></span></div></div>`
-    + `<div class="ph-bot">${mem || condB || totB || rsB ? `<div class="ph-specs" onclick="phGO('${f0.id}')">${mem}${condB}${totB}${rsB}</div>` : ''}<div class="cs-sws">${phDots(g, cmp)}</div></div>`
+    + `<div class="ph-bot">${mem || condB || totB || rsB || stpB ? `<div class="ph-specs" onclick="phGO('${f0.id}')">${mem}${condB}${stpB}${totB}${rsB}</div>` : ''}<div class="cs-sws">${phDots(g, cmp)}</div></div>`
     + bar,
     colOf(f0), 'cmp'
+  );
+}
+/* هاتف مستعمل: بطاقة مستقلة لكل جهاز بسعره وIMEI الخاص به، وتختفي عند بيعه */
+function phUCard(g) {
+  const i = g.items[0], mem = memBadge(g.ram, g.cap);
+  return cardH(
+    `<div class="ph-top" onclick="phOpen('${i.id}')"><b class="ph-nm"><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b><div class="ph-pr-wrap">${i.price ? prBadge(i.price) : ''}</div></div>`
+    + `<div class="ph-bot"><div class="ph-specs" onclick="phOpen('${i.id}')">${mem}<span class="phk c">مستعمل</span>${i.color ? `<span class="m"><bdi>${esc(i.color)}</bdi></span>` : ''}${rsQ(i) ? `<span class="rs">· محجوز${rsOld(i) ? ' ⚠' : ''}</span>` : ''}</div><button class="btn s sm sell" onclick="phC('${i.id}',-1)">− بيع</button></div>`
+    + (i.imei ? `<div class="cs-nt m">IMEI: <bdi>${esc(i.imei)}</bdi></div>` : '') + (i.note ? `<div class="cs-nt m">${esc(i.note)}</div>` : ''),
+    colOf(i), 'cmp'
   );
 }
 /* نافذة الموديل: كل الألوان − / + ثم الحد والإضافة */
@@ -154,6 +174,7 @@ function phSheetR(id) {
     + `<button class="btn s" onclick="phGo('phDup','${i.id}')">+ لون / سعة أخرى</button>`
     + (shown('phones', 'res') ? `<button class="btn s" onclick="phGo('phRs','${i.id}')">حجز${rsQ(i) ? ' (' + rsQ(i) + ')' : ''}</button>` : '')
     + `<button class="btn s" onclick="phGo('phAcc','${i.id}')">${I('shield')} ملحقات</button>`
+    + (i.cond == 'مستعمل' ? '' : `<button class="btn s" onclick="phGo('phStp','${i.id}')">${phGroup(i).stp ? 'إعادة الموديل للشراء' : 'إيقاف شراء الموديل'}</button>`)
     + (typeof usFromRep == 'function' && av(i) > 0 ? `<button class="btn s" onclick="phGo('usFromRep','${i.id}')">${I('swap')} روپريز</button>` : '')
     + ((i.log || []).length ? `<button class="btn s" onclick="phGo('lgOpen','${i.id}')">السجل</button>` : '')
     + (can('del') ? `<button class="btn s del" onclick="phDelF('${i.id}')">حذف الهاتف</button>` : '')
@@ -170,13 +191,13 @@ function phDupC(id) {
   phForm({ brand: r.brand, name: r.name, ram: r.ram, cap: r.cap, cond: r.cond, price: r.price, cnt: 1 });
 }
 function phView() {
-  const allPh = ph(), G = phGroupsOf(allPh), totPcs = allPh.reduce((t, i) => t + (+i.cnt || 0), 0), lowCnt = G.filter(g => phGSt(g) != 'g').length;
+  const allPh = ph(), G = phGroupsOf(allPh), totPcs = allPh.reduce((t, i) => t + (+i.cnt || 0), 0), lowCnt = G.filter(g => phGSt(g) != 'g' && !g.stp).length;
   const usedG = G.filter(g => g.cond == 'مستعمل'), usedPcs = usedG.reduce((t, g) => t + g.cnt, 0);
   const brMap = {};
   G.forEach(g => { if (g.brand) brMap[g.brand] = (brMap[g.brand] || 0) + g.cnt; });
   const brChips = Object.keys(brMap).map(b => `<button class="tag ${V.pb == b && !V.f ? 'on' : ''}" data-b="${esc(b)}" onclick="V.f=0;V.pb=this.dataset.b;render()">${esc(b)} (${brMap[b]})</button>`).join('');
   let a = srt(G, 'phones', g => g.brand + ' ' + g.name, g => g.cnt, g => g.at);
-  if (V.f == 1) a = a.filter(g => phGSt(g) != 'g');
+  if (V.f == 1) a = a.filter(g => phGSt(g) != 'g' && !g.stp);
   else if (V.f == 2) a = a.filter(g => g.cond == 'مستعمل');
   else if (V.pb) a = a.filter(g => g.brand == V.pb);
   const pg = pgSlice('ph', a);
@@ -188,7 +209,7 @@ function phView() {
     t: 'الهواتف',
     h: `<button class="btn" onclick="phAdd()">+ إضافة هاتف</button>`
       + secPanel('phones', tagsHtml)
-      + (pg.items.map(phGCard).join('') + pg.more || emptyBox('لا توجد هواتف مطابقة لهذا الفلتر', 'اضغط على «+ إضافة هاتف» في الأعلى لإضافة هاتف جديد'))
+      + (pg.items.map(g => g.cond == 'مستعمل' ? phUCard(g) : phGCard(g)).join('') + pg.more || emptyBox('لا توجد هواتف مطابقة لهذا الفلتر', 'اضغط على «+ إضافة هاتف» في الأعلى لإضافة هاتف جديد'))
   };
 }
 /* اقتراح الأنتي كاس والبوشيط تلقائياً لحظة بيع هاتف */
@@ -233,7 +254,7 @@ function phC(id, d) {
   const i = find(id); if (!i) return;
   if (d < 0 && rsQ(i) > 0 && av(i) <= 0) return toast('كل القطع محجوزة: سلّم الحجز أو ألغِه أولاً');
   if (d < 0 && i.cnt <= 0) return;
-  commit(d < 0 ? 'بيع ' + i.brand + ' ' + i.name + ' (−1)' : 'إضافة ' + i.brand + ' ' + i.name + ' (+1)', () => { i.cnt = Math.max(0, i.cnt + d); touch(i); });
+  commit(d < 0 ? 'بيع ' + i.brand + ' ' + i.name + ' (−1)' : 'إضافة ' + i.brand + ' ' + i.name + ' (+1)', () => { i.cnt = Math.max(0, i.cnt + d); if (d < 0 && i.cond == 'مستعمل' && i.cnt <= 0) i.sold = Date.now(); touch(i); });
   if (d > 0) return reqChk(i.brand + ' ' + i.name);
 }
 /* الإضافة: ابحث أولاً، فإن وُجد الهاتف أضف الكمية بدل إعادة الكتابة */
@@ -243,7 +264,7 @@ function phAdd() {
   sheetOpen(v => phDone(v, PR)); phF('');
 }
 function phF(q) {
-  PQ = q.trim(); const n = nz(q), m = ph().filter(i => !n || nzHit(nz(i.brand + i.name + i.color), q, n)).sort((a, b) => b.at - a.at).slice(0, 6);
+  PQ = q.trim(); const n = nz(q), m = ph().filter(i => i.cond != 'مستعمل' && (!n || nzHit(nz(i.brand + i.name + i.color + i.ram + i.cap), q, n))).sort((a, b) => b.at - a.at).slice(0, 8);
   $('pr').innerHTML = m.map(i => `<button class="card row2" onclick="phPick('${i.id}')"><b>${esc(i.brand + ' ' + i.name)}</b><span class="m">${esc([i.color, i.cap].filter(Boolean).join(' · '))} · ${i.cnt}</span></button>`).join('') + `<button class="btn" onclick="phForm({name:PQ})">+ هاتف جديد${PQ ? ' «' + esc(PQ) + '»' : ''}</button>`;
 }
 function phPick(id) {
@@ -279,12 +300,28 @@ function phDone(v, r) {
   if (v.add !== undefined) { commit('أُضيفت الكمية', () => { r.cnt += v.add; touch(r, 1); }); reqChk(r.brand + ' ' + r.name, 1); return; }
   if (r && r.id && S.items.includes(r)) {
     if (!can('price')) v.price = r.price;
-    const cntChg = r.cnt !== v.cnt;
-    commit('تم التعديل', () => { Object.assign(r, v); if (cntChg) touch(r, 1); else r.by = S.me; });
-    if (cntChg && v.cnt > 0) reqChk(r.brand + ' ' + r.name, 1);
+    const cntChg = r.cnt !== v.cnt, nk = phKey(v), ok0 = phKey(r), col = x => x.color || '';
+    const dup = phx('dm') && v.cond != 'مستعمل' ? ph().find(i => i !== r && phKey(i) == nk && col(i) == col(v)) : null;
+    const sib = phx('sp') && v.cond != 'مستعمل' && can('price') && v.price && nk == ok0 && String(v.price) !== String(r.price || '') ? ph().filter(i => i !== r && phKey(i) == ok0 && String(i.price || '') !== String(v.price)) : [];
+    const run = (mg, ap) => {
+      commit(mg ? 'تم الدمج' : 'تم التعديل', () => {
+        if (mg) {
+          mg.cnt += v.cnt; if (v.price && can('price')) mg.price = v.price;
+          if (v.imei) mg.imei = mg.imei ? (mg.imei.includes(v.imei) ? mg.imei : mg.imei + ' · ' + v.imei) : v.imei;
+          if (rsL(r).length) mg.res = [...rsL(mg), ...rsL(r)];
+          touch(mg, 1); S.items.splice(S.items.indexOf(r), 1);
+        } else { Object.assign(r, v); if (cntChg) touch(r, 1); else r.by = S.me; }
+        if (ap) sib.forEach(i => { i.price = v.price; touch(i); });
+      });
+      if (cntChg && v.cnt > 0) reqChk(r.brand + ' ' + r.name, 1);
+    };
+    const A = (l, o) => ask('تأكيد', [{ k: 'a', l, t: 'sel', o, v: o[0] }], 'متابعة');
+    if (dup) setTimeout(() => A('يوجد هاتف مطابق بنفس اللون (' + dup.cnt + ' قطعة). ماذا أفعل؟', ['دمج العددين', 'حفظ كما هو (منفصلين)']).then(x => run(x && x.a == 'دمج العددين' ? dup : null, 0)), 350);
+    else if (sib.length) setTimeout(() => A('السعر تغيّر. هل أطبّقه على باقي ألوان الموديل (' + sib.length + ')؟', ['نعم، على كل الألوان', 'لا، هذا اللون فقط']).then(x => run(null, x && x.a[0] == 'ن')), 350);
+    else run(null, 0);
     return;
   }
-  const code = r && r.code || '', d = ph().find(i => i.brand == v.brand && nz(i.name) == nz(v.name) && i.color == v.color && i.ram == v.ram && i.cap == v.cap && i.cond == v.cond);
+  const code = r && r.code || '', d = v.cond == 'مستعمل' ? null : ph().find(i => i.brand == v.brand && nz(i.name) == nz(v.name) && i.color == v.color && i.ram == v.ram && i.cap == v.cap && (i.cond || 'جديد') == (v.cond || 'جديد'));
   commit(d ? 'أُضيفت الكمية للموجود' : 'تمت الإضافة', () => {
     if (d) { d.cnt += v.cnt; if (v.price && can('price')) d.price = v.price; if (v.imei) d.imei = d.imei ? (d.imei.includes(v.imei) ? d.imei : d.imei + ' · ' + v.imei) : v.imei; if (code && !d.code) d.code = code; if (v.x) d.x = { ...(d.x || {}), ...v.x }; touch(d, 1); }
     else { const o = { id: uid(), sec: 'phones', ...v }; if (code) o.code = code; touch(o, 1); S.items.push(o); }
@@ -299,23 +336,23 @@ function phRs(id) { sheetOpen(rsCb); rsList(id); }
 function rsList(id) {
   const i = find(id), L = rsL(i);
   $('sh').innerHTML = `<div class="bar"></div><h3>حجوزات ${esc(i.brand + ' ' + i.name)}</h3><p class="m">العدد ${i.cnt} · محجوز ${rsQ(i)} · متاح ${av(i)}</p>`
-    + (L.length ? L.map((r, k) => `<div class="card"><b>${esc(r.n)} × ${+r.q || 1}${r.d ? ' · عربون ' + esc(r.d) : ''}</b><div class="sub"><button class="btn sm" onclick="finish({id:'${id}',k:${k},sold:1})">سُلِّم للزبون</button><button class="btn s sm" onclick="finish({id:'${id}',k:${k}})">إلغاء الحجز</button></div></div>`).join('') : '<p class="m">لا حجوزات</p>')
+    + (L.length ? L.map((r, k) => `<div class="card"><b>${esc(r.n)} × ${+r.q || 1}${r.p ? ' · <a href="tel:' + esc(String(r.p).replace(/[^\d+]/g, '')) + '"><bdi>' + esc(r.p) + '</bdi></a>' : ''}${r.d ? ' · عربون ' + esc(r.d) : ''}${rsDays(r) >= 1 ? ' · منذ ' + rsDays(r) + ' يوم' + (lim('rsd') > 0 && rsDays(r) >= lim('rsd') ? ' ⚠' : '') : ''}</b><div class="sub"><button class="btn sm" onclick="finish({id:'${id}',k:${k},sold:1})">سُلِّم للزبون</button><button class="btn s sm" onclick="finish({id:'${id}',k:${k}})">إلغاء الحجز</button></div></div>`).join('') : '<p class="m">لا حجوزات</p>')
     + `<div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button>${av(i) > 0 ? `<button class="btn" onclick="rsForm('${id}')">+ حجز جديد</button>` : ''}</div>`;
 }
 function rsForm(id) {
   const i = find(id);
-  $('sh').innerHTML = `<div class="bar"></div><h3>حجز جديد — ${esc(i.brand + ' ' + i.name)}</h3><p class="m">المتاح للحجز: ${av(i)}</p><label>اسم الزبون<input id="rn"></label><label>عدد القطع<input id="rq" type="number" value="1"></label><label>العربون (اختياري)<input id="rd" type="tel"></label><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="rsSave('${id}')">حفظ الحجز</button></div>`;
+  $('sh').innerHTML = `<div class="bar"></div><h3>حجز جديد — ${esc(i.brand + ' ' + i.name)}</h3><p class="m">المتاح للحجز: ${av(i)}</p><label>اسم الزبون<input id="rn"></label><label>عدد القطع<input id="rq" type="number" value="1"></label><label>رقم الزبون (اختياري)<input id="rp" type="tel"></label><label>العربون (اختياري)<input id="rd" type="tel"></label><div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="rsSave('${id}')">حفظ الحجز</button></div>`;
 }
 function rsSave(id) {
-  const i = find(id), n = $('rn').value.trim(), q = ci($('rq').value), d = $('rd').value.trim();
+  const i = find(id), n = $('rn').value.trim(), q = ci($('rq').value), d = $('rd').value.trim(), p = dg($('rp').value).trim();
   if (!n) return toast('اكتب اسم الزبون'); if (!q) return toast('اكتب عدداً أكبر من صفر'); if (q > av(i)) return toast('المتاح للحجز ' + av(i) + ' فقط');
-  finish({ id, add: { n, q, d } });
+  finish({ id, add: { n, q, d, t: Date.now(), ...(p ? { p } : {}) } });
 }
 function rsCb(v) {
   if (!v) return; const i = find(v.id); if (!i) return;
   if (v.add) return commit('تم الحجز', () => { i.res = [...rsL(i), v.add]; });
   const L = rsL(i), r = L[v.k]; if (!r) return;
-  commit(v.sold ? 'سُلِّم الحجز' : 'أُلغي الحجز', () => { const R = L.filter((_, k) => k != v.k); i.res = R.length ? R : null; if (v.sold) { i.cnt = Math.max(0, i.cnt - (+r.q || 1)); touch(i); } });
+  commit(v.sold ? 'سُلِّم الحجز' : 'أُلغي الحجز', () => { const R = L.filter((_, k) => k != v.k); i.res = R.length ? R : null; if (v.sold) { i.cnt = Math.max(0, i.cnt - (+r.q || 1)); if (i.cond == 'مستعمل' && i.cnt <= 0) i.sold = Date.now(); touch(i); } });
 }
 /* سجل الحركات (آخر 20 حركة للهواتف والإكسسوارات ذات العدد) + دمج الوسوم المكررة عند الإقلاع */
 const LGB = {}; let LGI = 0;
@@ -350,3 +387,13 @@ function tagFix() {
 }
 HK.save.push(() => { lgScan(); S.items.forEach(i => { delete i._nz; delete i._nzV; }); });
 tagFix(); lgScan(); LGI = 1;
+/* ---- خيارات القسم القابلة للتشغيل/الإيقاف من إعدادات المدير (صفحة st_phx) ---- */
+const PXD = { s1: 0, sp: 1, dm: 1 };
+const phx = k => { const v = (S.cfg.phx || {})[k]; return v === undefined ? PXD[k] : v; };
+const PXL = [
+  ['s1', 'بيع بنقرة واحدة على دائرة اللون (مع تراجع؛ الإضافة من نافذة الموديل)'],
+  ['sp', 'سؤال تطبيق السعر على كل ألوان الموديل عند تغييره'],
+  ['dm', 'سؤال الدمج عند تعديل هاتف يطابق هاتفاً موجوداً']
+];
+function phxTog(k) { if (!isAdmin()) return toast('للمدير فقط'); upd(() => { S.cfg.phx = S.cfg.phx || {}; S.cfg.phx[k] = phx(k) ? 0 : 1; }); }
+VW.st_phx = () => ({ t: 'خيارات الهواتف', h: '<p class="m">اضغط على الخيار لتشغيله أو إيقافه.</p>' + PXL.map(([k, l]) => row(l, `phxTog('${k}')`, phx(k) ? 'مفعّل ✓' : 'متوقف')).join('') });

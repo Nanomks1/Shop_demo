@@ -4,7 +4,7 @@
    ============================================================ */
 /* ---------- مساعدات ---------- */
 const find = id => S.items.find(i => i.id == id);
-const ph = () => S.items.filter(i => i.sec == 'phones');
+const ph = () => S.items.filter(i => i.sec == 'phones' && !i.sold);
 const lim = k => S.cfg[k] ?? DL0[k];
 const ci = v => Math.max(0, Math.floor(+dg(v) || 0));
 const fmtPr = p => { p = dg(p ?? '').trim(); return !p ? '' : /^\d+(\.\d+)?$/.test(p) ? p + ' درهم' : p; };
@@ -19,8 +19,9 @@ const touch = (i, cf) => {
 const sumv = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
 S.fields = S.fields || []; S.gg = S.gg || []; S.ag = S.ag || [];
 /* cl: 2 يعني لكل لون: 0 نفد (أحمر)، 1 أو 2 قارب (برتقالي)، 3 فأكثر متوفر (أخضر) */
-Object.assign(DL0, { cl: 2, csBuy: 3, gA: 30, gB: 20, gC: 10, gY: 5, acl: 3, agl: 10 });
+Object.assign(DL0, { rsd: 7, cl: 2, csBuy: 3, gA: 30, gB: 20, gC: 10, gY: 5, acl: 3, agl: 10 });
 LM.push(
+  ['rsd', 'هاتف: يُعتبر الحجز قديماً بعد (أيام)، 0 = بلا تنبيه'],
   ['csBuy', 'بوشيط: الكمية الافتراضية عند الشراء من التقرير'],
   ['gA', 'أنتي كاس: مستوى «غامق» يُحسب كـ (قطعة)'], ['gB', 'أنتي كاس: مستوى «أخضر» يُحسب كـ (قطعة)'], ['gC', 'أنتي كاس: مستوى «فاتح» يُحسب كـ (قطعة)'],
   ['gY', 'أنتي كاس: مستوى «قليل» يُحسب كـ (قطعة)'], ['acl', 'إكسسوار بعدد: «قليل» عند عدد فأقل'],
@@ -86,9 +87,11 @@ function reqChk(txt, wait) {
 const rsL = i => Array.isArray(i.res) ? i.res : (i.res && i.res.n ? [{ n: i.res.n, d: i.res.d || '', q: 1 }] : []);
 const rsQ = i => rsL(i).reduce((a, r) => a + (+r.q || 1), 0);
 const av = i => Math.max(0, (+i.cnt || 0) - rsQ(i));
+const rsDays = r => r.t ? Math.floor((Date.now() - r.t) / 864e5) : 0;
+const rsOld = i => { const L = lim('rsd'); return L > 0 && rsL(i).some(r => r.t && rsDays(r) >= L); };
 const rsHtml = i => {
   const L = rsL(i); if (!L.length) return '';
-  return `<div class="rs">محجوز ${rsQ(i)} من ${i.cnt}: ${L.map(r => esc(r.n) + ((+r.q || 1) > 1 ? ' ×' + r.q : '') + (r.d ? ' · عربون ' + esc(r.d) : '')).join('، ')}${av(i) <= 0 ? ' — كل القطع محجوزة' : ''}</div>`;
+  return `<div class="rs">محجوز ${rsQ(i)} من ${i.cnt}: ${L.map(r => esc(r.n) + ((+r.q || 1) > 1 ? ' ×' + r.q : '') + (r.p ? ' · <a href="tel:' + esc(String(r.p).replace(/[^\d+]/g, '')) + '"><bdi>' + esc(r.p) + '</bdi></a>' : '') + (r.d ? ' · عربون ' + esc(r.d) : '') + (rsDays(r) >= 1 ? ' · منذ ' + rsDays(r) + ' يوم' + (lim('rsd') > 0 && rsDays(r) >= lim('rsd') ? ' ⚠' : '') : '')).join('، ')}${av(i) <= 0 ? ' — كل القطع محجوزة' : ''}</div>`;
 };
 /* ---------- الألوان والترتيب ولوحة الفلترة الموحدة ---------- */
 const PAL = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1',

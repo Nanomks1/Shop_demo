@@ -121,7 +121,7 @@
     const x = S.cfg.rs; if (!x || !x.t || !sentToday()) return 0;
     const t = x.t, c = rcf(), onlyR = c.lv == 'r', okSt = s => s != 'g' && (!onlyR || s == 'r');
     let n = 0;
-    if (!c.hs.includes('phones')) n += phGroupsOf(ph()).filter(g => g.cond != 'مستعمل' && okSt(phGSt(g)) && (g.at || 0) > t).length;
+    if (!c.hs.includes('phones')) n += phGroupsOf(ph()).filter(g => g.cond != 'مستعمل' && !g.stp && okSt(phGSt(g)) && (g.at || 0) > t).length;
     if (!c.hs.includes('glass')) S.gg.forEach(g => S.tags.glass.filter(ty => gShow(g, ty)).forEach(ty => { const i = gitem(g.id, ty); if (i && okSt(gSt(i, g, ty)) && (i.at || 0) > t) n++; }));
     if (!c.hs.includes('pochette')) n += S.items.filter(i => i.sec == 'case' && okSt(csSt(i)) && (i.at || 0) > t).length;
     if (!c.hs.includes('acc')) {

@@ -61,7 +61,7 @@ function buyP(id) {
 /* كل سطر: [القسم, النص, الحالة r/y, دالة «تم الشراء»] */
 function invLines(notes = true) {
   const L = [];
-  phGroupsOf(ph()).filter(g => g.cond != 'مستعمل' && phGSt(g) != 'g').forEach(g => {
+  phGroupsOf(ph()).filter(g => g.cond != 'مستعمل' && !g.stp && phGSt(g) != 'g').forEach(g => {
     const lo = g.items.slice().sort((x, y) => av(x) - av(y))[0];
     const cl = g.items.length > 1 ? ' (' + g.items.map(x => (x.color || 'عام') + ' ' + av(x)).join('، ') + ')' : g.items[0].color ? ' (' + g.items[0].color + ')' : '';
     const stTxt = g.tot <= 0 ? ' — نفد' : ' — العدد ' + g.tot;
@@ -86,7 +86,7 @@ function invLines(notes = true) {
 }
 /* ============================ البحث الموحّد وعرض القسم ============================ */
 SRCH.push(
-  { k: 'phones', l: 'هواتف', run: (n, q) => { const ks = new Set(S.items.filter(i => i.sec == 'phones' && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(phKey)); return phGroupsOf(ph().filter(i => ks.has(phKey(i)))).map(phGCard); } },
+  { k: 'phones', l: 'هواتف', run: (n, q) => { const ks = new Set(S.items.filter(i => i.sec == 'phones' && !i.sold && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(phKey)); return phGroupsOf(ph().filter(i => ks.has(phKey(i)))).map(phGCard); } },
   { k: 'glass', l: 'أنتي كاس', run: (n, q) => S.gg.filter(g => g.models.some(m => nzHit(nz(((g.br || {})[m] || '') + m), q, n))).slice(0, 15).map(glB) },
   { k: 'case', l: 'بوشيط', run: (n, q) => S.items.filter(i => i.sec == 'case' && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(csCard) },
   { k: 'acc', l: 'إكسسوارات', run: (n, q) => [...agList().filter(d => nzHit(nz(agTxt(d)), q, n)).slice(0, 15).map(agCard), ...S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(acCard)] }
