@@ -213,18 +213,16 @@ function phView() {
   };
 }
 /* اقتراح الأنتي كاس والبوشيط تلقائياً لحظة بيع هاتف */
-function phMatchGlass(i) {
-  const nm = nz(i.name), full = nz(i.brand + ' ' + i.name);
-  return S.gg.find(g => g.models.some(m => {
-    const x = nz(m); if (!glBrOk(g, m, i.brand)) return false;   // لا يطابق زجاج ماركة أخرى
-    if (x == nm || x == full) return true;
-    if (!(x.length >= 2 && full.endsWith(x))) return false;
-    return !!(g.br || {})[m] || !/^\d{1,2}$/.test(x);   // اسم رقمي قصير بلا ماركة (13) لا يطابق بالنهاية فقط
-  }));
+/* الموديل المطابق داخل مجموعة: المطابقة التامة أولاً ثم النهاية، وبتوافق الماركة (A15 لا يختار A1) */
+function phGlassModel(g, i) {
+  const nm = nz(i.name), full = nz(i.brand + ' ' + i.name), ok = m => glBrOk(g, m, i.brand);
+  return g.models.find(m => ok(m) && (nz(m) == nm || nz(m) == full))
+    || g.models.find(m => { const x = nz(m); return ok(m) && x.length >= 2 && full.endsWith(x) && (!!(g.br || {})[m] || !/^\d{1,2}$/.test(x)); });   // اسم رقمي قصير بلا ماركة (13) لا يطابق بالنهاية فقط
 }
-function phMatchCase(i) {
-  const nm = nz(i.name), full = nz(i.brand + ' ' + i.name);
-  return S.items.filter(c => c.sec == 'case' && (nz(c.name) == nm || nz(c.name) == full || (nz(c.name).length >= 2 && full.endsWith(nz(c.name)))));
+const phMatchGlass = i => S.gg.find(g => phGlassModel(g, i));
+function phMatchCase(i) {   // اسم البوشيط يطابق الهاتف بكلمات كاملة (13 لا يطابق داخل 113 ولا Note 13 بالأرقام القصيرة)
+  const nm = nz(i.name), full = nz(i.brand + ' ' + i.name), toks = gTok(i.brand + ' ' + i.name);
+  return S.items.filter(c => { if (c.sec != 'case') return false; const x = nz(c.name); if (!x) return false; if (x == nm || x == full) return true; return x.length >= 2 && !/^\d{1,2}$/.test(x) && full.endsWith(x) && gSeq(toks, gTok(c.name)); });
 }
 function phAcc(id) { phUpR(id); sheetOpen(() => { }); }
 function phUpR(id) {
@@ -232,7 +230,7 @@ function phUpR(id) {
   const g = phMatchGlass(i), cs = phMatchCase(i), T = GT();
   let h = `<div class="bar"></div><h3>${I('shield')} ملحقات ${esc(i.brand + ' ' + i.name)}</h3><p class="m">اخصم ما أخذه الزبون مع هذا الهاتف:</p>`;
   if (g) {
-    const mName = g.models.find(m => nz(i.brand + ' ' + i.name).includes(nz(m))) || g.models[0];
+    const mName = phGlassModel(g, i) || g.models[0];
     const mk = Math.max(0, g.models.indexOf(mName));
     h += `<div class="card"><b>${I('shield')} أنتي كاس مطابق: ${esc(g.models.join(' / '))}</b>`
       + S.tags.glass.map((ty, j) => {

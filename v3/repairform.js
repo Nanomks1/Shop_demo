@@ -10,7 +10,7 @@ function rpAddonOpts(dev) {
         if (tot > 0) out.push({ k: `gl:${g.id}:${j}:${mName}`, l: `أنتي كاس ${ty} (${mName})${it && it.price ? ' — ' + dh(it.price) : ''}` });
       });
     });
-    S.items.filter(i => i.sec == 'case' && (nd.includes(nz(i.name)) || nz(i.name).includes(nd))).forEach(i => {
+    S.items.filter(i => i.sec == 'case' && gDevHit(dev, i.name)).forEach(i => {
       (i.v || []).filter(v => v.n > 0).forEach(v => {
         const vl = [v.g, v.c].filter(Boolean).join('·') || 'عام';
         out.push({ k: `cs:${i.id}:${v.id}`, l: `بوشيط ${i.name} (${vl}) — متوفر ${v.n}` });
