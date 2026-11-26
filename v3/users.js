@@ -115,7 +115,39 @@ function closeOverlaysForLock() {   // نغطي النافذة المفتوحة 
   sugClose();
   const t = $('ts'); if (t) t.hidden = true;
 }
+/* شاشة دخول موحّدة (خيار المدير lgu): أسماء الجميع ولوحة رمز واحدة في شاشة واحدة */
+const lgU = () => S.users.length && (S.cfg.lgu === undefined ? 1 : +S.cfg.lgu);
+function lgUTog() { if (!isAdmin()) return toast('للمدير فقط'); upd(() => { S.cfg.lgu = (S.cfg.lgu === undefined ? 1 : +S.cfg.lgu) ? 0 : 1; }); }
+function lgBoxHtmlU() {
+  const sel = S.users.find(u => u.name == usLgEmp);
+  return `<h2>${I('lock')} تسجيل الدخول — ${esc(shopName())}</h2><p class="m c">اختر اسمك ثم اكتب رمزك</p>`
+    + `<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">${S.users.map((u, i) => `<button class="tag${u.name == usLgEmp ? ' on' : ''}" onclick="lgPick(${i})">${esc(u.name)}${u.admin ? ' ★' : (u.pin ? ' ' + I('lock') : '')}</button>`).join('')}</div>`
+    + `<div id="lgm" class="m c">${sel ? esc('أدخل رمز ' + sel.name) : ''}</div>${pinPadHtml('lgup', sel ? 'رمز ' + sel.name : 'الرمز', 'lgUTry()')}<button class="btn" onclick="lgUTry()">دخول</button>`;
+}
+function lgPick(i) {
+  const u = S.users[i]; if (!u) return;
+  if (!u.admin && !u.pin) return lgEmpDone(u.name);
+  usLgEmp = u.name;
+  const b = $('lg') && $('lg').querySelector('.lockbox'); if (b) b.innerHTML = lgBoxHtmlU();
+}
+function lgUTry() {
+  const u = S.users.find(x => x.name == usLgEmp), p = $('lgup'), m = $('lgm');
+  if (!u) { if (m) m.textContent = 'اختر اسمك أولاً'; return; }
+  const tk = u.admin ? 'lg' : 'lge_' + u.name;
+  if (tryBlocked(tk, m, 'lgup')) return;
+  if (u.admin) {
+    if (p && hv(p.value, S.pin)) {
+      TRIES.lg = null; usLgEmp = ''; admSet(true); LAST = Date.now();
+      try { localStorage.removeItem('shopLock'); } catch (e) { }
+      lkStore();
+      upd(() => { S.me = u.name; });
+      const el = $('lg'); if (el) el.remove();
+    } else tryFail(tk, m, 'lgup', 'رمز خاطئ');
+  } else if (p && p.value && (hv(p.value, u.pin) || hv(p.value, S.pin))) { TRIES[tk] = null; usLgEmp = ''; lgEmpDone(u.name); }
+  else tryFail(tk, m, 'lgup', 'الرمز خاطئ، حاول مرة أخرى');
+}
 function lgBoxHtml() {
+  if (lgU()) return lgBoxHtmlU();
   const emp = S.users.filter(u => !u.admin), ads = S.users.filter(u => u.admin);
   return `<h2>${I('lock')} تسجيل الدخول — ${esc(shopName())}</h2>`
     + (emp.length ? '<p class="m c">دخول كموظف</p>' + emp.map((u, i) => `<button class="btn s" onclick="lgEmp(${i})">${esc(u.name)}${u.pin ? ' ' + I('lock') : ''}</button>`).join('') : '')
