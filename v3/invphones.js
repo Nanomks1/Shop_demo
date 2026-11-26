@@ -12,6 +12,16 @@ const phKey = i => [i.brand, nz(i.name), i.ram || '', i.cap || '', i.cond || 'ج
 const phGK = i => i.cond == 'مستعمل' ? phKey(i) + '|' + i.id : phKey(i);   // مفتاح البطاقة: المستعمل بطاقة مستقلة لكل جهاز
 /* المستعمل: العدد 0 = مباع (يخرج من القوائم والجرد والباركود)، وأي عدد > 0 يلغي علامة البيع */
 const phSoldFix = i => { if (i && i.sec == 'phones' && i.cond == 'مستعمل') { if ((+i.cnt || 0) <= 0) i.sold = i.sold || Date.now(); else delete i.sold; } };
+/* تنبيه IMEI مكرر (خيار المدير im): يبحث في المخزون والصيانة وسجل شراء المستعمل ولا يمنع الحفظ */
+function phImeiDup(imei, selfId) {
+  const T = String(imei || '').split(/[\s·,،]+/).map(nz).filter(t => t.length >= 6);
+  for (const n of T) {
+    if (S.items.some(i => i.id != selfId && i.imei && nz(i.imei).includes(n))) return 'المخزون';
+    if (S.rp.some(r => r.imei && nz(r.imei).includes(n))) return 'الصيانة';
+    if (S.used.some(u => u.imei && nz(u.imei).includes(n))) return 'سجل شراء المستعمل';
+  }
+  return '';
+}
 /* خيار المدير sx: عند زيادة مخزون موديل موقوف الشراء فوق عدد الإيقاف يُمسح الإيقاف نهائياً */
 function phStpFix(i) {
   if (!i || i.sec != 'phones' || i.cond == 'مستعمل' || !i.stp || !phx('sx')) return;
@@ -206,17 +216,22 @@ function phView() {
   const brMap = {};
   G.forEach(g => { if (g.brand) brMap[g.brand] = (brMap[g.brand] || 0) + g.cnt; });
   if (V.pb && !(V.pb in brMap)) V.pb = '';   // الماركة لم تعد موجودة: لا يبقى فلتر معلق على شاشة فارغة
-  if (V.f == 2 && !usedG.length) V.f = 0;
+  const resN = phx('rc') ? G.filter(g => g.rs > 0).length : 0, npN = phx('np') ? G.filter(g => !g.price).length : 0;
+  if ((V.f == 2 && !usedG.length) || (V.f == 3 && !resN) || (V.f == 4 && !npN)) V.f = 0;
   const brChips = Object.keys(brMap).map(b => `<button class="tag ${V.pb == b && !V.f ? 'on' : ''}" data-b="${esc(b)}" onclick="V.f=0;V.pb=this.dataset.b;render()">${esc(b)} (${brMap[b]})</button>`).join('');
   let a = srt(G, 'phones', g => g.brand + ' ' + g.name, g => g.cnt, g => g.at);
   if (V.f == 1) a = a.filter(g => phGSt(g) != 'g' && !g.stp);
   else if (V.f == 2) a = a.filter(g => g.cond == 'مستعمل');
+  else if (V.f == 3) a = a.filter(g => g.rs > 0);
+  else if (V.f == 4) a = a.filter(g => !g.price);
   else if (V.pb) a = a.filter(g => g.brand == V.pb);
   const pg = pgSlice('ph', a);
   const tagsHtml = `<button class="tag ${!V.f && !V.pb ? 'on' : ''}" onclick="V.f=0;V.pb='';render()">الكل (${G.length} · ${arCnt(totPcs, 'قطعة', 'قطعتان', 'قطع')})</button>`
     + `<button class="tag ${V.f == 1 ? 'on' : ''}" onclick="V.f=1;V.pb='';render()">يحتاج شراء (${lowCnt})</button>`
     + brChips
-    + (usedG.length ? `<button class="tag ${V.f == 2 ? 'on' : ''}" onclick="V.f=2;V.pb='';render()">مستعمل (${usedPcs})</button>` : '');
+    + (usedG.length ? `<button class="tag ${V.f == 2 ? 'on' : ''}" onclick="V.f=2;V.pb='';render()">مستعمل (${usedPcs})</button>` : '')
+    + (resN ? `<button class="tag ${V.f == 3 ? 'on' : ''}" onclick="V.f=3;V.pb='';render()">محجوز (${resN})</button>` : '')
+    + (npN ? `<button class="tag ${V.f == 4 ? 'on' : ''}" onclick="V.f=4;V.pb='';render()">بدون سعر (${npN})</button>` : '');
   return {
     t: 'الهواتف',
     h: `<button class="btn" onclick="phAdd()">+ إضافة هاتف</button>`
@@ -311,7 +326,12 @@ function phSave(more) {
   finish(fxAtt({ brand: b, name: n, color: FS.v.color || '', ram: FS.v.ram || '', cap: FS.v.cap || '', cond: FS.v.cond || 'جديد', price: $('pp').value.trim(), cnt: c, note: $('pt').value.trim(), imei: $('pimei').value.trim(), _more: more || 0 }));
 }
 function phDone(v, r) {
-  if (!v) return; const more = v._more; delete v._more;
+  if (!v) return;
+  if (v.add === undefined && v.imei && phx('im') && !v._ok) {
+    const dupIm = phImeiDup(v.imei, r && r.id);
+    if (dupIm) { sure('رقم IMEI هذا موجود مسبقاً في ' + dupIm + '. هل تتابع الحفظ؟', 'متابعة', false).then(y => { if (y) phDone({ ...v, _ok: 1 }, r); else setTimeout(() => { sheetOpen(x => phDone(x, r)); phForm({ ...(r || {}), ...v }); }, 220); }); return; }
+  }
+  delete v._ok; const more = v._more; delete v._more;
   if (v.add !== undefined) { commit('أُضيفت الكمية', () => { r.cnt += v.add; phStpFix(r); touch(r, 1); }); reqChk(r.brand + ' ' + r.name, 1); return; }
   if (r && r.id && S.items.includes(r)) {
     if (!can('price')) v.price = r.price;
@@ -403,13 +423,16 @@ function tagFix() {
 HK.save.push(() => { lgScan(); S.items.forEach(i => { delete i._nz; delete i._nzV; }); });
 tagFix(); lgScan(); LGI = 1;
 /* ---- خيارات القسم القابلة للتشغيل/الإيقاف من إعدادات المدير (صفحة st_phx) ---- */
-const PXD = { s1: 0, sp: 1, dm: 1, sx: 0 };
+const PXD = { s1: 0, sp: 1, dm: 1, sx: 0, rc: 1, np: 1, im: 1 };
 const phx = k => { const v = (S.cfg.phx || {})[k]; return v === undefined ? PXD[k] : v; };
 const PXL = [
   ['s1', 'بيع بنقرة واحدة على دائرة اللون (مع تراجع؛ الإضافة من نافذة الموديل)'],
   ['sp', 'سؤال تطبيق السعر على كل ألوان الموديل عند تغييره'],
   ['dm', 'سؤال الدمج عند تعديل هاتف يطابق هاتفاً موجوداً'],
-  ['sx', 'مسح «إيقاف شراء الموديل» نهائياً عند زيادة المخزون فوق عدد الإيقاف (متوقف: يبقى الإيقاف ويعود تلقائياً إن نزل العدد)']
+  ['sx', 'مسح «إيقاف شراء الموديل» نهائياً عند زيادة المخزون فوق عدد الإيقاف (متوقف: يبقى الإيقاف ويعود تلقائياً إن نزل العدد)'],
+  ['rc', 'شريحة «محجوز (X)» في شاشة الهواتف (تظهر فقط عند وجود حجوزات)'],
+  ['np', 'شريحة «بدون سعر (X)» في شاشة الهواتف (تظهر فقط عند وجود هواتف بلا سعر)'],
+  ['im', 'تنبيه عند إدخال IMEI مسجّل مسبقاً في المخزون أو الصيانة أو شراء المستعمل (مع إمكانية المتابعة)']
 ];
 function phxTog(k) { if (!isAdmin()) return toast('للمدير فقط'); upd(() => { S.cfg.phx = S.cfg.phx || {}; S.cfg.phx[k] = phx(k) ? 0 : 1; }); }
 VW.st_phx = () => ({ t: 'خيارات الهواتف', h: '<p class="m">اضغط على الخيار لتشغيله أو إيقافه.</p>' + PXL.map(([k, l]) => row(l, `phxTog('${k}')`, phx(k) ? 'مفعّل ✓' : 'متوقف')).join('') });
