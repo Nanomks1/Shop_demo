@@ -9,6 +9,16 @@ const PT0 = [['أزرار / بسيطة', 400, 6], ['اقتصادية', 2000, 5],
 const ptCfg = () => (Array.isArray(S.cfg.pt) && S.cfg.pt.length == 4 ? S.cfg.pt : PT0);
 const phPrice = p => { const m = String(p ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).match(/\d+(?:[.,]\d+)?/); return m ? +m[0].replace(',', '.') : 0; };
 const phKey = i => [i.brand, nz(i.name), i.ram || '', i.cap || '', i.cond || 'جديد'].join('|');
+const phGK = i => i.cond == 'مستعمل' ? phKey(i) + '|' + i.id : phKey(i);   // مفتاح البطاقة: المستعمل بطاقة مستقلة لكل جهاز
+/* المستعمل: العدد 0 = مباع (يخرج من القوائم والجرد والباركود)، وأي عدد > 0 يلغي علامة البيع */
+const phSoldFix = i => { if (i && i.sec == 'phones' && i.cond == 'مستعمل') { if ((+i.cnt || 0) <= 0) i.sold = i.sold || Date.now(); else delete i.sold; } };
+/* خيار المدير sx: عند زيادة مخزون موديل موقوف الشراء فوق عدد الإيقاف يُمسح الإيقاف نهائياً */
+function phStpFix(i) {
+  if (!i || i.sec != 'phones' || i.cond == 'مستعمل' || !i.stp || !phx('sx')) return;
+  const its = ph().filter(x => phKey(x) == phKey(i)); if (!its.length || !its.every(x => x.stp)) return;
+  const n = its.reduce((t, x) => t + (+x.cnt || 0), 0);
+  if (n > (+its[0].stpN || 0)) its.forEach(x => { x.stp = 0; delete x.stpN; });
+}
 function phGroupsOf(arr) {
   const m = new Map();
   arr.forEach(i => {
@@ -66,7 +76,7 @@ function phCnt(id) {
     if (n < 0) return toast('اكتب عدداً صحيحاً');
     if (n < rsQ(i)) return toast('العدد أقل من المحجوز (' + rsQ(i) + ')');
     if (n === old) return;
-    commit('تصحيح العدد: ' + stkN(i) + ' ← ' + n, () => { i.cnt = n; touch(i, 1); });
+    commit('تصحيح العدد: ' + stkN(i) + ' ← ' + n, () => { i.cnt = n; phSoldFix(i); if (n > old) phStpFix(i); touch(i, 1); });
     if (n > old) reqChk(i.brand + ' ' + i.name, 1);
   });
 }
@@ -93,7 +103,7 @@ function phUCard(g) {
   const i = g.items[0], mem = memBadge(g.ram, g.cap);
   return cardH(
     `<div class="ph-top" onclick="phOpen('${i.id}')"><b class="ph-nm"><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b><div class="ph-pr-wrap">${i.price ? prBadge(i.price) : ''}</div></div>`
-    + `<div class="ph-bot"><div class="ph-specs" onclick="phOpen('${i.id}')">${mem}<span class="phk c">مستعمل</span>${i.color ? `<span class="m"><bdi>${esc(i.color)}</bdi></span>` : ''}${rsQ(i) ? `<span class="rs">· محجوز${rsOld(i) ? ' ⚠' : ''}</span>` : ''}</div><button class="btn s sm sell" onclick="phC('${i.id}',-1)">− بيع</button></div>`
+    + `<div class="ph-bot"><div class="ph-specs" onclick="phOpen('${i.id}')">${mem}<span class="phk c">مستعمل</span>${(+i.cnt || 0) > 1 ? `<span class="phk">× ${+i.cnt}</span>` : ''}${i.color ? `<span class="m"><bdi>${esc(i.color)}</bdi></span>` : ''}${rsQ(i) ? `<span class="rs">· محجوز${rsOld(i) ? ' ⚠' : ''}</span>` : ''}</div><button class="btn s sm sell" onclick="phC('${i.id}',-1)">− بيع</button></div>`
     + (i.imei ? `<div class="cs-nt m">IMEI: <bdi>${esc(i.imei)}</bdi></div>` : '') + (i.note ? `<div class="cs-nt m">${esc(i.note)}</div>` : ''),
     colOf(i), 'cmp'
   );
@@ -195,6 +205,8 @@ function phView() {
   const usedG = G.filter(g => g.cond == 'مستعمل'), usedPcs = usedG.reduce((t, g) => t + g.cnt, 0);
   const brMap = {};
   G.forEach(g => { if (g.brand) brMap[g.brand] = (brMap[g.brand] || 0) + g.cnt; });
+  if (V.pb && !(V.pb in brMap)) V.pb = '';   // الماركة لم تعد موجودة: لا يبقى فلتر معلق على شاشة فارغة
+  if (V.f == 2 && !usedG.length) V.f = 0;
   const brChips = Object.keys(brMap).map(b => `<button class="tag ${V.pb == b && !V.f ? 'on' : ''}" data-b="${esc(b)}" onclick="V.f=0;V.pb=this.dataset.b;render()">${esc(b)} (${brMap[b]})</button>`).join('');
   let a = srt(G, 'phones', g => g.brand + ' ' + g.name, g => g.cnt, g => g.at);
   if (V.f == 1) a = a.filter(g => phGSt(g) != 'g' && !g.stp);
@@ -256,8 +268,8 @@ function phUpR(id) {
 function phC(id, d) {
   const i = find(id); if (!i) return;
   if (d < 0 && rsQ(i) > 0 && av(i) <= 0) return toast('كل القطع محجوزة: سلّم الحجز أو ألغِه أولاً');
-  if (d < 0 && i.cnt <= 0) return;
-  commit(d < 0 ? 'بيع ' + i.brand + ' ' + i.name + ' (−1)' : 'إضافة ' + i.brand + ' ' + i.name + ' (+1)', () => { i.cnt = Math.max(0, i.cnt + d); if (d < 0 && i.cond == 'مستعمل' && i.cnt <= 0) i.sold = Date.now(); touch(i); });
+  if (d < 0 && i.cnt <= 0) return toast('العدد 0 بالفعل: لا توجد قطع للبيع');
+  commit(d < 0 ? 'بيع ' + i.brand + ' ' + i.name + ' (−1)' : 'إضافة ' + i.brand + ' ' + i.name + ' (+1)', () => { i.cnt = Math.max(0, i.cnt + d); phSoldFix(i); if (d > 0) phStpFix(i); touch(i); });
   if (d > 0) return reqChk(i.brand + ' ' + i.name);
 }
 /* الإضافة: ابحث أولاً، فإن وُجد الهاتف أضف الكمية بدل إعادة الكتابة */
@@ -300,7 +312,7 @@ function phSave(more) {
 }
 function phDone(v, r) {
   if (!v) return; const more = v._more; delete v._more;
-  if (v.add !== undefined) { commit('أُضيفت الكمية', () => { r.cnt += v.add; touch(r, 1); }); reqChk(r.brand + ' ' + r.name, 1); return; }
+  if (v.add !== undefined) { commit('أُضيفت الكمية', () => { r.cnt += v.add; phStpFix(r); touch(r, 1); }); reqChk(r.brand + ' ' + r.name, 1); return; }
   if (r && r.id && S.items.includes(r)) {
     if (!can('price')) v.price = r.price;
     const cntChg = r.cnt !== v.cnt, nk = phKey(v), ok0 = phKey(r), col = x => x.color || '';
@@ -312,21 +324,21 @@ function phDone(v, r) {
           mg.cnt += v.cnt; if (v.price && can('price')) mg.price = v.price;
           if (v.imei) mg.imei = mg.imei ? (mg.imei.includes(v.imei) ? mg.imei : mg.imei + ' · ' + v.imei) : v.imei;
           if (rsL(r).length) mg.res = [...rsL(mg), ...rsL(r)];
-          touch(mg, 1); S.items.splice(S.items.indexOf(r), 1);
-        } else { Object.assign(r, v); if (cntChg) touch(r, 1); else r.by = S.me; }
+          phStpFix(mg); touch(mg, 1); S.items.splice(S.items.indexOf(r), 1);
+        } else { Object.assign(r, v); phSoldFix(r); if (cntChg) { phStpFix(r); touch(r, 1); } else r.by = S.me; }
         if (ap) sib.forEach(i => { i.price = v.price; touch(i); });
       });
       if (cntChg && v.cnt > 0) reqChk(r.brand + ' ' + r.name, 1);
     };
     const A = (l, o) => ask('تأكيد', [{ k: 'a', l, t: 'sel', o, v: o[0] }], 'متابعة');
-    if (dup) setTimeout(() => A('يوجد هاتف مطابق بنفس اللون (' + dup.cnt + ' قطعة). ماذا أفعل؟', ['دمج العددين', 'حفظ كما هو (منفصلين)']).then(x => run(x && x.a == 'دمج العددين' ? dup : null, 0)), 350);
-    else if (sib.length) setTimeout(() => A('السعر تغيّر. هل أطبّقه على باقي ألوان الموديل (' + sib.length + ')؟', ['نعم، على كل الألوان', 'لا، هذا اللون فقط']).then(x => run(null, x && x.a[0] == 'ن')), 350);
+    if (dup) setTimeout(() => A('يوجد هاتف مطابق بنفس اللون (' + dup.cnt + ' قطعة). ماذا أفعل؟', ['دمج العددين', 'حفظ كما هو (منفصلين)']).then(x => { if (!x) return toast('أُلغي التعديل'); run(x.a == 'دمج العددين' ? dup : null, 0); }), 350);
+    else if (sib.length) setTimeout(() => A('السعر تغيّر. هل أطبّقه على باقي ألوان الموديل (' + sib.length + ')؟', ['نعم، على كل الألوان', 'لا، هذا اللون فقط']).then(x => { if (!x) return toast('أُلغي التعديل'); run(null, x.a[0] == 'ن'); }), 350);
     else run(null, 0);
     return;
   }
   const code = r && r.code || '', d = v.cond == 'مستعمل' ? null : ph().find(i => i.brand == v.brand && nz(i.name) == nz(v.name) && i.color == v.color && i.ram == v.ram && i.cap == v.cap && (i.cond || 'جديد') == (v.cond || 'جديد'));
   commit(d ? 'أُضيفت الكمية للموجود' : 'تمت الإضافة', () => {
-    if (d) { d.cnt += v.cnt; if (v.price && can('price')) d.price = v.price; if (v.imei) d.imei = d.imei ? (d.imei.includes(v.imei) ? d.imei : d.imei + ' · ' + v.imei) : v.imei; if (code && !d.code) d.code = code; if (v.x) d.x = { ...(d.x || {}), ...v.x }; touch(d, 1); }
+    if (d) { d.cnt += v.cnt; if (v.price && can('price')) d.price = v.price; if (v.imei) d.imei = d.imei ? (d.imei.includes(v.imei) ? d.imei : d.imei + ' · ' + v.imei) : v.imei; if (code && !d.code) d.code = code; if (v.x) d.x = { ...(d.x || {}), ...v.x }; phStpFix(d); touch(d, 1); }
     else { const o = { id: uid(), sec: 'phones', ...v }; if (code) o.code = code; touch(o, 1); S.items.push(o); }
   });
   if (more == 2) setTimeout(() => { sheetOpen(x => phDone(x, PR)); phForm({ brand: v.brand, name: v.name, color: v.color, ram: v.ram, cap: v.cap, cond: v.cond, price: v.price, cnt: 1 }); }, 350);
@@ -391,12 +403,13 @@ function tagFix() {
 HK.save.push(() => { lgScan(); S.items.forEach(i => { delete i._nz; delete i._nzV; }); });
 tagFix(); lgScan(); LGI = 1;
 /* ---- خيارات القسم القابلة للتشغيل/الإيقاف من إعدادات المدير (صفحة st_phx) ---- */
-const PXD = { s1: 0, sp: 1, dm: 1 };
+const PXD = { s1: 0, sp: 1, dm: 1, sx: 0 };
 const phx = k => { const v = (S.cfg.phx || {})[k]; return v === undefined ? PXD[k] : v; };
 const PXL = [
   ['s1', 'بيع بنقرة واحدة على دائرة اللون (مع تراجع؛ الإضافة من نافذة الموديل)'],
   ['sp', 'سؤال تطبيق السعر على كل ألوان الموديل عند تغييره'],
-  ['dm', 'سؤال الدمج عند تعديل هاتف يطابق هاتفاً موجوداً']
+  ['dm', 'سؤال الدمج عند تعديل هاتف يطابق هاتفاً موجوداً'],
+  ['sx', 'مسح «إيقاف شراء الموديل» نهائياً عند زيادة المخزون فوق عدد الإيقاف (متوقف: يبقى الإيقاف ويعود تلقائياً إن نزل العدد)']
 ];
 function phxTog(k) { if (!isAdmin()) return toast('للمدير فقط'); upd(() => { S.cfg.phx = S.cfg.phx || {}; S.cfg.phx[k] = phx(k) ? 0 : 1; }); }
 VW.st_phx = () => ({ t: 'خيارات الهواتف', h: '<p class="m">اضغط على الخيار لتشغيله أو إيقافه.</p>' + PXL.map(([k, l]) => row(l, `phxTog('${k}')`, phx(k) ? 'مفعّل ✓' : 'متوقف')).join('') });

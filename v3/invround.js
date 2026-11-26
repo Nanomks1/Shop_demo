@@ -6,6 +6,7 @@
 function rndAll() {
   const out = [];
   S.items.forEach(i => {
+    if (i.sec == 'phones' && i.sold) return;   // المستعمل المباع لا يدخل الجرد
     if (i.sec == 'acc' && gkc(i.kind).g) return;
     if (i.sec == 'glass' && !S.gg.some(g => g.id == i.gid && gShow(g, i.ty))) return;
     out.push(i);

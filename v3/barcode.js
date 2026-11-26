@@ -105,7 +105,7 @@ function bcPickCsVar(it) {
 function bcQuickSell(it) {
   if (it.sec == 'phones') {
     if (av(it) <= 0) return !toast('لا توجد قطع متاحة للبيع من ' + bcLbl(it));
-    commit('بيع سريع (−1): ' + bcLbl(it) + ' ← بقي ' + (it.cnt - 1), () => { it.cnt = Math.max(0, it.cnt - 1); touch(it); });
+    commit('بيع سريع (−1): ' + bcLbl(it) + ' ← بقي ' + (it.cnt - 1), () => { it.cnt = Math.max(0, it.cnt - 1); phSoldFix(it); touch(it); });
     return true;
   } else if (it.sec == 'acc') {
     if (typeof it.cnt == 'number') {
@@ -128,7 +128,7 @@ function bcQuickSell(it) {
 function bcHome() {
   bcScan(c => {
     BCODE = String(c || '').trim(); const nc = nz(BCODE), r = $('res'); if (!r) return;
-    const m = S.items.filter(i => i.sec != 'glass' && (i.code == BCODE || (i.imei && nz(i.imei).includes(nc)))), x = BCM.map(f => f(BCODE)).join('');
+    const m = S.items.filter(i => i.sec != 'glass' && !i.sold && (i.code == BCODE || (i.imei && nz(i.imei).includes(nc)))), x = BCM.map(f => f(BCODE)).join('');
     if (m.length || x) {
       bcBeep(true);
       const r2 = $('res') || r;
@@ -144,7 +144,7 @@ function bcHome() {
   }, c => {
     /* المعالج المستمر عندما يكون وضع البيع السريع مفعلاً */
     if (!bcQ()) return false;
-    const nc = nz(c), m = S.items.filter(i => i.sec != 'glass' && (i.code == c || (i.imei && nz(i.imei).includes(nc)))), x = BCM.map(f => f(c)).join('');
+    const nc = nz(c), m = S.items.filter(i => i.sec != 'glass' && !i.sold && (i.code == c || (i.imei && nz(i.imei).includes(nc)))), x = BCM.map(f => f(c)).join('');
     if (m.length == 1 && !x) {
       const it = m[0];
       if (it.sec == 'case' && (it.v || []).filter(v => v.n > 0).length > 1) return false;   // نخرج من الكاميرا لاختيار اللون المباع
@@ -167,7 +167,7 @@ function bcNewPh() { $('sh').innerHTML = ''; sheetOpen(v => phDone(v, PR)); phFo
 function bcNewAcc() { $('sh').innerHTML = ''; sheetOpen(v => acDone(v, PR)); acForm({ code: BCODE }); }
 function bcNewCs() { CSCODE = BCODE; csAdd(); }
 function bcLink() { $('sh').innerHTML = '<div class="bar"></div><h3>ربط الرمز بعنصر</h3><label>ابحث عن العنصر<input oninput="bcF(this.value)"></label><div id="pr"></div><button class="btn s" onclick="finish(null)">إلغاء</button>'; sheetOpen(() => { }); bcF(''); }
-function bcF(q) { const n = nz(q); $('pr').innerHTML = S.items.filter(i => i.sec != 'glass' && n && nzHit(nz(hay(i)), q, n)).slice(0, 8).map(i => `<button class="card row2" onclick="bcSet('${i.id}')"><b>${esc(bcLbl(i))}</b></button>`).join(''); }
+function bcF(q) { const n = nz(q); $('pr').innerHTML = S.items.filter(i => i.sec != 'glass' && !i.sold && n && nzHit(nz(hay(i)), q, n)).slice(0, 8).map(i => `<button class="card row2" onclick="bcSet('${i.id}')"><b>${esc(bcLbl(i))}</b></button>`).join(''); }
 function bcSet(id) {
   const i = find(id); if (!i) return;
   upd(() => { if (i.sec == 'phones' && isImei(BCODE)) i.imei = i.imei ? (i.imei.includes(BCODE) ? i.imei : i.imei + ' · ' + BCODE) : BCODE; i.code = i.code || BCODE; i.by = S.me; });

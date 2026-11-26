@@ -53,6 +53,7 @@ function buyP(id) {
         }
         parts.push('+' + n + ' ' + (c || 'عام'));
       });
+      phStpFix(base);
       if (typeof rcLogIn == 'function' && parts.length) rcLogIn('phones', grp.key, base.id, [grp.brand, grp.name, grp.ram, grp.cap].filter(Boolean).join(' '), parts.join('، '));
     });
     reqChk(grp.brand + ' ' + grp.name, 1);
@@ -88,7 +89,7 @@ function invLines(notes = true) {
 }
 /* ============================ البحث الموحّد وعرض القسم ============================ */
 SRCH.push(
-  { k: 'phones', l: 'هواتف', run: (n, q) => { const ks = new Set(S.items.filter(i => i.sec == 'phones' && !i.sold && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(phKey)); return phGroupsOf(ph().filter(i => ks.has(phKey(i)))).map(phGCard); } },
+  { k: 'phones', l: 'هواتف', run: (n, q) => { const ks = new Set(S.items.filter(i => i.sec == 'phones' && !i.sold && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(phGK)); return phGroupsOf(ph().filter(i => ks.has(phGK(i)))).map(g => g.cond == 'مستعمل' ? phUCard(g) : phGCard(g)); } },
   { k: 'glass', l: 'أنتي كاس', run: (n, q) => S.gg.filter(g => glHit(g, q, n)).slice(0, 15).map(g => glB(g)) },
   { k: 'case', l: 'بوشيط', run: (n, q) => S.items.filter(i => i.sec == 'case' && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(csCard) },
   { k: 'acc', l: 'إكسسوارات', run: (n, q) => [...agList().filter(d => nzHit(nz(agTxt(d)), q, n)).slice(0, 15).map(agCard), ...S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(acCard)] }

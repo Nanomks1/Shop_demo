@@ -138,13 +138,13 @@ async function usCommit(rec, v) {
   S.used.push(o);
   if (v.repOf) {
     const it = S.items.find(x => x.id == v.repOf);
-    if (it && it.cnt > 0) { it.cnt = Math.max(0, it.cnt - 1); it.by = S.me; it.at = Date.now(); }
+    if (it && it.cnt > 0) { it.cnt = Math.max(0, it.cnt - 1); phSoldFix(it); it.by = S.me; it.at = Date.now(); }
   }
   save(); render();
   toast(v.repOf ? 'تم تسجيل الروپريز وخصم الهاتف المباع' : 'تم تسجيل الشراء', () => {
     S.used = S.used.filter(x => x.id != o.id);
     delImg(o.id);
-    if (v.repOf) { const it = S.items.find(x => x.id == v.repOf); if (it) it.cnt += 1; }
+    if (v.repOf) { const it = S.items.find(x => x.id == v.repOf); if (it) { it.cnt += 1; phSoldFix(it); } }
   });
 }
 const usAdd = pre => usOpen(pre || {});
@@ -157,7 +157,7 @@ function usDel(id) {
     const i = S.used.findIndex(x => x.id == id); if (i < 0) return;
     const o = S.used.splice(i, 1)[0], t = { id: uid(), coll: 'used', obj: o, label: 'شراء ' + o.dev, t: Date.now() };
     const repIt = o.repOf ? S.items.find(x => x.id == o.repOf) : null;
-    if (repIt) { repIt.cnt += 1; repIt.by = S.me; }
+    if (repIt) { repIt.cnt += 1; phSoldFix(repIt); repIt.by = S.me; }
     S.trash.push(t); save(); render();
     toast('تم الحذف', () => restore(t.id, 1));
   });
