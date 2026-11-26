@@ -518,3 +518,4 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .csd.pz{border-style:dashed}
 .cs-vr .tag{margin:0}
 .phsel .tag{margin:0}
+.cs-vr input.cs-cn{width:4.6rem;text-align:center}

@@ -184,7 +184,7 @@ HOME.after.push(() => {
 window.priceLookupHtml = function (q) {
   const n = nz(q); if (n.length < 2) return '';
   const phs = ph().filter(i => nzHit(nzOf(i, nzText), q, n)).slice(0, 6);
-  const gls = S.gg.filter(g => g.models.some(m => nzHit(nz(((g.br || {})[m] || '') + m), q, n))).slice(0, 4);
+  const gls = S.gg.filter(g => glHit(g, q, n)).slice(0, 4);
   const css = S.items.filter(i => i.sec == 'case' && nzHit(nzOf(i, nzText), q, n)).slice(0, 4);
   const gds = (S.guide || []).filter(g => nzHit(nz(g.m + ' ' + g.f + ' ' + (g.n || '')), q, n)).slice(0, 6);
   const acs = S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && nzHit(nzOf(i, nzText), q, n)).slice(0, 5);

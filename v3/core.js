@@ -442,6 +442,7 @@ function restore(id, fromUndo) {
     const it = S.items.find(x => x.id == t.obj.repOf);
     if (it && it.cnt > 0) it.cnt = Math.max(0, it.cnt - 1);
   }
+  if (t.coll == 'gg' && t.obj && t.obj._it) { const its = t.obj._it; delete t.obj._it; its.forEach(x => { if (!S.items.some(y => y.id == x.id)) S.items.push(x); }); }   // مجموعة الأنتي كاس تعود مع مخزونها
   S[t.coll] = S[t.coll] || []; S[t.coll].push(t.obj); save(); render();
 }
 const row = (l, fn, sub) => `<button class="card row2 st-row" onclick="${fn}"><b class="st-lbl">${esc(l)}</b>${sub !== undefined && sub !== '' ? `<span class="m st-val">${esc(sub)}</span>` : ''}<span class="st-arr">${ic('back')}</span></button>`;

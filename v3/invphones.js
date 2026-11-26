@@ -215,7 +215,12 @@ function phView() {
 /* اقتراح الأنتي كاس والبوشيط تلقائياً لحظة بيع هاتف */
 function phMatchGlass(i) {
   const nm = nz(i.name), full = nz(i.brand + ' ' + i.name);
-  return S.gg.find(g => g.models.some(m => { const x = nz(m); return x == nm || x == full || (x.length >= 2 && full.endsWith(x)); }));
+  return S.gg.find(g => g.models.some(m => {
+    const x = nz(m); if (!glBrOk(g, m, i.brand)) return false;   // لا يطابق زجاج ماركة أخرى
+    if (x == nm || x == full) return true;
+    if (!(x.length >= 2 && full.endsWith(x))) return false;
+    return !!(g.br || {})[m] || !/^\d{1,2}$/.test(x);   // اسم رقمي قصير بلا ماركة (13) لا يطابق بالنهاية فقط
+  }));
 }
 function phMatchCase(i) {
   const nm = nz(i.name), full = nz(i.brand + ' ' + i.name);

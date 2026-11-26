@@ -110,7 +110,7 @@ const BC = b => b ? ((S.cfg.bcol || {})[b] ?? DBC[b] ?? '') : '';
 const SCOL = s => (S.cfg.scol || {})[s] ?? DSC[s] ?? '';
 const CM = s => (S.cfg.cm || {})[s] ?? DCM[s];
 const brOfName = n => { const z = nz(n); return [...S.tags.brand].sort((a, b) => b.length - a.length).find(t => z.includes(nz(t))) || ''; };
-const colOf = i => { const s = i.sec; if (!s || s == 'glass') return ''; const m = CM(s); if (m == 'o') return ''; if (m == 's') return SCOL(s); return BC(s == 'phones' ? i.brand : s == 'case' ? brOfName(i.name) : ''); };
+const colOf = i => { const s = i.sec; if (!s || s == 'glass') return ''; const m = CM(s); if (m == 'o') return ''; if (m == 's') return SCOL(s); return BC(s == 'phones' ? i.brand : s == 'case' ? csBr(i) : ''); };
 const colG = g => { const m = CM('glass'); if (m == 'o') return ''; if (m == 's') return SCOL('glass'); return BC(Object.values(g.br || {})[0]); };
 const cardH = (h, c, cls = '') => `<div class="card${cls ? ' ' + cls : ''}"${c ? ` style="border-inline-start:6px solid ${c}"` : ''}>${h}</div>`;
 const SOL = { phones: [['n', 'الماركة'], ['d', 'الأحدث'], ['l', 'الأقل']] };
@@ -200,5 +200,5 @@ function fxN(id) {
 }
 const fxAtt = v => { if (FS.fxSec && v && typeof v == 'object') v.x = { ...FS.fx }; return v; };
 const moreBtn = fn => `<button class="btn s" onclick="${fn}(1)">حفظ وإضافة آخر</button>`;
-const nzText = i => hay(i) + ' ' + fxTxt(i) + ' ' + (i.imei || '') + ' ' + (i.code || '') + ' ' + (i.pw || '');
+const nzText = i => hay(i) + ' ' + fxTxt(i) + ' ' + (i.imei || '') + ' ' + (i.code || '') + ' ' + (i.pw || '') + (i.sec == 'case' ? ' ' + csExtra(i) : '');
 const hay = i => [i.brand, i.name, i.color, i.ram, i.cap, i.note, i.kind, i.conn, i.tier, (i.v || []).map(x => x.g + x.c).join(' ')].join(' ');

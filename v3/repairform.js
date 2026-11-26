@@ -2,8 +2,8 @@
 function rpAddonOpts(dev) {
   const out = [{ k: '', l: '— بدون إرفاق سلعة —' }], nd = nz(dev || '');
   if (nd.length >= 2) {
-    S.gg.filter(g => g.models.some(m => { const nm = nz(m); return nm && (nd.includes(nm) || nm.includes(nd)); })).forEach(g => {
-      const mName = g.models.find(m => { const nm = nz(m); return nm && (nd.includes(nm) || nm.includes(nd)); }) || g.models[0];
+    S.gg.filter(g => g.models.some(m => gDevHit(dev, m) && glBrDev(g, m, dev))).forEach(g => {
+      const mName = g.models.find(m => gDevHit(dev, m) && glBrDev(g, m, dev)) || g.models[0];
       S.tags.glass.forEach((ty, j) => {
         if (!gHas(g, mName, ty)) return;
         const it = gitem(g.id, ty), tot = it ? gTot(it, g) : 0;

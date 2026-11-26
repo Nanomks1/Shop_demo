@@ -71,8 +71,8 @@ function invLines(notes = true) {
     const tys = S.tags.glass.filter(t => gShow(g, t)), hasAny = tys.some(t => gitem(g.id, t));
     tys.forEach((t, idx) => {
       const i = gitem(g.id, t), ms = gMods(g, t).join(' / ');
-      if (i && gSt(i, g, t) != 'g') L.push(['الأنتي كاس', t + ': ' + ms + ' — المجموع ' + (gEst(i, g) ? '≈' : '') + gTot(i, g) + (glx('rp') ? glBrk(i, g, t) : ''), gSt(i, g, t), `buyG('${i.id}')`]);
-      else if (!i && !hasAny && idx === 0) L.push(['الأنتي كاس', t + ': ' + ms + ' — المجموع 0', 'r', `buyG('${g.id}')`]);
+      if (i && !gStop(i, g) && gSt(i, g, t) != 'g') L.push(['الأنتي كاس', t + ': ' + ms + ' — المجموع ' + (gEst(i, g) ? '≈' : '') + gTot(i, g) + (glx('rp') ? glBrk(i, g, t) : ''), gSt(i, g, t), `buyG('${i.id}')`]);
+      else if (!i && (!glx('ng') || (!hasAny && idx === 0))) L.push(['الأنتي كاس', t + ': ' + ms + ' — المجموع 0', 'r', `buyG('${g.id}',${S.tags.glass.indexOf(t)})`]);
     });
   });
   S.items.filter(i => i.sec == 'case' && csSt(i) != 'g').forEach(i => {
@@ -89,7 +89,7 @@ function invLines(notes = true) {
 /* ============================ البحث الموحّد وعرض القسم ============================ */
 SRCH.push(
   { k: 'phones', l: 'هواتف', run: (n, q) => { const ks = new Set(S.items.filter(i => i.sec == 'phones' && !i.sold && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(phKey)); return phGroupsOf(ph().filter(i => ks.has(phKey(i)))).map(phGCard); } },
-  { k: 'glass', l: 'أنتي كاس', run: (n, q) => S.gg.filter(g => g.models.some(m => nzHit(nz(((g.br || {})[m] || '') + m), q, n))).slice(0, 15).map(glB) },
+  { k: 'glass', l: 'أنتي كاس', run: (n, q) => S.gg.filter(g => glHit(g, q, n)).slice(0, 15).map(g => glB(g)) },
   { k: 'case', l: 'بوشيط', run: (n, q) => S.items.filter(i => i.sec == 'case' && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(csCard) },
   { k: 'acc', l: 'إكسسوارات', run: (n, q) => [...agList().filter(d => nzHit(nz(agTxt(d)), q, n)).slice(0, 15).map(agCard), ...S.items.filter(i => i.sec == 'acc' && !gkc(i.kind).g && nzHit(nzOf(i, nzText), q, n)).slice(0, 30).map(acCard)] }
 );

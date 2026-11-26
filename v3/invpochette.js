@@ -116,19 +116,34 @@ function csN(i) {
   return i;
 }
 const csNm = i => i.name + (i.ty ? ' · ' + i.ty : '');
+/* ---------- الماركة: يدوية i.br، أو من اسم الموديل، أو من الهواتف/الأنتي كاس بنفس الموديل ---------- */
+const csTk = s => nz(s).split(/\s+/).filter(Boolean);
+const csSim = (a, b) => { const ta = csTk(a), tb = csTk(b); return ta.join('').length >= 2 && tb.length > 0 && (ta.every(t => tb.includes(t)) || tb.every(t => ta.includes(t))); };
+function csBr0(i) {
+  if (i.br) return i.br;
+  const b = brOfName(i.name); if (b) return b;
+  for (const g of S.gg || []) for (const m of g.models || []) if (g.br && g.br[m] && csSim(i.name, m)) return g.br[m];
+  const p = S.items.find(x => x.sec == 'phones' && x.brand && csSim(i.name, x.name));
+  return p ? p.brand : '';
+}
+const CSBC = new WeakMap();
+const csBr = i => { let c = CSBC.get(i); if (!c || c.v !== ST.ver) { c = { v: ST.ver, b: csBr0(i) }; CSBC.set(i, c); } return c.b; };
+const csExtra = i => csBr(i) + ' ' + (i.ty || '') + ' ' + (i.cp || []).join(' ');   // يُضاف لنص البحث (nzText)
+const csMP = i => !!i.stp && csTot(i) <= (i.stpN || 0);   // موديل موقوف بالكامل: يعود إذا زاد مجموعه
 const csTot = i => (csN(i).v || []).reduce((a, x) => a + x.n, 0);
 const csIsP = x => !!x.stp && x.n <= (x.stpN || 0);   // لون موقوف: يعود تلقائياً إذا زاد عدده
 const csHasMain = i => (i.v || []).some(x => x.mn);
 const csLim = i => i.lim ?? lim(csx('md') == 1 ? 'ctl' : 'cl');
 /* حالة اللون: r نفد · y قارب · g متوفر · z صفر غير منبِّه · p موقوف */
 const csVSt = (i, x) => {
-  if (csIsP(x)) return 'p';
+  if (csIsP(x) || csMP(i)) return 'p';
   const md = csx('md');
   if (md == 1 || (md == 2 && !x.mn && csHasMain(i))) return x.n <= 0 ? 'z' : 'g';
   return x.n <= 0 ? 'r' : x.n <= csLim(i) ? 'y' : 'g';
 };
 const csSt = i => {
   const V0 = csN(i).v || [];
+  if (csMP(i)) return 'g';
   if (!V0.length) return 'r';
   const act = V0.filter(x => !csIsP(x));
   let s = 'g';
@@ -178,17 +193,19 @@ function csCard(i) {
   const s = csSt(i), cmp = isCmp('case') && V.v == 'sec', sel = (csN(i).v || []).find(x => x.id == CSSEL), oc = csOcN(i);
   const pr = i.price ? `<span class="cmp-pr">${esc(fmtPr(i.price))}</span>` : '';
   const nt = (i.need ? `<div class="cs-nt" style="color:${DT.r}">خاصنا: ${esc(i.need)}</div>` : '') + (i.rem ? `<div class="cs-nt m">باقي: ${esc(i.rem)}</div>` : '')
-    + (csx('oc') && oc >= 2 ? `<div class="cs-nt m">نفد ${oc} مرات هذا الشهر</div>` : '');
+    + (i.cp && i.cp.length ? `<div class="cs-nt m">يناسب أيضاً: ${esc(i.cp.join('، '))}</div>` : '') + (csx('oc') && oc >= 2 ? `<div class="cs-nt m">نفد ${oc} مرات هذا الشهر</div>` : '');
   const bar = sel ? `<div class="phsel"><span class="csd" style="background:${csBg(sel.c)};color:${csInk(sel.c)}"></span><b class="f1">${esc(sel.c || 'عام')}</b><button class="btn s sm sell" onclick="csC('${i.id}','${sel.id}',-1)">− بيع</button><span class="cn">${sel.n}</span><button class="btn sm" onclick="csC('${i.id}','${sel.id}',1)">+ إضافة</button><button class="tag" onclick="csVMenu('${i.id}','${sel.id}')">⋯</button></div>` : '';
-  return cardH(`<div class="row2" style="gap:8px;flex-wrap:wrap"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csOpen('${i.id}')"><b>${esc(i.name)}</b>${i.ty ? ` <span class="phk c">${esc(i.ty)}</span>` : ''}${nt}</div>${pr}${csChipsHtml(i, cmp, 1)}</div>${bar}${cmp ? '' : fxShow(i)}`, colOf(i), 'cmp');
+  return cardH(`<div class="row2" style="gap:8px;flex-wrap:wrap"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="csOpen('${i.id}')"><b>${esc(i.name)}</b>${i.ty ? ` <span class="phk c">${esc(i.ty)}</span>` : ''}${csMP(i) ? ' <span class="phk">متوقف</span>' : ''}${nt}</div>${pr}${csChipsHtml(i, cmp, 1)}</div>${bar}${cmp ? '' : fxShow(i)}`, colOf(i), 'cmp');
 }
 function csView() {
   const allCs = S.items.filter(i => i.sec == 'case'), totPcs = allCs.reduce((s, i) => s + csTot(i), 0), lowCnt = allCs.filter(i => csSt(i) != 'g').length;
+  const brs = {}; allCs.forEach(i => { const b = csBr(i) || '-'; brs[b] = (brs[b] || 0) + 1; });
   let a = srt(allCs, 'case', i => i.name, csTot, i => i.at);
-  if (V.cf) a = a.filter(i => csSt(i) != 'g');
+  if (V.cf) a = a.filter(i => csSt(i) != 'g'); else if (V.cb) a = a.filter(i => (csBr(i) || '-') == V.cb);
   const pg = pgSlice('cs', a);
-  const tagsHtml = `<button class="tag ${!V.cf ? 'on' : ''}" onclick="V.cf=0;render()">الكل (${allCs.length} · ${arCnt(totPcs, 'قطعة', 'قطعتان', 'قطع')})</button>`
-    + `<button class="tag ${V.cf ? 'on' : ''}" onclick="V.cf=1;render()">يحتاج شراء (${lowCnt})</button>`;
+  const tagsHtml = `<button class="tag ${!V.cf && !V.cb ? 'on' : ''}" onclick="V.cf=0;V.cb='';render()">الكل (${allCs.length} · ${arCnt(totPcs, 'قطعة', 'قطعتان', 'قطع')})</button>`
+    + `<button class="tag ${V.cf ? 'on' : ''}" onclick="V.cf=1;V.cb='';render()">يحتاج شراء (${lowCnt})</button>`
+    + Object.keys(brs).sort((x, y) => x == '-' ? 1 : y == '-' ? -1 : x.localeCompare(y)).map(b => `<button class="tag ${!V.cf && V.cb == b ? 'on' : ''}" data-b="${esc(b)}" onclick="V.cf=0;V.cb=this.dataset.b;render()">${b == '-' ? 'بدون ماركة' : esc(b)} (${brs[b]})</button>`).join('');
   return {
     t: 'البوشيط',
     h: `<button class="btn" onclick="csAdd()">+ إضافة موديل بوشيط</button>`
@@ -228,7 +245,7 @@ function csSheetR(id) {
     + rows
     + (i.need ? `<div class="rs row2" style="margin-top:8px;gap:6px"><span class="dotl" style="background:${DT.r}"></span><span style="flex:1">خاصنا: ${esc(i.need)}</span><button class="tag" style="margin:0;color:${DT.r}" onclick="csClrNeed('${i.id}');csSheetR('${i.id}')">× مسح</button></div>` : '')
     + (i.rem ? `<div class="m" style="margin-top:6px"><span class="dotl" style="background:${DT.g}"></span> باقي: ${esc(i.rem)}</div>` : '')
-    + `<div class="cs-acts"><button class="btn s" onclick="csAddView('${i.id}')">+ لون</button><button class="btn s" onclick="csGo('csLimEd','${i.id}')">الحد والسعر</button><button class="btn s" onclick="csGo('csQuickNote','${i.id}')">باقي / خاصنا</button><button class="btn s" onclick="csGo('csRen','${i.id}')">تعديل الاسم</button>`
+    + `<div class="cs-acts"><button class="btn s" onclick="csAddView('${i.id}')">+ لون</button><button class="btn s" onclick="csGo('csLimEd','${i.id}')">الحد والسعر</button><button class="btn s" onclick="csGo('csQuickNote','${i.id}')">باقي / خاصنا</button><button class="btn s" onclick="csGo('csRen','${i.id}')">تعديل الاسم</button><button class="btn s" onclick="csGo('csCpEd','${i.id}')">يناسب أيضاً${i.cp && i.cp.length ? ' (' + i.cp.length + ')' : ''}</button><button class="btn s" onclick="csGo('csBrEd','${i.id}')">الماركة: ${esc(csBr(i) || 'غير محددة')}</button><button class="btn s" onclick="csStpM('${i.id}')">${csMP(i) ? 'إعادة الموديل للشراء' : 'إيقاف شراء الموديل'}</button>`
     + (csx('ty') || i.ty ? `<button class="btn s" onclick="csGo('csTypeEd','${i.id}')">النوع${i.ty ? ': ' + esc(i.ty) : ''}</button>` : '')
     + (S.fields.some(f => f.sec == 'case') ? `<button class="btn s" onclick="csGo('csFx','${i.id}')">خانات</button>` : '')
     + `<button class="btn s del" onclick="csGo('csDel','${i.id}')">حذف الموديل</button></div>`
@@ -335,6 +352,65 @@ function csSetTy(id, k) {
   finish(null);
   commit('تم تغيير النوع', () => { if (ty) i.ty = ty; else delete i.ty; touch(i); });
 }
+/* ---------- إيقاف الموديل كاملاً · الماركة · الموديلات المتوافقة ---------- */
+function csStpM(id) {
+  const i = find(id); if (!i) return; const on = !csMP(i);
+  csDo(id, on ? 'أُوقف شراء الموديل (يخرج من التقرير ويعود إذا زاد مجموعه)' : 'أُعيد الموديل للشراء', r => { if (on) { r.stp = 1; r.stpN = csTot(r); } else { delete r.stp; delete r.stpN; } touch(r); });
+  csShR(id);
+}
+function csBrEd(id) {
+  const i = find(id); if (!i) return; const B = S.tags.brand || [];
+  $('sh').innerHTML = `<div class="bar"></div><h3>ماركة: ${esc(csNm(i))}</h3><p class="m">الآن: ${esc(csBr(i) || 'غير محددة')}${i.br ? '' : ' (تلقائي)'}</p>`
+    + B.map((b, k) => `<button class="btn s" onclick="csSetBr('${i.id}',${k})">${esc(b)}${i.br == b ? ' ✓' : ''}</button>`).join('')
+    + `<button class="btn s" onclick="csSetBr('${i.id}',-1)">تلقائي</button><button class="btn s" onclick="finish(null)">إلغاء</button>`;
+  sheetOpen(csClosed);
+}
+function csSetBr(id, k) {
+  const i = find(id); if (!i) return; const b = k < 0 ? '' : (S.tags.brand || [])[k] || '';
+  finish(null);
+  commit('تم تغيير الماركة', () => { if (b) i.br = b; else delete i.br; touch(i); });
+}
+function csCpEd(id) {
+  const i = find(id); if (!i) return;
+  ask('يناسب أيضاً: ' + csNm(i), [{ k: 't', l: 'موديلات أخرى تشاركه نفس البوشيط (افصل بينها بفاصلة)', v: (i.cp || []).join('، ') }], 'حفظ').then(v => {
+    if (!v) return;
+    const a = v.t.split(/[,،\n]+/).map(s => s.trim()).filter(Boolean);
+    commit('تم حفظ الموديلات المتوافقة', () => { if (a.length) i.cp = a; else delete i.cp; touch(i); });
+  });
+}
+/* ---------- نسخ ألوان موديل آخر إلى موديل جديد ---------- */
+function csCopyPick() {
+  if (!CSD.name) return;
+  $('sh').innerHTML = `<div class="bar"></div><h3>نسخ ألوان إلى «${esc(CSD.name)}»</h3><label>ابحث عن موديل له نفس الألوان<input data-sug="mn" oninput="csCopyF(this.value)"></label><div id="pr"></div><button class="btn s" onclick="csAddView(null)">رجوع</button>`;
+  csCopyF('');
+}
+function csCopyF(q) {
+  const n = nz(q), m = S.items.filter(i => i.sec == 'case' && (i.v || []).length && (!n || nzHit(nz(i.name + ' ' + csExtra(i)), q, n))).sort((a, b) => b.at - a.at).slice(0, 8);
+  $('pr').innerHTML = m.map(i => `<button class="card row2" onclick="csCopyView('${i.id}')"><b>${esc(csNm(i))}</b><span class="m">${esc(csGSummaryTxt(i))}</span></button>`).join('') || '<p class="m">لا توجد نتائج</p>';
+}
+function csCopyView(sid) {
+  const s = find(sid); if (!s || !CSD.name) return;
+  CSD.cp = sid;
+  $('sh').innerHTML = `<div class="bar"></div><h3>${esc(CSD.name)} — ألوان من ${esc(csNm(s))}</h3><p class="m">اكتب عدد كل لون (0 = يُتجاهل)</p>`
+    + (csN(s).v || []).map((x, k) => `<div class="cs-vr">${csDot(x, 'g', '')}<b>${esc(x.c || 'عام')}</b><input class="cs-cn" type="number" data-c="${k}" value="${lim('csBuy')}"></div>`).join('')
+    + (can('price') ? `<label>السعر (اختياري)<input id="cpr" type="tel" value="${esc(s.price || '')}"></label>` : '')
+    + `<div class="acts"><button class="btn s" onclick="csCopyPick()">رجوع</button><button class="btn" onclick="csCopyOk()">حفظ</button></div>`;
+}
+function csCopyOk() {
+  const s = find(CSD.cp); if (!s || !CSD.name) return;
+  const V0 = csN(s).v || [], pr = $('cpr') ? $('cpr').value.trim() : '';
+  const vs = [...$('sh').querySelectorAll('.cs-cn')].map(el => ({ x: V0[+el.dataset.c], n: ci(el.value) })).filter(o => o.x && o.n > 0);
+  if (!vs.length) return toast('اكتب عدداً للون واحد على الأقل');
+  upd(() => {
+    const now = Date.now(), i = { id: uid(), sec: 'case', name: CSD.name, v: vs.map(o => ({ id: uid(), g: '', c: o.x.c || '', n: o.n })), by: S.me, at: now, cf: now };
+    if (CSD.ty) i.ty = CSD.ty;
+    if (CSCODE) { i.code = CSCODE; CSCODE = ''; }
+    if (pr && can('price')) i.price = pr;
+    if (s.br) i.br = s.br;
+    S.items.push(i); CSD = { id: i.id }; CSUP = i.id;
+  });
+  toast('تمت الإضافة'); finish(null);
+}
 /* ---------- الإضافة: ابحث أولاً، ثم (النوع) واللون والعدد ---------- */
 function csAdd() {
   CQ = ''; CSD = {};
@@ -342,7 +418,7 @@ function csAdd() {
   sheetOpen(csClosed); csF('');
 }
 function csF(q) {
-  CQ = q.trim(); const n = nz(q), m = S.items.filter(i => i.sec == 'case' && (!n || nzHit(nz(i.name + ' ' + (i.ty || '')), q, n))).sort((a, b) => b.at - a.at).slice(0, 6);
+  CQ = q.trim(); const n = nz(q), m = S.items.filter(i => i.sec == 'case' && (!n || nzHit(nz(i.name + ' ' + csExtra(i)), q, n))).sort((a, b) => b.at - a.at).slice(0, 6);
   $('pr').innerHTML = m.map(i => `<button class="card row2" onclick="csPick('${i.id}')"><b>${esc(csNm(i))}</b><span class="m">${esc(csGSummaryTxt(i))}</span></button>`).join('') + `<button class="btn" onclick="csNew()">+ موديل جديد${CQ ? ' «' + esc(CQ) + '»' : ''}</button>`;
 }
 function csPick(id) { CSD = { id }; csAddView(id); }
@@ -367,6 +443,7 @@ function csAddView(id) {
   fsInit([['color', 'اللون']], {}); FS.sugC = () => colSugCs(id);
   $('sh').innerHTML = `<div class="bar"></div><h3>${esc(nm)} — إضافة لون</h3><div id="cc"></div>`
     + `<div class="row2" style="gap:8px"><label style="flex:1">العدد<input id="cq" type="number" value="${i ? 1 : lim('csBuy')}"></label>${i ? '' : `<label style="flex:1">السعر (اختياري)<input id="cpr" type="tel" placeholder="مثال: 30"></label>`}</div>`
+    + (i ? '' : `<button class="btn s" onclick="csCopyPick()">نسخ ألوان من موديل آخر</button>`)
     + `<div class="acts"><button class="btn s" onclick="${i ? `csSheetR('${i.id}')` : 'finish(null)'}">${i ? 'رجوع' : 'إلغاء'}</button><button class="btn s" onclick="csAddOk(1)">+ لون آخر</button><button class="btn" onclick="csAddOk(0)">حفظ</button></div>`;
   chipsR();
 }

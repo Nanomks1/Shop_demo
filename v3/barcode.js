@@ -86,16 +86,17 @@ const bcLbl = i => i.sec == 'phones' ? i.brand + ' ' + i.name : i.sec == 'case' 
 const isImei = c => /^\d{14,17}$/.test(c);
 /* اختيار سريع للون/نوع البوشيط عند البيع السريع بالباركود إذا كان له عدة ألوان متوفرة */
 function bcPickCsVar(it) {
-  const avs = (it.v || []).filter(x => x.n > 0);
-  if (!avs.length) return toast('نفد هذا البوشيط بالفعل');
+  const avs = [...(it.v || [])].sort((a, b) => (b.n > 0) - (a.n > 0));
+  if (!avs.length) return toast('لا توجد ألوان لهذا البوشيط');
   setTimeout(() => {
     $('sh').innerHTML = `<div class="bar"></div><h3>بيع سريع (−1): بوشيط ${esc(it.name)}</h3><p class="m">اختر النوع/اللون الذي بيع:</p>`
-      + avs.map(x => `<button class="btn s" onclick="finish('${x.id}')">${esc([x.g, x.c].filter(Boolean).join(' · ') || 'عام')} (المتوفر: ${x.n})</button>`).join('')
+      + avs.map(x => `<button class="btn s" onclick="finish('${x.id}')">${esc([x.g, x.c].filter(Boolean).join(' · ') || 'عام')} ${x.n > 0 ? '(المتوفر: ' + x.n + ')' : '⚠ عدده 0'}</button>`).join('')
       + `<button class="btn s" onclick="finish(null)">إلغاء</button>`;
     sheetOpen(vid => {
       if (!vid) return;
-      const v = (it.v || []).find(x => x.id == vid); if (!v || v.n <= 0) return;
+      const v = (it.v || []).find(x => x.id == vid); if (!v) return;
       const lbl = [v.g, v.c].filter(Boolean).join(' · ') || 'عام';
+      if (v.n <= 0) return toast('عدد «' + lbl + '» هو 0 في النظام — لم يُخصم شيء. صحّح العدد (ضغطة مطولة على دائرة اللون)');
       commit(`بيع سريع (−1): بوشيط ${csNm(it)} (${lbl})`, () => { const w = v.n; v.n = Math.max(0, v.n - 1); csOut(it, v, w); touch(it); S.cfg.bcQuick = Date.now(); });
     });
   }, 350);
@@ -117,8 +118,7 @@ function bcQuickSell(it) {
     }
   } else if (it.sec == 'case' && (it.v || []).length) {
     const avs = it.v.filter(x => x.n > 0);
-    if (!avs.length) return !toast('نفد هذا البوشيط بالفعل');
-    if (avs.length > 1) { bcPickCsVar(it); return true; }
+    if (!avs.length || avs.length > 1) { bcPickCsVar(it); return true; }
     const v = avs[0];
     commit('بيع سريع (−1): بوشيط ' + csNm(it), () => { const w = v.n; v.n = Math.max(0, v.n - 1); csOut(it, v, w); touch(it); });
     return true;
