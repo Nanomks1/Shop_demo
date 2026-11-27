@@ -106,6 +106,14 @@
     if (c.lv == 'r') L = L.filter(x => x[2] == 'r');
     return L.length;
   };
+  /* عدد النواقص لكل قسم (نفس حساب repNeedCount) لعرضه على أقسام الرئيسية */
+  window.repNeedBy = () => {
+    const c = rcf();
+    let L = invLines(false).concat(typeof tpLines == 'function' ? tpLines() : []).filter(x => secs('all').some(k => RSEC[k][0] == x[0]));
+    if (c.lv == 'r') L = L.filter(x => x[2] == 'r');
+    const o = {}; Object.keys(RSEC).forEach(k => { o[k] = L.filter(x => x[0] == RSEC[k][0]).length; });
+    return o;
+  };
   const dstr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); };
   const rpLine = () => {
     const i = S.rp.filter(x => x.st == 'in').length, d = S.rp.filter(x => x.st == 'rd');

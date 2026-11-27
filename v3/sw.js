@@ -1,4 +1,4 @@
-const CACHE = 'aziz-shop-v3-100';
+const CACHE = 'aziz-shop-v3-101';
 const ASSETS = [
   './',
   './index.html',

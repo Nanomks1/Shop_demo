@@ -202,15 +202,16 @@ function csView() {
   const brs = {}; allCs.forEach(i => { const b = csBr(i) || '-'; brs[b] = (brs[b] || 0) + 1; });
   let a = srt(allCs, 'case', i => i.name, csTot, i => i.at);
   if (V.cf) a = a.filter(i => csSt(i) != 'g'); else if (V.cb) a = a.filter(i => (csBr(i) || '-') == V.cb);
+  if (V.sq) a = a.filter(i => sqOk(nzOf(i, nzText)));
   const pg = pgSlice('cs', a);
   const tagsHtml = `<button class="tag ${!V.cf && !V.cb ? 'on' : ''}" onclick="V.cf=0;V.cb='';render()">الكل (${allCs.length} · ${arCnt(totPcs, 'قطعة', 'قطعتان', 'قطع')})</button>`
     + `<button class="tag ${V.cf ? 'on' : ''}" onclick="V.cf=1;V.cb='';render()">يحتاج شراء (${lowCnt})</button>`
     + Object.keys(brs).sort((x, y) => x == '-' ? 1 : y == '-' ? -1 : x.localeCompare(y)).map(b => `<button class="tag ${!V.cf && V.cb == b ? 'on' : ''}" data-b="${esc(b)}" onclick="V.cf=0;V.cb=this.dataset.b;render()">${b == '-' ? 'بدون ماركة' : esc(b)} (${brs[b]})</button>`).join('');
   return {
     t: 'البوشيط',
-    h: `<button class="btn" onclick="csAdd()">+ إضافة موديل بوشيط</button>`
+    h: secAdd('csAdd()', 'موديل بوشيط')
       + secPanel('case', tagsHtml)
-      + (pg.items.map(csCard).join('') + pg.more || emptyBox('لا توجد موديلات بوشيط في هذا الفلتر', 'اضغط على «+ إضافة موديل بوشيط» في الأعلى لإضافة أول موديل'))
+      + '<div id="slist">' + (pg.items.map(csCard).join('') + pg.more || emptyBox('لا توجد موديلات بوشيط مطابقة', 'جرّب كلمة أخرى أو اضغط على زر «+» في الأعلى لإضافة موديل')) + '</div>'
   };
 }
 /* ---------- تعديل مع «تراجع» (يُحدّث نافذة الموديل إن كانت مفتوحة) ---------- */

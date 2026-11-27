@@ -93,30 +93,23 @@ function glDedup() {
 HK.save.push(glDedup);
 glDedup();
 const glBrands = () => [...new Set(S.gg.flatMap(g => Object.values(g.br || {})).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-const glFlt = g => { const q = V.gq || '', n = nz(q), b = V.gbr || ''; return (!b || Object.values(g.br || {}).includes(b)) && (!q || glHit(g, q, n)); };
+const glFlt = g => { const q = V.sq || '', n = nz(q); return !q || glHit(g, q, n); };
 const glNeed = (g, ty) => { const i = gitem(g.id, ty); if (gStop(i, g)) return false; const s = i ? gSt(i, g, ty) : (glx('ng') ? 'n' : 'r'); return s == 'r' || s == 'y'; };
 function glList(j) {
   const ty = S.tags.glass[j], it = g => gitem(g.id, ty);
   let a = srt(S.gg.filter(g => gShow(g, ty) && glFlt(g)), 'glass', g => gMods(g, ty)[0] || '', g => { const i = it(g); return i ? gTot(i, g) : 0; }, g => { const i = it(g); return i ? i.at : 0; });
   if (V.gf && glx('nf')) a = a.filter(g => glNeed(g, ty));
-  const pg = pgSlice('gl' + j, a, 30), f = V.gq || V.gbr || (V.gf && glx('nf'));
-  return pg.items.map(g => glCard(g, j)).join('') + pg.more || emptyBox(f ? 'لا نتائج' : 'لا توجد مجموعات أنتي كاس بعد', f ? 'جرّب كلمة أخرى أو ألغِ الفلتر' : 'اضغط على «+ إضافة موديل» في الأعلى لبدء أول مجموعة');
+  const pg = pgSlice('gl' + j, a, 30), f = V.sq || (V.gf && glx('nf'));
+  return pg.items.map(g => glCard(g, j)).join('') + pg.more || emptyBox(f ? 'لا نتائج' : 'لا توجد مجموعات أنتي كاس بعد', f ? 'جرّب كلمة أخرى أو ألغِ الفلتر' : 'اضغط على زر «+» في الأعلى لبدء أول مجموعة');
 }
-function glQ(v) { V.gq = v; const e = $('glist'); if (e) e.innerHTML = glList(V.ty || 0); }
-function glBr(k) { const b = glBrands()[k]; V.gbr = V.gbr == b ? '' : b; render(); }
 function glView() {
-  const j = V.ty || 0;
-  const tagsHtml = S.tags.glass.map((t, k) => `<button class="tag ${k == j ? 'on' : ''}" onclick="V.ty=${k};render()">${esc(t)}</button>`).join('');
-  const brs = glx('gs') ? glBrands() : [];
-  const nfN = glx('nf') ? S.gg.filter(g => gShow(g, S.tags.glass[j]) && glNeed(g, S.tags.glass[j])).length : 0;
-  const nfB = glx('nf') ? `<div class="sec-tags nowrap"><button class="tag ${V.gf ? 'on' : ''}" onclick="V.gf=V.gf?0:1;render()">يحتاج شراء (${nfN})</button></div>` : '';
-  const tools = nfB + (glx('gs') ? `<input class="gl-q" id="glq" type="search" placeholder="ابحث عن موديل" value="${esc(V.gq || '')}" oninput="glQ(this.value)">`
-    + (brs.length > 1 ? `<div class="sec-tags nowrap">${brs.map((b, k) => `<button class="tag ${V.gbr == b ? 'on' : ''}" onclick="glBr(${k})">${esc(b)}</button>`).join('')}</div>` : '') : '');
+  const j = V.ty || 0, ty = S.tags.glass[j];
+  const nfN = glx('nf') ? S.gg.filter(g => gShow(g, ty) && glNeed(g, ty)).length : 0;
+  const tagsHtml = S.tags.glass.map((t, k) => `<button class="tag ${k == j ? 'on' : ''}" onclick="V.ty=${k};render()">${esc(t)}</button>`).join('')
+    + (glx('nf') ? `<button class="tag ${V.gf ? 'on' : ''}" onclick="V.gf=V.gf?0:1;render()">يحتاج شراء (${nfN})</button>` : '');
   return {
     t: 'الأنتي كاس',
-    h: `<button class="btn" onclick="glAdd()">+ إضافة موديل</button>`
-      + secPanel('glass', tagsHtml) + tools
-      + `<div id="glist">${glList(j)}</div>`
+    h: secAdd('glAdd()', 'موديل') + secPanel('glass', tagsHtml) + `<div id="slist">${glList(j)}</div>`
   };
 }
 function glRow(g, i, j, k, m, single) {

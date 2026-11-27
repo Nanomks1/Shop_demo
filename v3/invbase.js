@@ -98,7 +98,7 @@ const PAL = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '
   '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#78716c', '#b91c1c', '#c2410c', '#a16207', '#15803d', '#0f766e', '#1d4ed8',
   '#6d28d9', '#a21caf', '#be185d', '#92400e', '#64748b', '#1e293b'];
 const DBC = { Samsung: '#3b82f6', Redmi: '#f97316', Xiaomi: '#eab308', Realme: '#facc15', Oppo: '#22c55e', Vivo: '#a855f7', Tecno: '#06b6d4', Infinix: '#84cc16', iPhone: '#64748b', Itel: '#ef4444' };
-const DSC = { glass: '#06b6d4', case: '#a855f7', acc: '#84cc16' }, DCM = { phones: 'b', glass: 's', case: 's', acc: 's' };
+const DSC = { glass: '#06b6d4', case: '#a855f7', acc: '#84cc16' }, DCM = { phones: 'b', glass: 'o', case: 'o', acc: 'o' };
 const SN3 = { phones: 'الهواتف', glass: 'الأنتي كاس', case: 'البوشيط', acc: 'الإكسسوارات' }, MN = { b: 'حسب الماركة', s: 'لون واحد للقسم', o: 'بدون' };
 const autoBc = t => {
   S.cfg.bcol = S.cfg.bcol || {};
@@ -127,6 +127,15 @@ const sortToolbarHtml = s => {
     + `</div></div>`;
 };
 const secPanel = (s, tagsHtml) => `<div class="sec-panel"><div class="sec-tags">${tagsHtml}</div>${sortToolbarHtml(s)}</div>`;
+/* شريط علوي موحّد لكل الأقسام: حقل بحث + زر «+» مربّع (بدل زر الإضافة العريض) */
+const secAdd = (fn, what) => `<div class="stop"><input type="search" id="ssq" placeholder="ابحث عن ${what}" value="${esc(V.sq || '')}" oninput="ssq(this.value)" aria-label="بحث"><button type="button" class="addb" onclick="${fn}" aria-label="إضافة ${what}">${ic('plus')}</button></div>`;
+const sqOk = h => !V.sq || nzHit(h, V.sq);   // h = نص مُطبَّع بـ nz()
+function ssq(v) {   // يحدّث القائمة فقط (#slist) فلا يضيع التركيز على الحقل
+  V.sq = v;
+  const e = $('slist'), r = typeof VW.sec == 'function' ? VW.sec() : null; if (!e || !r) return;
+  const d = document.createElement('div'); d.innerHTML = r.h;
+  const n = d.querySelector('#slist'); if (n) e.innerHTML = n.innerHTML;
+}
 const emptyBox = (title, sub) => `<div class="empty-state"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
 function soSet(s, k) { upd(() => { S.cfg.so = S.cfg.so || {}; S.cfg.so[s] = k; }); }
 const srt = (a, s, nm, lo, at) => { const k = SO(s); return [...a].sort((x, y) => k == 'd' ? (at(y) || 0) - (at(x) || 0) : k == 'l' ? (lo(x) - lo(y)) || String(nm(x)).localeCompare(String(nm(y)), undefined, { numeric: true }) : String(nm(x)).localeCompare(String(nm(y)), undefined, { numeric: true })); };

@@ -86,16 +86,16 @@ function acView() {
   all.forEach(x => { if (stOf(x) != 'g') need[x.kind] = (need[x.kind] || 0) + 1; });
   const nAll = Object.values(need).reduce((a, b) => a + b, 0);
   /* الحالة أولاً (أحمر ← برتقالي ← أخضر) ثم ترتيب المستخدم (الاسم/الأحدث) داخل كل حالة */
-  const rows = srt(all.filter(x => (k == null || x.kind == k) && (!V.kn || stOf(x) != 'g')), 'acc', x => x.g ? x.g.title : acName(x.i), x => AORD[stOf(x)], x => x.g ? x.g.at : x.i.at).sort((x, y) => acx('so') ? AORD[stOf(x)] - AORD[stOf(y)] : 0);
+  const rows = srt(all.filter(x => (k == null || x.kind == k) && (!V.kn || stOf(x) != 'g') && (!V.sq || sqOk(x.g ? nz(agTxt(x.g)) : nzOf(x.i, nzText)))), 'acc', x => x.g ? x.g.title : acName(x.i), x => AORD[stOf(x)], x => x.g ? x.g.at : x.i.at).sort((x, y) => acx('so') ? AORD[stOf(x)] - AORD[stOf(y)] : 0);
   const pg = pgSlice('ac', rows);
   const tagsHtml = `<button class="tag ${j == null ? 'on' : ''}" onclick="V.kk=null;render()">الكل</button>`
     + S.tags.kind.map((t, x) => `<button class="tag ${j == x ? 'on' : ''}" onclick="V.kk=${x};render()">${esc(t)}${need[t] ? ` <small>(${need[t]})</small>` : ''}</button>`).join('')
     + `<button class="tag ${V.kn ? 'on' : ''}" onclick="V.kn=!V.kn;render()">يحتاج شراء${nAll ? ' (' + nAll + ')' : ''}</button>`;
   return {
     t: 'الإكسسوارات',
-    h: `<button class="btn" onclick="acAdd()">+ إضافة إكسسوار</button>`
+    h: secAdd('acAdd()', 'إكسسوار')
       + secPanel('acc', tagsHtml)
-      + (rows.length ? pg.items.map(x => x.g ? agCard(x.g) : acCard(x.i)).join('') + pg.more : V.kn ? emptyBox('لا يوجد شيء يحتاج شراء ✓') : all.length ? emptyBox('لا توجد نتائج لهذا النوع') : emptyBox('لا توجد إكسسوارات في هذا القسم بعد', 'اضغط على «+ إضافة إكسسوار» في الأعلى لإضافة أول قطعة'))
+      + '<div id="slist">' + (rows.length ? pg.items.map(x => x.g ? agCard(x.g) : acCard(x.i)).join('') + pg.more : V.kn ? emptyBox('لا يوجد شيء يحتاج شراء ✓') : all.length ? emptyBox('لا توجد نتائج', 'جرّب كلمة أخرى أو نوعاً آخر') : emptyBox('لا توجد إكسسوارات في هذا القسم بعد', 'اضغط على زر «+» في الأعلى لإضافة أول قطعة')) + '</div>'
   };
 }
 function acC(id, d) {

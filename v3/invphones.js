@@ -240,6 +240,7 @@ function phView() {
   else if (V.f == 3) a = a.filter(g => g.rs > 0);
   else if (V.f == 4) a = a.filter(g => !g.price);
   else if (V.pb) a = a.filter(g => g.brand == V.pb);
+  if (V.sq) a = a.filter(g => g.items.some(i => sqOk(nzOf(i, nzText))));
   const pg = pgSlice('ph', a);
   const tagsHtml = `<button class="tag ${!V.f && !V.pb ? 'on' : ''}" onclick="V.f=0;V.pb='';render()">الكل (${G.length} · ${arCnt(totPcs, 'قطعة', 'قطعتان', 'قطع')})</button>`
     + `<button class="tag ${V.f == 1 ? 'on' : ''}" onclick="V.f=1;V.pb='';render()">يحتاج شراء (${lowCnt})</button>`
@@ -249,9 +250,9 @@ function phView() {
     + (npN ? `<button class="tag ${V.f == 4 ? 'on' : ''}" onclick="V.f=4;V.pb='';render()">بدون سعر (${npN})</button>` : '');
   return {
     t: 'الهواتف',
-    h: `<button class="btn" onclick="phAdd()">+ إضافة هاتف</button>`
+    h: secAdd('phAdd()', 'هاتف')
       + secPanel('phones', tagsHtml)
-      + (pg.items.map(g => g.cond == 'مستعمل' ? phUCard(g) : phGCard(g)).join('') + pg.more || emptyBox('لا توجد هواتف مطابقة لهذا الفلتر', 'اضغط على «+ إضافة هاتف» في الأعلى لإضافة هاتف جديد'))
+      + '<div id="slist">' + (pg.items.map(g => g.cond == 'مستعمل' ? phUCard(g) : phGCard(g)).join('') + pg.more || emptyBox('لا توجد هواتف مطابقة', 'جرّب كلمة أخرى أو اضغط على زر «+» في الأعلى لإضافة هاتف جديد')) + '</div>'
   };
 }
 /* اقتراح الأنتي كاس والبوشيط تلقائياً لحظة بيع هاتف */

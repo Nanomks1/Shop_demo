@@ -13,6 +13,9 @@ const SECS = [
   ['usd', 'شراء مستعمل', 'cused'],
   ['dbt', 'الديون', 'cdebt']
 ];
+/* شارة عدد النواقص على كل قسم (تُحسب مرة لكل رسم للرئيسية) */
+let NBC = {};
+const scn = k => { const n = NBC[{ case: 'pochette', tp: 'topup' }[k] || k] || 0; return n ? `<span class="scn" aria-label="${n} ناقص">${n}</span>` : ''; };
 const secGo = k => ['tp', 'req', 'usd', 'dbt'].includes(k) ? `go('${k}')` : `go('sec',{k:'${k}'})`;
 /* ---------- البحث الموحّد + بطاقة كاشف الأثمنة الفوري (بدون تكرار) ---------- */
 let SC = '', SQ_T = 0;   // نطاق البحث الحالي + مؤقت تهدئة الكتابة
@@ -61,22 +64,23 @@ function homeQuickBar() {
   const need = typeof repNeedCount == 'function' ? repNeedCount() : (typeof invLines == 'function' ? invLines(false).length : 0);
   const rq = (S.req || []).length;
   const P = (cls, on, icn, n, l, sub) => `<button class="qpill ${cls}" onclick="${on}"><div class="qic">${ic(icn)}</div><div class="qn">${n}</div><div class="ql">${l}</div>${sub ? `<div class="qs">${sub}</div>` : ''}</button>`;
-  return `<div class="qbar cmp">`
+  return `<div class="qwrap"><div class="qbar cmp">`
     + P('rp', `go('rp',{tab:'${rpOk ? 'rd' : rpRd ? 'nf' : 'in'}'})`, 'tool', rpIn + rpRd, 'في الصيانة', rpRd ? rpRd + ' جاهز للتسليم' : '')
     + P(need ? 'al' : 'ok', "go('rep')", need ? 'alert' : 'check', need, 'نواقص المخزون', need ? '' : 'مكتمل')
     + P(rq ? 'rp' : 'ok', "go('req')", 'chat', rq, 'طلبات الزبائن', '')
     + `</div>`
-    + todayLine();
+    + todayLine() + `</div>`;
 }
 function todayLine() {
   if (!S.rp.length) return '';
   const day = new Date(); day.setHours(0, 0, 0, 0); const t = day.getTime();
   const a = S.rp.filter(r => r.t0 >= t).length, b = S.rp.filter(r => r.st == 'dn' && r.t2 >= t).length;
-  return `<div class="m" style="text-align:center;margin:-2px 0 8px">اليوم: استلمنا <b>${a}</b> · سلّمنا <b>${b}</b></div>`;
+  return `<div class="m qtd">اليوم: استلمنا <b>${a}</b> · سلّمنا <b>${b}</b></div>`;
 }
 /* ---------- الرئيسية ---------- */
 const bkHide = () => { try { localStorage.setItem('bkHide', Date.now()); } catch (e) { } render(); };
 VW.home = () => {
+  NBC = typeof repNeedBy == 'function' ? repNeedBy() : {};
   const old = isAdmin() && (S.items.length || S.rp.length) && Date.now() - (S.cfg.lb || 0) > 7 * 864e5;
   let hid = 0; try { hid = Date.now() - (+localStorage.getItem('bkHide') || 0) < 864e5; } catch (e) { }
   const bk = old && !hid ? `<div class="bkb">${I('alert')}<span>لم تُحفظ نسخة خارجية منذ أسبوع</span><button class="btn sm" onclick="BKP()">حفظ</button><button class="bkx" onclick="bkHide()" aria-label="إغلاق">✕</button></div>` : '';
@@ -92,8 +96,8 @@ VW.home = () => {
       + '<div id="hm">' + homeQuickBar() + scan
       + '<h3 class="zl">الأقسام</h3>'
       + (S.cfg.hl == 'grid'
-        ? `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b></span></button>`).join('')}</div>`
-        : `<div class="hl">${SECS.map(([k, n, i]) => `<button class="hr" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b></span></button>`).join('')}</div>`)
+        ? `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b></span>${scn(k)}</button>`).join('')}</div>`
+        : `<div class="hl">${SECS.map(([k, n, i]) => `<button class="hr" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b></span>${scn(k)}</button>`).join('')}</div>`)
       + more + '</div>',
     a: () => sq(Q, 1)
   };

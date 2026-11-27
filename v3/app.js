@@ -37,4 +37,12 @@ function bootRescue() {
 }
 bootRescue();
 imgInit();
-
+/* الترويسة تختفي عند النزول في القائمة وتعود عند الصعود أو قرب أعلى الصفحة */
+(function () {
+  let y = scrollY;
+  addEventListener('scroll', () => {
+    const c = scrollY, d = c - y, el = document.documentElement; y = c;
+    const ov = $('ov'); if (ov && !ov.hidden) return;
+    if (c < 24 || d < -6) el.classList.remove('hh'); else if (d > 6) el.classList.add('hh');
+  }, { passive: true });
+})();
