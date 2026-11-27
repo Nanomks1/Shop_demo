@@ -279,7 +279,7 @@ VW.st_tg = () => {
       + `<div>${(S.tags[g] || []).map((t, i) => {
         const c = tgCount(g, t);
         const dot = isCol ? `<button type="button" class="tg-dot" style="background:${csBg(t)}" ${ed ? `onclick="colHexEd(${i})"` : 'disabled'} title="لون الدائرة"></button>` : '';
-        return `<span class="tag">${dot}${ed ? `<span onclick="tgRen('${g}',${i})">${esc(t)}</span>` : esc(t)}${c ? `<small class="m" style="font-size:.75rem">(${c})</small>` : ''}${ed ? `<b onclick="tgDel('${g}',${i})" style="padding-inline-start:4px">×</b>` : ''}</span>`;
+        return `<span class="tag">${dot}${ed ? `<span onclick="tgRen('${g}',${i})">${esc(t)}</span>` : esc(t)}${c ? `<small class="m" style="font-size:var(--t-xs)">(${c})</small>` : ''}${ed ? `<b onclick="tgDel('${g}',${i})" style="padding-inline-start:4px">×</b>` : ''}</span>`;
       }).join('')}</div>`
       + (ed ? `<button class="btn" onclick="tgAdd('${g}')">+ إضافة</button>` : '')
   };

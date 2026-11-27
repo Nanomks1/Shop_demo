@@ -44,7 +44,7 @@ function acCard(i) {
   const sub = [acTierTxt(i), i.pw, ...(cmp ? [] : fxParts), i.note, acx('sb') && acStale(cfTime(i)) && '⚠ غير مؤكد'].filter(Boolean).map(esc).join(' · ');
   const act = cn
     ? `<button class="btn s sm" onclick="acC('${i.id}',-1)">−</button><span class="cn" onclick="acCnt('${i.id}')">${i.cnt}</span><button class="btn sm" onclick="acC('${i.id}',1)">+</button>`
-    : ['g', 'y', 'r'].map(x => `<button class="tag ${i.st == x ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:.76rem" onclick="acS('${i.id}','${x}')">${ALB[x]}</button>`).join('');
+    : ['g', 'y', 'r'].map(x => `<button class="tag ${i.st == x ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:var(--t-xs)" onclick="acS('${i.id}','${x}')">${ALB[x]}</button>`).join('');
   return cardH(`<div class="row2" style="flex-wrap:wrap;gap:6px"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="acOpen('${i.id}')"><b><bdi>${esc(acTitle(i))}</bdi></b>${sub ? `<div class="m">${sub}</div>` : ''}</div>${prBadge(i.price)}<div class="row2" style="gap:4px">${act}</div></div>`, colOf(i), 'cmp');
 }
 /* نافذة الإجراءات السفلية للإكسسوار (تفتح عند الضغط على السطر) */
@@ -222,7 +222,7 @@ function agCard(d) {
   const e = encodeURIComponent(d.id), cmp = isCmp('acc') && V.v == 'sec';
   const brs = !cmp && d.mem.length ? d.mem.map(i => (i.brand || 'عام') + (d.mode != 'lv' && typeof i.cnt == 'number' ? ' (' + i.cnt + ')' : '')).join('، ') : '';
   const sub = [d.tot !== null ? 'المجموع ' + (d.est ? '≈' : '') + d.tot : '', 'الحد ' + d.lim, brs, d.g && d.g.note, acx('sb') && acStale(d.cf) && '⚠ غير مؤكد'].filter(Boolean).join(' · ');
-  return cardH(`<div class="row2" style="flex-wrap:wrap;gap:6px"><span class="dotl" style="background:${DT[d.st]}"></span><div class="cmp-main" onclick="agOpen('${e}')"><b><bdi>${esc(d.title)}</bdi></b>${sub ? `<div class="m">${esc(sub)}</div>` : ''}</div><div class="row2" style="gap:4px">${d.mode == 'cnt' && acx('gp') ? `<button class="btn sm" onclick="agC('${e}',-1)">−</button><span class="cn" onclick="agCnt('${e}')">${d.est ? '≈' : ''}${d.tot}</span><button class="btn sm" onclick="agC('${e}',1)">+</button>` : ['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:.76rem" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('')}</div></div>`, '', 'cmp');
+  return cardH(`<div class="row2" style="flex-wrap:wrap;gap:6px"><span class="dotl" style="background:${DT[d.st]}"></span><div class="cmp-main" onclick="agOpen('${e}')"><b><bdi>${esc(d.title)}</bdi></b>${sub ? `<div class="m">${esc(sub)}</div>` : ''}</div><div class="row2" style="gap:4px">${d.mode == 'cnt' && acx('gp') ? `<button class="btn sm" onclick="agC('${e}',-1)">−</button><span class="cn" onclick="agCnt('${e}')">${d.est ? '≈' : ''}${d.tot}</span><button class="btn sm" onclick="agC('${e}',1)">+</button>` : ['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" style="margin:0;padding:4px 8px;font-size:var(--t-xs)" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('')}</div></div>`, '', 'cmp');
 }
 const agGo = (f, e) => { finish(null); setTimeout(() => window[f](e), 380); };
 function agOpen(e) {

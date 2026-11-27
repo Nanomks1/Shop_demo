@@ -75,7 +75,7 @@ function jlCompactRow(i) {
     const d = i.d, e = encodeURIComponent(d.id);
     const sub = d.tot !== null ? `المجموع <bdi class="ltr">${d.est ? '≈' : ''}${d.tot}</bdi>` : esc(ALB2[d.st]);
     return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[d.st]}"></span><div class="cmp-main" onclick="agCnt('${e}')"><b>${esc(d.title)}</b><div class="m">${sub} · ${dBadge}</div></div>`
-      + `<div class="jl-acts">${['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" style="margin:0;padding:4px 7px;font-size:.74rem" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('')}`
+      + `<div class="jl-acts">${['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" style="margin:0;padding:4px 7px;font-size:var(--t-xs)" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('')}`
       + `<button class="rck" title="تأكيد كما هو" onclick="rCfAg('${e}')">${I('check')}</button></div></div></div>`;
   }
   if (i._jl == 'tp') {
@@ -104,7 +104,7 @@ function jlCompactRow(i) {
   if (i.sec == 'acc') {
     const s = acSt(i), cn = typeof i.cnt == 'number';
     const act = cn ? `<button class="btn s sm" onclick="acC('${i.id}',-1)">−</button><span class="cn">${i.cnt}</span><button class="btn sm" onclick="acC('${i.id}',1)">+</button>`
-      : ['g', 'y', 'r'].map(x => `<button class="tag ${i.st == x ? 'on' : ''}" style="margin:0;padding:4px 7px;font-size:.74rem" onclick="acS('${i.id}','${x}')">${ALB[x]}</button>`).join('');
+      : ['g', 'y', 'r'].map(x => `<button class="tag ${i.st == x ? 'on' : ''}" style="margin:0;padding:4px 7px;font-size:var(--t-xs)" onclick="acS('${i.id}','${x}')">${ALB[x]}</button>`).join('');
     return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="acEd('${i.id}')"><b><bdi>${esc(acTitle(i))}</bdi></b><div class="m">${i.price ? '<bdi>' + esc(fmtDh(i.price)) + '</bdi> · ' : ''}${dBadge}</div></div>`
       + `<div class="jl-acts">${act}<button class="rck" title="تأكيد كما هو" onclick="rCf('${i.id}')">${I('check')}</button></div></div></div>`;
   }
@@ -195,34 +195,34 @@ window.priceLookupHtml = function (q) {
   let rows = '';
   phs.forEach(i => {
     const s = phSt(i), sub = [i.color, i.ram, i.cap, i.cond && i.cond != 'جديد' && i.cond].filter(Boolean).join('·');
-    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="phEd('${i.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cphone')} <b><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b> ${sub ? `<small class="m">(${esc(sub)})</small>` : ''} <small class="m">· متاح ${av(i)}</small></span><b class="cmp-pr">${esc(i.price ? fmtDh(i.price) : 'بدون سعر')}</b></div>`;
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="phEd('${i.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:var(--t-sm)">${I('cphone')} <b><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b> ${sub ? `<small class="m">(${esc(sub)})</small>` : ''} <small class="m">· متاح ${av(i)}</small></span><b class="cmp-pr">${esc(i.price ? fmtDh(i.price) : 'بدون سعر')}</b></div>`;
   });
   gls.forEach(g => {
     S.tags.glass.forEach((ty, j) => {
       if (!gShow(g, ty)) return;
       const it = gitem(g.id, ty), tot = it ? gTot(it, g) : 0, s = it ? gSt(it, g, ty) : 'r';
       if (tot > 0 || (it && it.price)) {
-        rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="glMin('${g.id}',${j})"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cglass')} زجاج <b>${esc(ty)}</b> <small class="m">(<bdi>${esc(gMods(g, ty).slice(0, 3).join('/'))}</bdi>) · <bdi class="ltr">${it && gEst(it, g) ? '≈' : ''}${tot}</bdi></small></span><b class="cmp-pr">${esc(gPr(it, ty) ? fmtDh(gPr(it, ty)) : 'حدّد السعر')}</b></div>`;
+        rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="glMin('${g.id}',${j})"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:var(--t-sm)">${I('cglass')} زجاج <b>${esc(ty)}</b> <small class="m">(<bdi>${esc(gMods(g, ty).slice(0, 3).join('/'))}</bdi>) · <bdi class="ltr">${it && gEst(it, g) ? '≈' : ''}${tot}</bdi></small></span><b class="cmp-pr">${esc(gPr(it, ty) ? fmtDh(gPr(it, ty)) : 'حدّد السعر')}</b></div>`;
       }
     });
   });
   css.forEach(c => {
     const s = csSt(c), gSum = typeof csGSummaryTxt == 'function' ? csGSummaryTxt(c) : 'المتوفر ' + csTot(c);
-    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="csLimEd('${c.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('ccase')} بوشيط <b><bdi>${esc(csNm(c))}</bdi></b> <small class="m">(${esc(gSum)})</small></span><b class="cmp-pr">${esc(c.price ? fmtDh(c.price) : 'حدّد السعر')}</b></div>`;
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="csLimEd('${c.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:var(--t-sm)">${I('ccase')} بوشيط <b><bdi>${esc(csNm(c))}</bdi></b> <small class="m">(${esc(gSum)})</small></span><b class="cmp-pr">${esc(c.price ? fmtDh(c.price) : 'حدّد السعر')}</b></div>`;
   });
   ags.forEach(d => {
-    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="agOpen('${encodeURIComponent(d.id)}')"><span class="dotl" style="background:${DT[d.st]}"></span><span class="rt" style="font-size:.88rem">${I('cacc')} <b>${esc(d.title)}</b> <small class="m">(${d.tot !== null ? (d.est ? '≈' : '') + d.tot : ALB2[d.st]})</small></span><b class="cmp-pr">${esc(d.tier ? fmtDh(d.tier) : '—')}</b></div>`;
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="agOpen('${encodeURIComponent(d.id)}')"><span class="dotl" style="background:${DT[d.st]}"></span><span class="rt" style="font-size:var(--t-sm)">${I('cacc')} <b>${esc(d.title)}</b> <small class="m">(${d.tot !== null ? (d.est ? '≈' : '') + d.tot : ALB2[d.st]})</small></span><b class="cmp-pr">${esc(d.tier ? fmtDh(d.tier) : '—')}</b></div>`;
   });
   acs.forEach(a => {
     const s = acSt(a);
-    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="acEd('${a.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:.88rem">${I('cacc')} <b>${esc(acName(a))}</b></span><b class="cmp-pr">${esc(a.price ? fmtDh(a.price) : '—')}</b></div>`;
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="acEd('${a.id}')"><span class="dotl" style="background:${DT[s]}"></span><span class="rt" style="font-size:var(--t-sm)">${I('cacc')} <b>${esc(acName(a))}</b></span><b class="cmp-pr">${esc(a.price ? fmtDh(a.price) : '—')}</b></div>`;
   });
   gds.forEach(g => {
     const prTxt = fmtDh(g.p) + (g.p2 ? ' · أصلي: ' + fmtDh(g.p2) : '');
-    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="gdEd('${g.id}')"><span class="dotl" style="background:var(--p)"></span><span class="rt" style="font-size:.88rem">${I('crepair')} إصلاح <b><bdi>${esc(g.m)}</bdi></b> — ${esc(g.f)}${g.n ? ` <small class="m">(${esc(g.n)})</small>` : ''}</span><b class="cmp-pr">${esc(prTxt)}</b></div>`;
+    rows += `<div class="rrow" style="padding:7px 0;cursor:pointer" onclick="gdEd('${g.id}')"><span class="dotl" style="background:var(--p)"></span><span class="rt" style="font-size:var(--t-sm)">${I('crepair')} إصلاح <b><bdi>${esc(g.m)}</bdi></b> — ${esc(g.f)}${g.n ? ` <small class="m">(${esc(g.n)})</small>` : ''}</span><b class="cmp-pr">${esc(prTxt)}</b></div>`;
   });
   if (!rows) return '';
-  return `<div class="card" style="border-color:var(--p);background:color-mix(in srgb,var(--ab) 35%,var(--c));padding:10px 12px"><div class="row2" style="margin-bottom:4px"><b style="color:var(--pt);font-size:.9rem">${I('tag')} ملخص الأثمنة والتوفر</b><span class="m" style="font-size:.76rem">اضغط على السطر للتعديل</span></div>${rows}</div>`;
+  return `<div class="card" style="border-color:var(--p);background:color-mix(in srgb,var(--ab) 35%,var(--c));padding:10px 12px"><div class="row2" style="margin-bottom:4px"><b style="color:var(--pt);font-size:var(--t-md)">${I('tag')} ملخص الأثمنة والتوفر</b><span class="m" style="font-size:var(--t-xs)">اضغط على السطر للتعديل</span></div>${rows}</div>`;
 };
 SRCH.unshift({
   k: 'prc',

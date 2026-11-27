@@ -90,7 +90,7 @@ VW.home = () => {
       + `<div class="sec-panel" style="margin-top:4px"><div class="q-wrap"><input id="q_inp" placeholder="ابحث: هاتف، زجاج، بوشيط، تذكرة، زبون…" value="${esc(Q)}" oninput="sq(this.value)"><button id="q_clr" type="button" class="q-clr" ${Q ? '' : 'hidden'} onclick="qClear()" aria-label="مسح البحث">✕</button></div>`
       + `<div id="sc" class="sec-tags nowrap">${scopeChips()}</div></div><div id="res"></div>`
       + '<div id="hm">' + homeQuickBar() + scan
-      + '<h3>الأقسام</h3>'
+      + '<h3 class="zl">الأقسام</h3>'
       + (S.cfg.hl == 'grid'
         ? `<div class="grid">${SECS.map(([k, n, i]) => `<button class="card sc cs2" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b></span></button>`).join('')}</div>`
         : `<div class="hl">${SECS.map(([k, n, i]) => `<button class="hr" onclick="${secGo(k)}">${ic(i)}<span class="ct"><b>${n}</b></span></button>`).join('')}</div>`)
@@ -157,7 +157,7 @@ VW.st = () => {
     t: 'المزيد',
     h: `<input placeholder="ابحث في الإعدادات: قاموس، واتساب، عطلة، ضمان، حد..." oninput="stQ(this.value)"><div id="str"></div><div id="stg">`
       + (tools.length ? `<div class="st-tools">${tools.map(([l, fn, icon, sub]) => `<button class="card st-tbtn" onclick="${fn}"><div class="st-ic">${ic(icon)}</div><div class="f1"><b>${l}</b><div class="m">${sub}</div></div></button>`).join('')}</div>` : '')
-      + '<h3>الإعدادات</h3>'
+      + '<h3 class="zl">الإعدادات</h3>'
       + MG.map(([k, t, d, icon]) => `<button class="card st-card" onclick="go('st_grp',{g:'${k}'})"><div class="st-ic">${ic(icon)}</div><div class="st-txt"><b>${t}</b><div class="m">${d}</div></div><span class="st-arr">${ic('back')}</span></button>`).join('')
       + '</div>'
   };
