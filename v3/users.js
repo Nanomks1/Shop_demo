@@ -7,7 +7,7 @@ VW.st_users = () => {
   const a = isAdmin();
   return {
     t: 'المستخدمون',
-    h: S.users.map((u, i) => `<div class="card row2"><b>${esc(u.name)}</b><span class="m">${u.admin ? 'مدير' : 'موظف' + (u.pin ? '' : ' · بلا رمز')}${u.nr ? ' · بلا تنبيهات' : ''}${u.lkmax ? ' · قفل ≤ ' + lkTxt(u.lkmax) : ''}</span>${a ? `<button class="btn s sm" onclick="uEd(${i})">تعديل</button>` : ''}</div>`).join('')
+    h: S.users.map((u, i) => `<div class="card row2"><div class="f1"><b>${esc(u.name)}</b><div class="m">${u.admin ? 'مدير' : 'موظف' + (u.pin ? '' : ' · بلا رمز')}${u.nr ? ' · بلا تنبيهات' : ''}${u.lkmax ? ' · قفل ≤ ' + lkTxt(u.lkmax) : ''}</div></div>${a ? `<button class="btn s sm" onclick="uEd(${i})">تعديل</button>` : ''}</div>`).join('')
       + (a ? '<button class="btn" onclick="uAdd()">+ مستخدم</button><button class="btn s" onclick="pinCh()">تغيير رمز المدير</button><h3>الصلاحيات</h3>'
         + Object.keys(PL).map(k => `<div class="card row2"><b>${PL[k]}</b><button class="btn s sm" onclick="pTog('${k}')">${S.perm[k] == 'e' ? 'الجميع' : 'المدير فقط'}</button></div>`).join('')
         : '<p class="m">التعديل للمدير فقط.</p>')

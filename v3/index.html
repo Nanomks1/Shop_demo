@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-visual">
-<meta name="theme-color" content="#111722">
+<meta name="theme-color" content="#121314">
 <script>
 /* خلفية الصفحة والخط يتبعان الثيم من أول لحظة (قبل تحميل بقية الملفات) فلا يظهر وميض أبيض ليلاً */
 (function(){try{var s=JSON.parse(localStorage.getItem('shop3')||'{}'),p=String(((s.cfg||{}).th)||'').split(':'),md=p[0],d=document.documentElement,
@@ -13,11 +13,11 @@ dk=md=='d'||(md!='l'&&matchMedia('(prefers-color-scheme: dark)').matches);d.data
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&display=swap">
-<link rel="manifest" href="manifest.json?v=105">
-<link rel="icon" href="icon-192.png?v=105">
-<link rel="apple-touch-icon" href="icon-192.png?v=105">
+<link rel="manifest" href="manifest.json?v=107">
+<link rel="icon" href="icon-192.png?v=107">
+<link rel="apple-touch-icon" href="icon-192.png?v=107">
 <title>المحل</title>
-<link rel="stylesheet" href="style.css?v=105">
+<link rel="stylesheet" href="style.css?v=107">
 </head>
 <body>
 <header>
@@ -32,34 +32,34 @@ dk=md=='d'||(md!='l'&&matchMedia('(prefers-color-scheme: dark)').matches);d.data
 <nav id="nv"></nav>
 <div id="ts" class="toast" hidden></div>
 <div id="ov" hidden><div id="sh"></div></div>
-<script src="core.js?v=105"></script>
-<script src="icons.js?v=105"></script>
-<script src="topup.js?v=105"></script>
-<script src="invbase.js?v=105"></script>
-<script src="invphones.js?v=105"></script>
-<script src="invglass.js?v=105"></script>
-<script src="invpochette.js?v=105"></script>
-<script src="invacc.js?v=105"></script>
-<script src="invreport.js?v=105"></script>
-<script src="invround.js?v=105"></script>
-<script src="barcode.js?v=105"></script>
-<script src="invcolor.js?v=105"></script>
-<script src="invset.js?v=105"></script>
-<script src="repair.js?v=105"></script>
-<script src="repairform.js?v=105"></script>
-<script src="repairguide.js?v=105"></script>
-<script src="report.js?v=105"></script>
-<script src="sync.js?v=105"></script>
-<script src="extra.js?v=105"></script>
-<script src="home.js?v=105"></script>
-<script src="users.js?v=105"></script>
-<script src="backup.js?v=105"></script>
-<script src="adminset.js?v=105"></script>
-<script src="app.js?v=105"></script>
+<script src="core.js?v=107"></script>
+<script src="icons.js?v=107"></script>
+<script src="topup.js?v=107"></script>
+<script src="invbase.js?v=107"></script>
+<script src="invphones.js?v=107"></script>
+<script src="invglass.js?v=107"></script>
+<script src="invpochette.js?v=107"></script>
+<script src="invacc.js?v=107"></script>
+<script src="invreport.js?v=107"></script>
+<script src="invround.js?v=107"></script>
+<script src="barcode.js?v=107"></script>
+<script src="invcolor.js?v=107"></script>
+<script src="invset.js?v=107"></script>
+<script src="repair.js?v=107"></script>
+<script src="repairform.js?v=107"></script>
+<script src="repairguide.js?v=107"></script>
+<script src="report.js?v=107"></script>
+<script src="sync.js?v=107"></script>
+<script src="extra.js?v=107"></script>
+<script src="home.js?v=107"></script>
+<script src="users.js?v=107"></script>
+<script src="backup.js?v=107"></script>
+<script src="adminset.js?v=107"></script>
+<script src="app.js?v=107"></script>
 <script>
 if("serviceWorker" in navigator){
   const had=!!navigator.serviceWorker.controller;
-  navigator.serviceWorker.register("sw.js?v=105").then(r=>{
+  navigator.serviceWorker.register("sw.js?v=107").then(r=>{
     r.update().catch(()=>{});
     document.addEventListener("visibilitychange",()=>{if(!document.hidden)r.update().catch(()=>{});});
   }).catch(()=>{});

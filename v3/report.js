@@ -314,8 +314,10 @@
       const cIdx = head.indexOf(': ');
       const ty = cIdx > 0 ? head.slice(0, cIdx) : '', ms = cIdx > 0 ? head.slice(cIdx + 2) : head;
       const modsH = ms.split(' / ').map(m => `<bdi>${esc(m)}</bdi>`).join(' / ');
-      const stH = esc(stRaw || (isRed ? 'نفد' : 'قارب')).replace(/(≈?[0-9٠-٩]+)/, '<bdi class="ltr">$1</bdi>');
-      return `<div${tap}><div class="rt-line1">${ty ? `<span class="tag" style="margin:0;padding:1px 7px;font-size:var(--t-xs)">${esc(ty)}</span>` : ''}${modsH}${rinTag}</div></div><span class="rt-st ${isRed ? 'r' : ''}">${stH}</span>`;
+      const dm = stRaw.match(/^(.*?)\s*\((.+)\)\s*$/), stMain = dm ? dm[1] : stRaw;
+      const detH = dm ? dm[2].split(' · ').map(q => { const k = q.indexOf(': '); return k > 0 ? esc(q.slice(0, k + 1)) + ' <bdi>' + esc(q.slice(k + 2)) + '</bdi>' : esc(q); }).join(' · ') : '';
+      const stH = esc(stMain || (isRed ? 'نفد' : 'قارب')).replace(/(≈?[0-9٠-٩]+)/, '<bdi class="ltr">$1</bdi>');
+      return `<div${tap}><div class="rt-line1">${ty ? `<span class="tag">${esc(ty)}</span>` : ''}${modsH}${rinTag}</div>${detH ? `<div class="rt-sub">${detH}</div>` : ''}</div><span class="rt-st ${isRed ? 'r' : ''}">${stH}</span>`;
     }
     if (bk == 'topup') {
       const segs = String(l.s || '').split(' — '), op = segs[0] || '', rest = segs.slice(1);
@@ -380,7 +382,7 @@
     let h = '';
     if (!nq && F == 'all') {
       const stl = rnd().length;
-      if (stl) h += `<div class="card row2"><span class="f1">${I('alert')} ${stl} صنف لم يُؤكَّد منذ أكثر من ${lim('stale')} أيام</span><button class="btn sm" onclick="go('jl')">افتح الجولة</button></div>`;
+      if (stl) h += `<div class="card ntc"><span class="f1">${I('alert')} ${stl} صنف لم يُؤكَّد منذ أكثر من ${lim('stale')} أيام</span><button class="btn sm" onclick="go('jl')">افتح الجولة</button></div>`;
     }
     if (!nq && (F == 'all' || F == 'topup') && !c.hs.includes('topup') && typeof tpSummary == 'function') {
       const ts = tpSummary();
@@ -390,7 +392,7 @@
         if (ts.stalePh) msgs.push('أرصدة اليوم: ' + ts.done + ' من ' + ts.tot);
         if (ts.cashMiss) msgs.push('صندوق التعبئة غير مسجّل');
         else if (ts.cashOld) msgs.push('صندوق التعبئة لم يُؤكَّد اليوم');
-        h += `<div class="card row2">${I('alert')}<span class="f1"><b>التعبئة:</b> ${esc(msgs.join(' · '))}</span><button class="btn s sm" onclick="go('tp')">افتح التعبئة</button></div>`;
+        h += `<div class="card ntc"><span class="f1">${I('alert')} <b>التعبئة:</b> ${esc(msgs.join(' · '))}</span><button class="btn s sm" onclick="go('tp')">افتح التعبئة</button></div>`;
       }
       if (c.tpSum) h += tpReportBox(ts);
     }
@@ -426,7 +428,7 @@
     if (!anyRow) h += emptyBox(nq ? 'لا توجد نتائج مطابقة داخل التقرير' : 'لا يوجد نقص في المخزون حالياً ✓', nq ? 'جرّب كلمة أخرى أو امسح البحث' : 'جميع الأصناف متوفرة فوق الحد المطلوب');
     if (!nq) {
       const pvWarn = isFiltered() ? `<div class="rs" style="margin-top:6px">المعاينة تعرض الفلتر الحالي (${esc(filterDesc())}) — عند الضغط على إرسال أو نسخ يمكنك اختيار الشامل أو هذا القسم.</div>` : '';
-      h += `<details class="card" style="margin-top:14px"><summary><b>معاينة النص</b>${isFiltered() ? `<span class="m">${esc(filterDesc())}</span>` : ''}</summary>${pvWarn}<div style="white-space:pre-wrap;margin-top:8px;line-height:1.8">${esc(generateReportText(F, lv))}</div></details>`;
+      h += `<details class="card" style="margin-top:14px"><summary><b>معاينة النص</b>${isFiltered() ? `<span class="m">${esc(filterDesc())}</span>` : ''}</summary>${pvWarn}<div class="rp-pre">${esc(generateReportText(F, lv))}</div></details>`;
     }
     return h;
   }

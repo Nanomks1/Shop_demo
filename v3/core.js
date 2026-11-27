@@ -257,10 +257,31 @@ const needAdm = f => function (...a) {
 function toast(msg, undo, ms) {
   const t = $('ts');
   t.innerHTML = `<span>${esc(msg)}</span>` + (undo ? '<button id="tu">تراجع</button>' : '');
-  t.hidden = false;
+  t.hidden = false; t.style.transform = ''; t.style.opacity = '';
   if (undo) $('tu').onclick = () => { undo(); save(); render(); t.hidden = true; };
   clearTimeout(TT); TT = setTimeout(() => t.hidden = true, ms || 6000);
 }
+/* سحب الإشعار (يمنى/يسرى/لأسفل) لإزالته؛ الضغطة العادية على «تراجع» تبقى كما هي */
+(function () {
+  const t = $('ts'); if (!t) return;
+  let x0 = 0, y0 = 0, id = null, mv = 0, dx = 0, dy = 0;
+  t.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; id = e.pointerId; mv = 0; dx = dy = 0; });
+  t.addEventListener('pointermove', e => {
+    if (e.pointerId !== id) return;
+    dx = e.clientX - x0; dy = e.clientY - y0;
+    if (!mv) { if (Math.hypot(dx, dy) < 8) return; mv = 1; clearTimeout(TT); try { t.setPointerCapture(id); } catch (_) { } }
+    t.style.transform = `translate(${dx}px,${Math.max(0, dy)}px)`; t.style.opacity = Math.max(.25, 1 - Math.abs(dx) / 260);
+  });
+  const end = e => {
+    if (e.pointerId !== id) return; id = null;
+    if (!mv) return;
+    if (Math.abs(dx) > 70 || dy > 40) { t.hidden = true; t.style.transform = ''; t.style.opacity = ''; }
+    else { t.style.transform = ''; t.style.opacity = ''; TT = setTimeout(() => t.hidden = true, 3000); }
+    setTimeout(() => mv = 0, 0);
+  };
+  t.addEventListener('pointerup', end); t.addEventListener('pointercancel', end);
+  t.addEventListener('click', e => { if (mv) { e.stopPropagation(); e.preventDefault(); } }, true);
+})();
 /* ---------- التنقل وزر الرجوع ---------- */
 function go(v, p) {
   sugClose();
