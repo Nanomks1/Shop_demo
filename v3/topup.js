@@ -9,13 +9,17 @@
   const OPS = ['IAM', 'ORANGE', 'INWI'];
   const DEF_CARDS = [5, 10, 20, 50], PH = [1];
   const D0 = { bo: 30, br: 10, cl: { 5: 3, 10: 3, 20: 3, 50: 3 }, rh: 10, cap: 0, rm: 1 };
-  const TPXD = { un: 1, sum: 1, dc: 1, tm: 1, jl: 1 };
+  const TPXD = { un: 1, sum: 1, dc: 1, tm: 1, jl: 1, rem: 1, ao: 1, by: 1, wu: 1 };
   const TPXL = [
     ['un', 'شريط «تراجع» بعد كل ضغطة − / + في البطاقات'],
     ['sum', 'إظهار بطاقة الحساب والمجموع الكامل في شاشة التعبئة'],
     ['dc', 'اعتبار التزويد مخصوماً من صندوق التعبئة افتراضياً'],
     ['tm', 'إظهار ساعة آخر تحديث بجانب رصيد كل هاتف وصندوق التعبئة'],
-    ['jl', 'إدراج بطاقات التعبئة في الجولة اليومية (الجرد)']
+    ['jl', 'إدراج بطاقات التعبئة في الجولة اليومية (الجرد)'],
+    ['rem', 'تسجيل الباقي تلقائياً كتزويد خارجي عند الخصم الجزئي من الصندوق'],
+    ['ao', 'حذف حركات المعلم للمدير فقط'],
+    ['by', 'إظهار اسم صاحب الحركة ووقتها في سطرها'],
+    ['wu', 'تنبيه قبل تزويد فئة بطاقات «غير مسجّلة» (يُعتبر مخزونها السابق 0)']
   ];
   const T = () => (S.tp = S.tp || []);
   const rnd2 = x => Math.round((+x || 0) * 100) / 100;
@@ -41,6 +45,8 @@
   const noteRec = () => { const r = recId('tp_note'); return r && r.val && isToday(r.at) ? r : null; };
   const adjRec = () => { const r = recId('tp_adj'); return r && Array.isArray(r.list) && isToday(r.at) ? r : null; };
   const adjList = () => (adjRec() || {}).list || [];
+  const adjWho = m => tpx('by') ? [m.by, m.t ? hm(m.t) : ''].filter(Boolean).join(' · ') : '';
+  const adjDelOk = () => !tpx('ao') || okE();
   const num = (s, isInt) => {
     s = dg(s).trim().replace(',', '.');
     if (!s) return null;
@@ -231,28 +237,35 @@
       + `<p class="m" ${TPB.src == 'ext' ? '' : 'hidden'} id="tpb_ext_hint"></p>`
       + `<div id="tpb_w" class="rs"></div>`
       + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="tpBuySub('${k}')">تأكيد</button></div>`;
-    sheetOpen(v => {
-      if (!v) return;
+    const apply = v => {
       const prev = snapTp(), prevRin = snapRin(), c0 = cashVal();
       const didDed = !v.ext && c0 != null && v.ded > 0;
       const extVal = k == 'p' ? v.q : rnd2(v.q * n);
+      const actDed = didDed ? Math.min(v.ded, c0) : 0;
+      const rem = v.ext ? extVal : (tpx('rem') && c0 != null ? Math.max(0, rnd2(extVal - actDed)) : 0);
+      const extNote = (v.ext ? 'تزويد ' : 'جزء من خارج الصندوق — ');
       if (k == 'p') {
         const nv = rnd2((curV || 0) + v.q);
         put(op, 'p', n, nv, true);
         if (didDed) putRaw('tp_cash_box', '', 'm', 0, Math.max(0, rnd2(c0 - v.ded)), true);
-        if (v.ext) putAdj([...adjList(), { id: uid(), t: Date.now(), kind: 'ext', amt: extVal, note: 'تزويد ' + op + ' +' + dm(v.q), app: 0, by: S.me || '' }], true);
-        if (typeof rcLogIn == 'function') rcLogIn('tp', id, '', 'تعبئة ' + op + ' — رصيد الهاتف', '+' + dm(v.q) + ' ← ' + dm(nv) + (v.ext ? ' · خارج الصندوق' : didDed ? ' · خُصم ' + dm(v.ded) : ''));
+        if (rem > 0) putAdj([...adjList(), { id: uid(), t: Date.now(), kind: 'ext', amt: rem, note: extNote + op + ' +' + dm(v.q), app: 0, by: S.me || '' }], true);
+        if (typeof rcLogIn == 'function') rcLogIn('tp', id, '', 'تعبئة ' + op + ' — رصيد الهاتف', '+' + dm(v.q) + ' ← ' + dm(nv) + (v.ext ? ' · خارج الصندوق' : didDed ? ' · خُصم ' + dm(actDed) : ''));
         save(); render();
-        toast('تمت تعبئة ' + op + (v.ext ? ' (تزويد خارج الصندوق)' : didDed ? ' وخُصم ' + dm(v.ded) + ' من الصندوق' : ''), () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
+        toast('تمت تعبئة ' + op + (v.ext ? ' (تزويد خارج الصندوق)' : didDed ? ' وخُصم ' + dm(actDed) + ' من الصندوق' : '') + (!v.ext && rem > 0 ? ' · ' + dm(rem) + ' من خارجه' : ''), () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
       } else {
         const nv = (curV || 0) + v.q;
         put(op, 'c', n, nv, true);
         if (didDed) putRaw('tp_cash_box', '', 'm', 0, Math.max(0, rnd2(c0 - v.ded)), true);
-        if (v.ext) putAdj([...adjList(), { id: uid(), t: Date.now(), kind: 'ext', amt: extVal, note: 'بطاقات ' + op + ' ' + n + ' (+' + v.q + ')', app: 0, by: S.me || '' }], true);
-        if (typeof rcLogIn == 'function') rcLogIn('tp', id, '', 'تعبئة ' + op + ' — بطاقة ' + n, '+' + v.q + (v.ext ? ' · خارج الصندوق' : didDed ? ' · خُصم ' + dm(v.ded) : ''));
+        if (rem > 0) putAdj([...adjList(), { id: uid(), t: Date.now(), kind: 'ext', amt: rem, note: (v.ext ? '' : 'جزء من خارج الصندوق — ') + 'بطاقات ' + op + ' ' + n + ' (+' + v.q + ')', app: 0, by: S.me || '' }], true);
+        if (typeof rcLogIn == 'function') rcLogIn('tp', id, '', 'تعبئة ' + op + ' — بطاقة ' + n, '+' + v.q + (v.ext ? ' · خارج الصندوق' : didDed ? ' · خُصم ' + dm(actDed) : ''));
         save(); render();
-        toast('أُضيفت ' + v.q + ' بطاقة' + (v.ext ? ' (تزويد خارج الصندوق)' : didDed ? ' وخُصم ' + dm(v.ded) + ' من الصندوق' : ''), () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
+        toast('أُضيفت ' + v.q + ' بطاقة' + (v.ext ? ' (تزويد خارج الصندوق)' : didDed ? ' وخُصم ' + dm(actDed) + ' من الصندوق' : '') + (!v.ext && rem > 0 ? ' · ' + dm(rem) + ' من خارجه' : ''), () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
       }
+    };
+    sheetOpen(v => {
+      if (!v) return;
+      if (k == 'c' && curV == null && tpx('wu')) sure('فئة ' + n + ' درهم غير مسجّلة؛ سيُحسب المخزون بعد التزويد ' + v.q + ' بطاقة فقط. هل هذا صحيح؟', 'نعم، تابع', false).then(y => { if (y) apply(v); });
+      else apply(v);
     });
     setTimeout(() => { const el = $('tpb_q'); if (el) el.focus(); }, 120);
   }
@@ -329,6 +342,7 @@
     setTimeout(() => { const el = $('tpcm_a'); if (el) el.focus(); }, 120);
   };
   window.tpAdjDel = id => {
+    if (!adjDelOk()) return toast('حذف الحركة للمدير فقط');
     const L = adjList(), m = L.find(x => x.id == id); if (!m) return;
     sure('حذف حركة «' + (m.note || (m.kind == 'out' ? 'سحب من الصندوق' : m.kind == 'in' ? 'إضافة للصندوق' : 'تزويد خارجي')) + ' — ' + dm(m.amt) + '»؟', 'حذف').then(y => {
       if (!y) return;
@@ -347,7 +361,7 @@
   window.tpDiffAct = () => {
     window.tpFlush();
     const c = calc();
-    const adjH = c.adjList.length ? `<div class="card">${c.adjList.map(m => `<div class="rrow"><span class="rt"><b>${m.kind == 'out' ? '−' : '+'} ${esc(dm(m.amt))}</b> · ${esc(m.note || (m.kind == 'out' ? 'سحب من الصندوق' : m.kind == 'in' ? 'إضافة للصندوق' : 'تزويد خارجي'))}</span><button type="button" class="btn s sm del" onclick="finish(null);setTimeout(()=>tpAdjDel('${m.id}'),320)">حذف</button></div>`).join('')}</div>` : '';
+    const adjH = c.adjList.length ? `<div class="card">${c.adjList.map(m => `<div class="rrow"><span class="rt"><b>${m.kind == 'out' ? '−' : '+'} ${esc(dm(m.amt))}</b> · ${esc(m.note || (m.kind == 'out' ? 'سحب من الصندوق' : m.kind == 'in' ? 'إضافة للصندوق' : 'تزويد خارجي'))}${adjWho(m) ? ' <small class="m">(' + esc(adjWho(m)) + ')</small>' : ''}</span>${adjDelOk() ? `<button type="button" class="btn s sm del" onclick="finish(null);setTimeout(()=>tpAdjDel('${m.id}'),320)">حذف</button>` : ''}</div>`).join('')}</div>` : '';
     const admActs = okE()
       ? `<button class="btn" onclick="finish('cap')">تعديل رأس المال المرجعي يدوياً</button>`
         + (c.grand > 0 && c.grand != c.cap ? `<button class="btn s" onclick="finish('adopt')">اعتماد المجموع الحالي (${esc(dm(c.grand))}) كرأس مال مرجعي</button>` : '')
@@ -404,7 +418,7 @@
       adjBox.hidden = !c.adjList.length;
       adjBox.innerHTML = c.adjList.map(m => {
         const tag = m.kind == 'out' ? 'سحب المعلم −' : m.kind == 'in' ? 'إضافة المعلم +' : 'تزويد خارجي +';
-        return `<div class="tp-adj-row"><span>${esc(tag)}<b>${esc(dm(m.amt))}</b>${m.note ? ' <small class="m">(' + esc(m.note) + ')</small>' : ''}</span><button type="button" class="tp-adj-x" onclick="tpAdjDel('${m.id}')" aria-label="حذف">×</button></div>`;
+        return `<div class="tp-adj-row"><span>${esc(tag)}<b>${esc(dm(m.amt))}</b>${m.note ? ' <small class="m">(' + esc(m.note) + ')</small>' : ''}${adjWho(m) ? ' <small class="m">· ' + esc(adjWho(m)) + '</small>' : ''}</span>${adjDelOk() ? `<button type="button" class="tp-adj-x" onclick="tpAdjDel('${m.id}')" aria-label="حذف">×</button>` : ''}</div>`;
       }).join('');
     }
     const sumCard = $('tp_sum_card');

@@ -503,6 +503,7 @@ function thApply(de) {
   de.dataset.md = dark ? 'd' : 'l';
   de.dataset.th = dark ? c.dt : c.lt;
   de.dataset.fn = c.fn;
+  de.dataset.nc = S.cfg.nc === 0 ? '0' : '1';
   delete de.dataset.ac;
   de.dataset.ics = 'float';
   de.dataset.ds = vis >= 19.8 ? 'lg' : vis <= 16.2 ? 'sm' : 'md';

@@ -608,3 +608,6 @@ details>summary b{font-size:var(--t-md);font-weight:700}
 .cs-vr .tag{margin:0}
 .phsel .tag{margin:0}
 .cs-vr input.cs-cn{width:4.6rem;text-align:center}
+/* منع قائمة النسخ/التحديد عند الضغط المطوّل على الأزرار والبطاقات فقط (يتحكم بها المدير: المزيد ← هوية المحل) */
+html[data-nc="1"] button,html[data-nc="1"] .card,html[data-nc="1"] .tag,html[data-nc="1"] summary,html[data-nc="1"] [onclick]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html[data-nc="1"] input,html[data-nc="1"] textarea,html[data-nc="1"] select,html[data-nc="1"] [contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}

@@ -35,6 +35,15 @@ function asShopEd() {
     });
   });
 }
+function asNcTog() {
+  if (!isAdmin()) return toast('للمدير فقط');
+  upd(() => { S.cfg.nc = S.cfg.nc === 0 ? 1 : 0; });
+}
+addEventListener('contextmenu', e => {
+  if (S.cfg.nc === 0 || !e.target.closest) return;
+  if (e.target.closest('input,textarea,select,[contenteditable]')) return;
+  if (e.target.closest('button,.card,.tag,summary,[onclick]')) e.preventDefault();
+});
 function asOffTog(i) {
   if (!isAdmin() && S.users.length) return toast('للمدير فقط');
   const cur = offDays().slice(), k = cur.indexOf(i);
@@ -56,6 +65,8 @@ VW.st_shop = () => {
       + '<p class="m">في أيام العطلة يتوقف تذكير التقرير اليومي وتذكير التعبئة الصباحي تلقائياً.</p>'
       + `<div class="card"><div class="rp-chip-box">${AS_DAYS.map((n, i) => `<button type="button" class="tag ${od.includes(i) ? 'on' : ''}" onclick="asOffTog(${i})">${n}</button>`).join('')}</div>`
       + `<div class="m">${od.length ? 'أيام العطلة المختارة: <b>' + od.map(i => AS_DAYS[i]).join('، ') + '</b>' : 'لا توجد أيام عطلة محددة (التذكيرات تعمل كل الأيام)'}</div></div>`
+      + '<h3>الضغط المطوّل</h3>'
+      + swRow('منع قائمة النسخ واللصق على الأزرار والبطاقات', 'asNcTog()', S.cfg.nc !== 0, 'حقول الإدخال تبقى تسمح بالنسخ واللصق دائماً')
   };
 };
 /* ---------- 2. الجرد والجولة اليومية ---------- */
