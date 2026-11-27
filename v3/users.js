@@ -198,16 +198,41 @@ function lgAdm() {
     const el = $('lg'); if (el) el.remove();
   } else tryFail('lg', m, 'lgp', 'رمز خاطئ');
 }
+let lkSel = '';   // الاسم المختار في شاشة القفل
+function lkBoxHtml() {
+  const sel = S.users.find(u => u.name == lkSel);
+  return `<h2>${I('lock')} ${esc(shopName())} مقفل</h2><p class="m c">اختر اسمك ثم اكتب رمزك</p>`
+    + `<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">${S.users.map((u, i) => `<button class="tag${u.name == lkSel ? ' on' : ''}" onclick="lkPick(${i})">${esc(u.name)}${u.admin ? ' ★' : (u.pin ? ' ' + I('lock') : '')}</button>`).join('')}</div>`
+    + `<p id="lkm" class="m c">${sel ? esc('أدخل رمز ' + sel.name) : ''}</p>${pinPadHtml('lki', sel ? 'رمز ' + sel.name : 'رمز الفتح', 'lkTry()')}<button class="btn" onclick="lkTry()">فتح التطبيق</button>`;
+}
+function lkEnter(name) {   // دخول المستخدم المختار بعد نجاح الرمز
+  TRIES.lk = null; try { localStorage.removeItem('shopLock'); } catch (e) { }
+  const u = S.users.find(x => x.name == name);
+  admSet(!!(u && u.admin));
+  const el = $('lk'); if (el) el.remove();
+  LAST = Date.now(); lkStore();
+  if (name != S.me) upd(() => { S.me = name; });
+}
+function lkPick(i) {
+  const u = S.users[i]; if (!u) return;
+  if (!u.admin && !u.pin) return lkEnter(u.name);   // موظف بلا رمز يدخل مباشرة كما في شاشة الدخول
+  lkSel = u.name;
+  const b = $('lk') && $('lk').querySelector('.lockbox'); if (b) b.innerHTML = lkBoxHtml();
+}
 function lkShow() {
   if ($('lk')) return;
   closeOverlaysForLock();
-  document.body.insertAdjacentHTML('beforeend', `<div id="lk" class="lockscr"><div class="lockbox"><h2>${I('lock')} ${esc(shopName())} مقفل</h2><p id="lkm" class="m c">${lkMe() && !lkMe().admin ? 'أدخل رمزك' : 'أدخل رمز المدير'}</p>${pinPadHtml('lki', 'رمز الفتح', 'lkTry()')}<button class="btn" onclick="lkTry()">فتح التطبيق</button></div></div>`);
+  const me = lkMe(); lkSel = me && (me.admin || me.pin) ? me.name : '';
+  document.body.insertAdjacentHTML('beforeend', `<div id="lk" class="lockscr"><div class="lockbox">${lkBoxHtml()}</div></div>`);
 }
 function lkTry() {
   const m = $('lkm'), el = $('lki');
   if (tryBlocked('lk', m, 'lki')) return;
-  const c = el ? el.value : '', u = S.users.find(x => x.name == S.me);
-  if (c && ((u && u.pin && hv(c, u.pin)) || hv(c, S.pin))) { TRIES.lk = null; try { localStorage.removeItem('shopLock'); } catch (e) { } $('lk').remove(); LAST = Date.now(); lkStore(); }
+  const u = S.users.find(x => x.name == lkSel);
+  if (!u) { if (m) m.textContent = 'اختر اسمك أولاً'; return; }
+  const c = el ? el.value : '';
+  const ok = c && (u.admin ? hv(c, S.pin) : (hv(c, u.pin) || hv(c, S.pin)));
+  if (ok) lkEnter(u.name);
   else tryFail('lk', m, 'lki', 'الرمز خاطئ، حاول مرة أخرى');
 }
 function lockNow() {
