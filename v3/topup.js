@@ -1,16 +1,14 @@
 /* ============================================================
-   topup.js — التعبئة الحسابية:
-   (001) بطاقات التعبئة × الفئة · (002) أرصدة الهواتف · (003) مال الرف
-   المجموع الكامل = (001) + (002) + (003) ومقارنته برأس المال المرجعي،
-   والخصم التلقائي من مال الرف عند الشراء أو تعبئة الهاتف.
+   topup.js — التعبئة الحسابية المبسّطة:
+   بطاقات التعبئة (العدد × الفئة) + أرصدة الهواتف + مال رف التعبئة
+   المجموع الكامل ومقارنته برأس المال المرجعي، والخصم من مال الرف عند الشراء.
    يُحمَّل بعد core.js مباشرة.
    ============================================================ */
 (() => {
   Object.assign(IC, { topup: '<path d="M5 20v-4M10 20v-8M15 20V8M20 20V4"/>' });
-  const OPS = [['IAM', '#2563eb'], ['ORANGE', '#ea580c'], ['INWI', '#9333ea']];
+  const OPS = ['IAM', 'ORANGE', 'INWI'];
   const CARDS = [5, 10, 20, 50], PH = [1];
   const D0 = { gv: 15, bo: 30, br: 10, cl: { 5: 3, 10: 3, 20: 3, 50: 3 }, rh: 10, cap: 0 };
-  const GREY = '#94a3b8', DC = { 5: '#0d9488', 10: '#2563eb', 20: '#7c3aed', 50: '#db2777' };
   const T = () => (S.tp = S.tp || []);
   const rnd2 = x => Math.round((+x || 0) * 100) / 100;
   const cf = () => {
@@ -32,13 +30,13 @@
   const dm = v => rnd2(v) + ' درهم';
   const pad = n => String(n).padStart(2, '0');
   const when = t => { if (!t) return 'لم يُسجَّل بعد'; const d = new Date(t); return isToday(t) ? 'اليوم ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : fd(t); };
-  /* الحالة: u غير مسجَّل · g متوفر · y قارب · r نافد/منخفض */
+  /* الحالة: u غير مسجَّل · g متوفر · y قارب · r نفد/منخفض */
   const stP = v => v == null ? 'u' : v <= cf().br ? 'r' : v <= cf().bo ? 'y' : 'g';
   const stC = (n, v) => v == null ? 'u' : v <= 0 ? 'r' : v <= cf().cl[n] ? 'y' : 'g';
   const ST_LBL = { g: 'متوفر', y: 'قارب', r: 'نفد', u: 'غير مسجّل' };
-  const each = fn => OPS.forEach(([op]) => { PH.forEach(n => fn(op, 'p', n, stP(val(op, 'p', n)))); CARDS.forEach(n => fn(op, 'c', n, stC(n, val(op, 'c', n)))); });
+  const each = fn => OPS.forEach(op => { PH.forEach(n => fn(op, 'p', n, stP(val(op, 'p', n)))); CARDS.forEach(n => fn(op, 'c', n, stC(n, val(op, 'c', n)))); });
   const tally = () => { const t = { r: 0, y: 0, g: 0, u: 0 }; each((a, b, c, s) => t[s]++); return t; };
-  const phDone = () => { let n = 0; OPS.forEach(([op]) => PH.forEach(p => { const r = rec(op, 'p', p); if (r && r.val != null && isToday(r.at)) n++; })); return n; };
+  const phDone = () => { let n = 0; OPS.forEach(op => PH.forEach(p => { const r = rec(op, 'p', p); if (r && r.val != null && isToday(r.at)) n++; })); return n; };
   const lastPh = () => T().filter(r => r.k == 'p' && r.at).sort((a, b) => b.at - a.at)[0];
   let svT = 0;
   function putRaw(id, op, k, n, v, est, now) {
@@ -47,14 +45,14 @@
     r.val = v; r.est = est ? 1 : 0; r.at = r.cf = Date.now(); r.by = S.me || '';
     clearTimeout(svT);
     if (now) save();
-    else svT = setTimeout(save, 150);   // الحفظ بعد الرسم حتى لا يتأخر الضغط ولا تُغلق لوحة المفاتيح
+    else svT = setTimeout(save, 150);   // الحفظ بعد التحديث حتى لا تُغلق لوحة المفاتيح
   }
   const put = (op, k, n, v, est, now) => putRaw(rid(op, k, n), op, k, n, v, est, now);
-  /* الحساب الكامل: (001) البطاقات + (002) الهواتف + (003) مال الرف */
+  /* الحساب الكامل: البطاقات + الهواتف + مال الرف */
   function calc() {
     const byOp = {};
     let cardsTot = 0, phonesTot = 0, missCards = 0, estCards = 0, missPh = 0, oldPh = 0;
-    OPS.forEach(([op]) => {
+    OPS.forEach(op => {
       let cs = 0, cm = 0, ce = 0;
       CARDS.forEach(n => {
         const r = rec(op, 'c', n), v = r && r.val != null ? r.val : null;
@@ -100,7 +98,7 @@
     });
     return L;
   };
-  /* ---------- الشراء / التعبئة من مال الرف (من التقرير ✓ أو من شاشة التعبئة +) ---------- */
+  /* ---------- الشراء / التعبئة من مال الرف ---------- */
   window.tpBuySync = (k, baseOrDenom) => {
     const qEl = $('tpb_q'), dEl = $('tpb_d'), cEl = $('tpb_calc');
     if (!qEl || !dEl || !cEl) return;
@@ -137,13 +135,13 @@
       ? ('الرصيد المسجل الآن: <b>' + (curV == null ? 'غير مسجّل' : esc(dm(curV))) + '</b>')
       : ('المتوفر الآن: <b>' + (curV == null ? 'غير مسجّل' : (r0 && r0.est ? '≈' : '') + curV + ' بطاقة') + '</b>');
     const cashTxt = curCash == null
-      ? 'مال الرف (003) غير مسجّل بعد (لن يُخصم منه تلقائياً حتى تسجّل مبلغ الرف)'
-      : 'المتوفر في مال الرف (003) حالياً: <b>' + esc(dm(curCash)) + '</b>';
+      ? 'مال الرف غير مسجّل بعد (لن يُخصم منه تلقائياً حتى تسجّل مبلغ الرف)'
+      : 'المتوفر في مال الرف حالياً: <b>' + esc(dm(curCash)) + '</b>';
     $('sh').innerHTML = `<div class="bar"></div><h3>${esc(title)}</h3><p class="m">${curTxt}</p>`
       + `<label>${k == 'p' ? 'المبلغ المُعبَّأ / المُضاف (درهم)' : 'الكمية التي وصلت (عدد البطاقات)'}<input id="tpb_q" type="tel" inputmode="${k == 'p' ? 'decimal' : 'numeric'}" placeholder="${k == 'p' ? 'مثال: 500' : 'مثال: 10'}" oninput="tpBuySync('${k}',${k == 'p' ? (curV || 0) : n})"></label>`
-      + `<div id="tpb_calc" class="m" style="margin:2px 0 6px">${k == 'p' ? (curV != null ? 'الرصيد بعد التعبئة: ' + esc(dm(curV)) : '') : 'التكلفة الاسمية: 0 درهم'}</div>`
-      + `<label>المبلغ المأخوذ من مال الرف (003) — درهم<input id="tpb_d" type="tel" inputmode="decimal" placeholder="0" oninput="tpBuyWarn()"><span class="m" style="font-weight:400;display:block;margin-top:3px">يُحسب تلقائياً كاملاً؛ اجعله 0 إن دُفع من خارج درج التعبئة.</span></label>`
-      + `<div class="m" style="margin-top:6px">${cashTxt}</div><div id="tpb_w" class="rs" style="margin-top:4px"></div>`
+      + `<div id="tpb_calc" class="m">${k == 'p' ? (curV != null ? 'الرصيد بعد التعبئة: ' + esc(dm(curV)) : '') : 'التكلفة الاسمية: 0 درهم'}</div>`
+      + `<label>المبلغ المأخوذ من مال الرف (درهم)<input id="tpb_d" type="tel" inputmode="decimal" placeholder="0" oninput="tpBuyWarn()"><span class="m">يُحسب تلقائياً كاملاً؛ اجعله 0 إن دُفع من خارج مال التعبئة.</span></label>`
+      + `<div class="m">${cashTxt}</div><div id="tpb_w" class="rs"></div>`
       + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="tpBuySub('${k}')">تأكيد</button></div>`;
     sheetOpen(v => {
       if (!v) return;
@@ -169,6 +167,27 @@
   }
   window.tpFix = id => tpBuySheet(id);
   window.tpBuyOpen = (op, k, n) => tpBuySheet(rid(op, k, n));
+  /* خيارات الفئة عند الضغط على شارتها (شراء من الرف أو تصفير) */
+  window.tpCardAct = (op, n) => {
+    const r0 = rec(op, 'c', n), v = r0 && r0.val != null ? r0.val : null;
+    $('sh').innerHTML = `<div class="bar"></div><h3>بطاقة ${esc(op)} — فئة ${n} درهم</h3>`
+      + `<p class="m">المتوفر الآن: <b>${v == null ? 'غير مسجّل' : (r0 && r0.est ? '≈' : '') + v + ' بطاقة (' + dm(v * n) + ')'}</b></p>`
+      + `<button class="btn" onclick="finish('buy')">${I('plus')} شراء بطاقات من مال الرف</button>`
+      + `<button class="btn s del" onclick="finish('zero')">تصفير الفئة (نفد = 0)</button>`
+      + `<div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>`;
+    sheetOpen(w => {
+      if (w == 'buy') setTimeout(() => tpBuySheet(rid(op, 'c', n)), 350);
+      else if (w == 'zero') tpZero(op, n);
+    });
+  };
+  /* نافذة اختيار موحّدة للشراء أو تعبئة الهاتف من مال الرف */
+  window.tpBuyMenu = () => {
+    $('sh').innerHTML = `<div class="bar"></div><h3>شراء بطاقات / تعبئة هاتف من مال الرف</h3>`
+      + `<label>تعبئة رصيد هاتف</label><div class="tp-menu-row">${OPS.map(op => `<button type="button" class="btn s sm" onclick="finish('${rid(op, 'p', 1)}')">${esc(op)}</button>`).join('')}</div>`
+      + OPS.map(op => `<label>بطاقات ${esc(op)}</label><div class="tp-menu-row">${CARDS.map(n => `<button type="button" class="btn s sm" onclick="finish('${rid(op, 'c', n)}')">${n} درهم</button>`).join('')}</div>`).join('')
+      + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button></div>`;
+    sheetOpen(id => { if (id) setTimeout(() => tpBuySheet(id), 350); });
+  };
   /* ---------- التحديث في مكانه بلا إعادة رسم (حتى لا تُغلق لوحة المفاتيح) ---------- */
   const setT = (id, v) => { const e = $(id); if (e) e.textContent = v; };
   const lastLine = () => {
@@ -178,25 +197,24 @@
   function paint() {
     const c = calc(), nr = noteRec();
     each((op, k, n, s) => {
-      const id = op + '_' + k + n, r = $('tpr_' + id), rec0 = rec(op, k, n); if (!r) return;
-      r.className = 'tpr' + (k == 'c' ? ' c' : '') + (s == 'r' || s == 'y' ? ' ' + s : '');
+      const id = op + '_' + k + n, rec0 = rec(op, k, n);
       if (k == 'p') {
-        const d = $('tpd_' + id); if (d) d.style.background = s == 'u' ? GREY : DT[s];
+        const d = $('tpd_' + id); if (d) d.style.background = s == 'u' ? 'var(--m)' : DT[s];
         setT('tpt_' + id, s == 'r' ? 'منخفض' : s == 'y' ? 'قارب' : '');
         const cfB = $('tpcfm_' + id); if (cfB) cfB.hidden = !(rec0 && rec0.val != null && !isToday(rec0.at));
       } else {
         const est = !!(rec0 && rec0.est && rec0.val != null), v = rec0 && rec0.val != null ? rec0.val : null;
+        const bd = $('tpd_' + id);
+        if (bd) bd.className = 'tpd ' + s;
         const stEl = $('tpst_' + id);
         if (stEl) { stEl.className = 'tp-st ' + s; stEl.textContent = est ? ST_LBL[s] + ' (تقديري)' : ST_LBL[s]; }
         const valEl = $('tpv_' + id);
-        if (valEl) valEl.textContent = v == null ? '—' : (est ? '≈' : '= ') + dm(v * n);
-        const zEl = $('tpz_' + id);
-        if (zEl) zEl.classList.toggle('on', v === 0 && !est);
+        if (valEl) valEl.textContent = v == null ? '—' : (est ? '≈' : '') + dm(v * n);
       }
     });
     const t = tally(); setT('tps_r', t.r); setT('tps_y', t.y); setT('tps_u', t.u + c.estCards);
     const l = lastLine(), e = $('tpl'); if (e) { e.textContent = l[0]; e.className = 'rsent' + (l[1] ? ' w' : ''); }
-    OPS.forEach(([op]) => {
+    OPS.forEach(op => {
       const L = T().filter(r => r.op == op && r.at).sort((a, b) => b.at - a.at)[0];
       setT('tpu_' + op, L ? when(L.at) : 'لم يُسجَّل بعد');
       const o = c.byOp[op];
@@ -210,36 +228,36 @@
     const dfEl = $('tps_diff'), alEl = $('tps_al');
     if (dfEl) {
       if (c.cap > 0) {
-        if (c.incomplete) { dfEl.className = 'tp-diff wn'; dfEl.textContent = 'رأس المال ' + dm(c.cap) + ' · الجرد غير مكتمل'; }
+        if (c.incomplete) { dfEl.className = 'tp-diff wn'; dfEl.textContent = 'رأس المال ' + dm(c.cap) + ' · غير مكتمل'; }
         else if (c.diff === 0) { dfEl.className = 'tp-diff ok'; dfEl.textContent = 'متوازن ✓ (' + dm(c.cap) + ')'; }
         else if (c.diff < 0) { dfEl.className = 'tp-diff al'; dfEl.textContent = 'ناقص ' + dm(Math.abs(c.diff)) + ' من ' + dm(c.cap); }
         else { dfEl.className = 'tp-diff ok'; dfEl.textContent = 'زائد ' + dm(c.diff) + ' فوق ' + dm(c.cap); }
       } else {
-        dfEl.className = 'tp-diff'; dfEl.textContent = okE() ? 'اضغط لتحديد رأس المال المرجعي' : 'رأس المال غير محدد';
+        dfEl.className = 'tp-diff'; dfEl.textContent = okE() ? 'تحديد رأس المال' : 'بلا رأس مال مرجعي';
       }
     }
     if (alEl) {
       const msgs = [];
-      if (c.missCards) msgs.push(arCnt(c.missCards, 'فئة بطاقات غير مسجلة', 'فئتا بطاقات غير مسجلتين', 'فئات بطاقات غير مسجلة', 'فئة بطاقات غير مسجلة'));
-      if (c.estCards) msgs.push(arCnt(c.estCards, 'فئة تقديرية تحتاج عداً فعلياً', 'فئتان تقديريتان', 'فئات تقديرية تحتاج عداً فعلياً', 'فئة تقديرية'));
-      if (c.missPh || c.oldPh) msgs.push('أرصدة الهواتف غير مكتملة اليوم (' + phDone() + '/' + OPS.length + ')');
-      if (c.cashMiss) msgs.push('مال الرف (003) غير مسجّل');
+      if (c.missCards) msgs.push(arCnt(c.missCards, 'فئة غير مسجلة', 'فئتان غير مسجلتين', 'فئات غير مسجلة', 'فئة غير مسجلة'));
+      if (c.estCards) msgs.push(arCnt(c.estCards, 'فئة تقديرية', 'فئتان تقديريتان', 'فئات تقديرية', 'فئة تقديرية'));
+      if (c.missPh || c.oldPh) msgs.push('أرصدة الهواتف (' + phDone() + '/' + OPS.length + ')');
+      if (c.cashMiss) msgs.push('مال الرف غير مسجّل');
       else if (c.cashOld) msgs.push('مال الرف لم يُؤكَّد اليوم');
       if (msgs.length) {
         alEl.hidden = false;
         alEl.className = 'tp-al wn';
-        alEl.innerHTML = `<b>${I('alert')} الحساب غير مكتمل اليوم:</b> ${esc(msgs.join(' · '))}`;
+        alEl.innerHTML = `${I('alert')} <span><b>الحساب غير مكتمل اليوم:</b> ${esc(msgs.join(' · '))}</span>`;
       } else if (c.cap > 0 && c.diff < 0) {
         alEl.hidden = false;
         alEl.className = 'tp-al al';
-        alEl.innerHTML = `<b>${I('alert')} ناقص ${esc(dm(Math.abs(c.diff)))} عن رأس المال — راجع سريعاً:</b>`
-          + `<div class="m">1) هل اشتُريت بطاقات أو تعبئة دون تسجيلها؟ 2) هل بيع رصيد بالكريدي دون تسجيله في الديون؟ 3) هل أُخذ مبلغ من مال الرف؟</div>`
+        alEl.innerHTML = `<div>${I('alert')} <b>ناقص ${esc(dm(Math.abs(c.diff)))} عن رأس المال</b></div>`
+          + `<div class="m">راجع: بطاقات أو تعبئة لم تُسجَّل، بيع بالكريدي، أو مبلغ مسحوب من الرف.</div>`
           + (nr ? `<div class="tp-note-show">${I('chat')} <b>ملاحظة اليوم:</b> ${esc(nr.val)}</div>` : '')
-          + `<button type="button" class="btn s sm" style="margin-top:6px" onclick="tpNoteEd()">${nr ? 'تعديل ملاحظة الفرق' : '+ تدوين ملاحظة لسبب الفرق'}</button>`;
+          + `<button type="button" class="btn s sm" onclick="tpNoteEd()">${nr ? 'تعديل ملاحظة الفرق' : '+ تدوين ملاحظة للفرق'}</button>`;
       } else if (nr) {
         alEl.hidden = false;
         alEl.className = 'tp-al';
-        alEl.innerHTML = `<div class="tp-note-show">${I('chat')} <b>ملاحظة اليوم:</b> ${esc(nr.val)}</div><button type="button" class="btn s sm" style="margin-top:6px" onclick="tpNoteEd()">تعديل الملاحظة</button>`;
+        alEl.innerHTML = `<div class="tp-note-show">${I('chat')} <b>ملاحظة اليوم:</b> ${esc(nr.val)}</div><button type="button" class="btn s sm" onclick="tpNoteEd()">تعديل الملاحظة</button>`;
       } else {
         alEl.hidden = true;
       }
@@ -290,53 +308,48 @@
     const cur = (noteRec() || {}).val || '';
     ask('ملاحظة فرق حساب التعبئة لليوم', [{ k: 't', l: 'سبب النقص أو الزيادة (تُعرض في التقرير لليوم فقط)', v: cur }], 'حفظ').then(v => {
       if (!v) return;
-      const t = v.t.trim();
-      putRaw('tp_note', '', 'n', 0, t, 0, true);
+      putRaw('tp_note', '', 'n', 0, v.t.trim(), 0, true);
       render();
     });
   };
-  /* ---------- الشاشة ---------- */
+  /* ---------- الشاشة (بطاقات هادئة، سطر واحد لكل فئة، وشارة تتلوّن بالحالة فقط) ---------- */
   const row1 = (op, k, n) => {
     const r = rec(op, k, n), v = val(op, k, n), id = op + '_' + k + n, ph = k == 'p', est = !!(r && r.est);
-    if (ph) return `<div class="tpr" id="tpr_${id}"><span class="dotl" id="tpd_${id}"></span><span class="tpn">رصيد الهاتف</span><span class="tpt" id="tpt_${id}"></span>`
+    if (ph) return `<div class="tpr" id="tpr_${id}"><span class="dotl" id="tpd_${id}"></span><span class="tpn tp-tap" onclick="tpBuyOpen('${op}','p',${n})">رصيد الهاتف</span><span class="tpt" id="tpt_${id}"></span>`
       + `<button type="button" class="tp-cfm" id="tpcfm_${id}" hidden onclick="tpCfm('${rid(op, 'p', n)}')" title="تأكيد نفس الرصيد لليوم">${I('check')}</button>`
-      + `<input class="tpi" id="tpi_${id}" inputmode="decimal" placeholder="—" value="${v == null ? '' : esc(v)}" oninput="tpIn('${op}','p',${n},this)" onchange="tpIn('${op}','p',${n},this,1)" onfocus="this.select()"><span class="m tpu">درهم</span>`
-      + `<button type="button" class="tp-buy" onclick="tpBuyOpen('${op}','p',${n})" title="تعبئة الهاتف من مال الرف">${I('plus')}</button></div>`;
-    return `<div class="tpr c" id="tpr_${id}" style="--dc:${DC[n]}">`
-      + `<div class="tp-left"><span class="tpd">${n}<small>درهم</small></span><div class="tp-meta"><span class="tp-st" id="tpst_${id}"></span><b class="tp-val" id="tpv_${id}"></b></div></div>`
-      + `<div class="tp-ctrl">`
-      + `<button type="button" class="tp-sb" onclick="tpStep('${op}',${n},-1)" aria-label="ناقص 1">−</button>`
+      + `<input class="tpi" id="tpi_${id}" inputmode="decimal" placeholder="—" value="${v == null ? '' : esc(v)}" oninput="tpIn('${op}','p',${n},this)" onchange="tpIn('${op}','p',${n},this,1)" onfocus="this.select()"><span class="m tpu">درهم</span></div>`;
+    return `<div class="tpr c" id="tpr_${id}">`
+      + `<div class="tp-left"><button type="button" class="tpd u" id="tpd_${id}" onclick="tpCardAct('${op}',${n})" title="شراء أو تصفير">${n}<small>درهم</small></button>`
+      + `<div class="tp-meta"><b class="tp-val" id="tpv_${id}"></b><span class="tp-st" id="tpst_${id}"></span></div></div>`
+      + `<div class="tp-ctrl"><button type="button" class="tp-sb" onclick="tpStep('${op}',${n},-1)" aria-label="ناقص 1">−</button>`
       + `<input class="tpi" id="tpi_${id}" inputmode="numeric" placeholder="${est && v != null ? '≈' + v : '—'}" value="${v == null || est ? '' : esc(v)}" oninput="tpIn('${op}','c',${n},this)" onchange="tpIn('${op}','c',${n},this,1)" onfocus="this.select()">`
-      + `<button type="button" class="tp-sb" onclick="tpStep('${op}',${n},1)" aria-label="زائد 1">+</button>`
-      + `<button type="button" class="tp-z" id="tpz_${id}" onclick="tpZero('${op}',${n})" title="نفد (0)">0</button>`
-      + `<button type="button" class="tp-buy" onclick="tpBuyOpen('${op}','c',${n})" title="شراء بطاقات من مال الرف">${I('plus')}</button>`
-      + `</div></div>`;
+      + `<button type="button" class="tp-sb" onclick="tpStep('${op}',${n},1)" aria-label="زائد 1">+</button></div></div>`;
   };
   VW.tp = () => {
     const t = tally(), l = lastLine(), cv = cashVal();
     let h = `<div class="qbar rsum"><div class="qpill al"><div class="qn" id="tps_r">${t.r}</div><div class="ql">نافد / منخفض</div></div><div class="qpill wn"><div class="qn" id="tps_y">${t.y}</div><div class="ql">قارب النفاد</div></div><div class="qpill rp"><div class="qn" id="tps_u">${t.u}</div><div class="ql">غير مسجّل</div></div></div>`
       + `<div id="tpl" class="rsent ${l[1] ? 'w' : ''}">${esc(l[0])}</div>`;
-    OPS.forEach(([op, col]) => {
-      h += `<div class="card tpop" style="--oc:${col}"><div class="tpoh"><b>${op}</b><span class="m" id="tpu_${op}"></span></div>`
-        + `<div class="tp-subtot m" id="tpoh_${op}"></div>`
-        + '<div class="tpl">هاتف التعبئة</div>' + PH.map(n => row1(op, 'p', n)).join('')
-        + '<div class="tpl">بطاقات التعبئة (العدد × الفئة)</div>' + CARDS.map(n => row1(op, 'c', n)).join('') + '</div>';
+    OPS.forEach(op => {
+      h += `<div class="card tpop"><div class="tpoh"><b>${op}</b><span class="m" id="tpu_${op}"></span></div>`
+        + `<div class="tp-subtot" id="tpoh_${op}"></div>`
+        + PH.map(n => row1(op, 'p', n)).join('')
+        + CARDS.map(n => row1(op, 'c', n)).join('') + `</div>`;
     });
-    h += `<div class="card tp-cash-card"><div class="tpoh"><b>(003) مال رف التعبئة</b><span class="m" id="tpu_cash"></span></div>`
-      + `<div class="row2" style="flex-wrap:wrap;margin-top:6px"><span class="m f1">المبلغ النقدي الموجود في درج/رف التعبئة</span>`
-      + `<button type="button" class="btn s sm" id="tpcfm_cash" hidden onclick="tpCfm('tp_cash_box')">${I('check')} نفس المبلغ اليوم</button>`
+    h += `<div class="card"><div class="tpoh"><b>مال رف التعبئة</b><span class="m" id="tpu_cash"></span></div>`
+      + `<div class="row2" style="margin-top:6px"><span class="m f1">النقد الموجود في درج/رف التعبئة</span>`
+      + `<button type="button" class="tp-cfm" id="tpcfm_cash" hidden onclick="tpCfm('tp_cash_box')" title="تأكيد نفس المبلغ لليوم">${I('check')}</button>`
       + `<input class="tpi tp-cash-inp" id="tpi_cash" inputmode="decimal" placeholder="0" value="${cv == null ? '' : esc(cv)}" oninput="tpIn('','m',0,this)" onchange="tpIn('','m',0,this,1)" onfocus="this.select()"><span class="m tpu">درهم</span></div></div>`;
     h += `<div class="card tp-sum-card">`
       + `<div class="tp-sum-grid">`
-      + `<div class="tp-sum-cell"><small>(001) البطاقات</small><b id="tps_c">0 درهم</b></div>`
-      + `<div class="tp-sum-cell"><small>(002) الهواتف</small><b id="tps_p">0 درهم</b></div>`
-      + `<div class="tp-sum-cell"><small>(003) مال الرف</small><b id="tps_m">0 درهم</b></div>`
+      + `<div class="tp-sum-cell"><small>البطاقات</small><b id="tps_c">0 درهم</b></div>`
+      + `<div class="tp-sum-cell"><small>الهواتف</small><b id="tps_p">0 درهم</b></div>`
+      + `<div class="tp-sum-cell"><small>مال الرف</small><b id="tps_m">0 درهم</b></div>`
       + `</div>`
-      + `<div class="tp-grand-bar"><div><small>المجموع الكامل (001 + 002 + 003)</small><b id="tps_tot">0 درهم</b></div>`
+      + `<div class="tp-grand-bar"><div><small>المجموع الكامل</small><b id="tps_tot">0 درهم</b></div>`
       + `<button type="button" id="tps_diff" class="tp-diff" onclick="if(okTpE())tpLim('cap')"></button></div>`
       + `<div id="tps_al" class="tp-al" hidden></div>`
       + `</div>`;
-    h += `<div class="row2" style="margin-top:10px"><button class="btn s" onclick="go('rep',{rf:'topup'})">عرض في التقرير</button></div>`;
+    h += `<div class="pair-grid"><button class="btn" onclick="tpBuyMenu()">${I('plus')} شراء / تعبئة من الرف</button><button class="btn s" onclick="go('rep',{rf:'topup'})">عرض في التقرير</button></div>`;
     return { t: 'التعبئة', h, a: paint };
   };
   /* ---------- الحدود ورأس المال المرجعي ---------- */
@@ -362,7 +375,7 @@
     const c = cf(), od = offDays();
     return {
       t: 'حدود وحساب التعبئة',
-      h: '<p class="m">تحدد متى يصير اللون برتقالياً أو أحمر، والمبلغ المرجعي لمقارنة حساب التعبئة اليومي.</p>'
+      h: '<p class="m">تحدد متى تتلوّن البطاقة بالبرتقالي أو الأحمر، والمبلغ المرجعي لمقارنة حساب التعبئة اليومي.</p>'
         + '<h3>حساب الصندوق ورأس المال</h3>'
         + row('رأس مال التعبئة المرجعي', "tpLim('cap')", c.cap > 0 ? dm(c.cap) : 'غير محدد')
         + '<h3>رصيد هاتف التعبئة</h3>'
