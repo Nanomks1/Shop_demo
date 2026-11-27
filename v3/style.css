@@ -437,6 +437,7 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .tpr{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--bl);flex-wrap:wrap}.tpr:last-child{border-bottom:0}
 .tpr.c{justify-content:space-between;flex-wrap:nowrap;gap:8px;padding:6px 0}
 .tpn{flex:1;min-width:4.5rem;font-weight:600;font-size:var(--t-md)}
+.tp-ph-tm{display:block;font-size:var(--t-xs);font-weight:500;line-height:1.2}
 .tp-tap{cursor:pointer}
 .tpt{font-size:var(--t-xs);font-weight:700;color:var(--wn-t)}
 .tpd{min-width:2.85rem;padding:.24em .38em;border-radius:8px;border:1px solid var(--bl);background:var(--inp);color:var(--m);font:inherit;font-weight:800;font-size:var(--t-sm);text-align:center;line-height:1.12;flex:none;cursor:pointer;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
@@ -462,6 +463,18 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .tp-cash-info b{font-size:var(--t-md);font-weight:700;color:var(--t)}
 .tp-cash-info small{font-size:var(--t-xs)}
 .tp-cash-inp{width:5.8rem!important;min-width:4.8rem}
+.tp-cash-acts{margin-top:8px;padding-top:8px;border-top:1px dashed var(--bl);display:flex;gap:6px;flex-wrap:wrap}
+.tp-cash-acts .btn.sm{flex:1}
+.tp-adj-box{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.tp-adj-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:.32em .55em;border-radius:8px;background:var(--inp);border:1px solid var(--bl);font-size:var(--t-sm)}
+.tp-adj-x{border:0;background:none;color:var(--al-t);font:inherit;font-size:var(--t-lg);font-weight:800;cursor:pointer;padding:0 .35em;line-height:1}
+.tp-src-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0 8px}
+[data-ds=lg] .tp-src-grid{grid-template-columns:1fr}
+.tp-src-grid .tag{margin:0;width:100%;justify-content:center;text-align:center;min-height:calc(2.35rem * var(--ds))}
+.tp-op-grid{margin-top:10px;padding-top:8px;border-top:1px dashed var(--bl);display:flex;flex-direction:column;gap:8px}
+.tp-op-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tp-op-chips{display:flex;flex-wrap:wrap;gap:5px}
+.tp-op-chips .tag{margin:0;min-width:2.5rem;justify-content:center}
 .tp-sum-card{padding:.7rem}
 .tp-sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
 .tp-sum-cell{background:var(--inp);border:1px solid var(--bl);border-radius:var(--r);padding:.45rem .3rem;text-align:center;min-width:0}

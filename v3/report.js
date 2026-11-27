@@ -124,14 +124,24 @@
   const dbLine = () => { const n = (S.debt || []).filter(x => !x.paid).length; return n ? 'ديون مفتوحة: ' + n : ''; };
   const sentToday = () => { const x = S.cfg.rs; return !!(x && x.t && new Date(x.t).toDateString() == new Date().toDateString()); };
   const cleanReq = s => String(s || '').replace(/(?:\+?212|0)[\s\-.]*[567](?:[\s\-.]*\d){8}/g, '').replace(/\s*[-–—:]\s*$/, '').replace(/\s{2,}/g, ' ').trim();
+  const tpAdjTxt = ts => {
+    if (!ts || !(ts.adjList && ts.adjList.length)) return '';
+    const p = [];
+    if (ts.extTot > 0) p.push('تزويد خارجي +' + ts.extTot + ' درهم');
+    if (ts.inTot > 0) p.push('إضافة للصندوق +' + ts.inTot + ' درهم');
+    if (ts.outTot > 0) p.push('سحب المعلم −' + ts.outTot + ' درهم');
+    return p.join(' · ');
+  };
   const tpSumTxt = ts => {
-    if (!ts || (ts.grand <= 0 && !ts.cap && ts.incomplete)) return '';
+    if (!ts || (ts.grand <= 0 && !ts.cap && ts.incomplete && !(ts.adjList && ts.adjList.length))) return '';
     const base = `حساب التعبئة: بطاقات ${ts.cardsTot} + هواتف ${ts.phonesTot} + الصندوق ${ts.cashTot} = ${ts.grand}`;
+    const refN = ts.expected || ts.cap;
+    const adjS = ts.netAdj ? ` (المرجع ${ts.cap}${ts.netAdj > 0 ? '+' : '−'}${Math.abs(ts.netAdj)})` : '';
     if (ts.incomplete) return base + ' درهم (الجرد غير مكتمل اليوم)';
     if (ts.cap > 0) {
-      if (ts.diff === 0) return base + ' درهم (متوازن ✓)';
-      if (ts.diff < 0) return `⚠ ${base} من ${ts.cap} درهم (ناقص ${Math.abs(ts.diff)} درهم)`;
-      return `${base} من ${ts.cap} درهم (زائد ${ts.diff} درهم)`;
+      if (ts.diff === 0) return base + ` من ${refN} درهم${adjS} (متوازن ✓)`;
+      if (ts.diff < 0) return `⚠ ${base} من ${refN} درهم${adjS} (ناقص ${Math.abs(ts.diff)} درهم)`;
+      return `${base} من ${refN} درهم${adjS} (زائد ${ts.diff} درهم)`;
     }
     return base + ' درهم';
   };
@@ -253,8 +263,9 @@
       if (ts.u > 0) o.push('تنبيه تعبئة: لم تُسجَّل بعد ' + arCnt(ts.u, 'خانة', 'خانتان', 'خانات', 'خانة'));
       if (ts.stalePh) o.push('أرصدة التعبئة اليوم: مسجّل ' + ts.done + ' من ' + ts.tot + ' فقط');
       if (c.tpSum) {
-        const stx = tpSumTxt(ts);
+        const stx = tpSumTxt(ts), atx = tpAdjTxt(ts);
         if (stx) o.push(stx);
+        if (atx) o.push('حركات التعبئة اليوم: ' + atx);
         if (ts.note) o.push('ملاحظة التعبئة: ' + ts.note);
       }
     }
@@ -347,17 +358,20 @@
       + `</div></details>`;
   }
   function tpReportBox(ts) {
-    if (!ts || (ts.grand <= 0 && !ts.cap && ts.incomplete)) return '';
+    if (!ts || (ts.grand <= 0 && !ts.cap && ts.incomplete && !(ts.adjList && ts.adjList.length))) return '';
     let badge = '';
+    const refN = ts.expected || ts.cap;
     if (ts.incomplete) badge = '<span class="rp-badge warn">جرد غير مكتمل</span>';
     else if (ts.cap > 0) {
       if (ts.diff === 0) badge = '<span class="rp-badge ok">متوازن ✓</span>';
       else if (ts.diff < 0) badge = `<span class="rp-badge bad">ناقص <bdi>${Math.abs(ts.diff)} درهم</bdi></span>`;
       else badge = `<span class="rp-badge ok">زائد <bdi>${ts.diff} درهم</bdi></span>`;
     }
+    const atx = tpAdjTxt(ts);
     return `<div class="card rp-click" onclick="go('tp')">`
       + `<div class="row2"><b>${I('ctopup')} حساب التعبئة</b>${badge}</div>`
-      + `<div class="m" style="margin-top:4px">بطاقات <bdi>${ts.cardsTot}</bdi> + هواتف <bdi>${ts.phonesTot}</bdi> + الصندوق <bdi>${ts.cashTot}</bdi> = <b><bdi>${ts.grand} درهم</bdi></b>${ts.cap > 0 ? ` (من أصل <bdi>${ts.cap} درهم</bdi>)` : ''}</div>`
+      + `<div class="m" style="margin-top:4px">بطاقات <bdi>${ts.cardsTot}</bdi> + هواتف <bdi>${ts.phonesTot}</bdi> + الصندوق <bdi>${ts.cashTot}</bdi> = <b><bdi>${ts.grand} درهم</bdi></b>${ts.cap > 0 ? ` (من أصل <bdi>${refN} درهم</bdi>)` : ''}</div>`
+      + (atx ? `<div class="m" style="margin-top:4px">${esc(atx)}</div>` : '')
       + (ts.note ? `<div class="rs" style="margin-top:4px">${I('chat')} ${esc(ts.note)}</div>` : '')
       + `</div>`;
   }
@@ -370,10 +384,9 @@
     }
     if (!nq && (F == 'all' || F == 'topup') && !c.hs.includes('topup') && typeof tpSummary == 'function') {
       const ts = tpSummary();
-      if (ts.u > 0 || ts.stalePh || ts.cashMiss || ts.cashOld || ts.estCards > 0) {
+      if (ts.u > 0 || ts.stalePh || ts.cashMiss || ts.cashOld) {
         const msgs = [];
         if (ts.u > 0) msgs.push('لم تُسجَّل ' + arCnt(ts.u, 'خانة', 'خانتان', 'خانات', 'خانة'));
-        if (ts.estCards > 0) msgs.push(arCnt(ts.estCards, 'فئة تقديرية', 'فئتان تقديريتان', 'فئات تقديرية', 'فئة تقديرية'));
         if (ts.stalePh) msgs.push('أرصدة اليوم: ' + ts.done + ' من ' + ts.tot);
         if (ts.cashMiss) msgs.push('صندوق التعبئة غير مسجّل');
         else if (ts.cashOld) msgs.push('صندوق التعبئة لم يُؤكَّد اليوم');

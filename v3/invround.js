@@ -15,11 +15,14 @@ function rndAll() {
     const t = d.cf || d.at || Date.now();
     out.push({ _jl: 'ag', sec: 'acc', id: d.id, d, at: t, cf: t });
   });
-  (S.tp || []).forEach(r => {
-    if (!r || r.k != 'c') return;
-    const t = cfTime(r) || Date.now();
-    out.push({ _jl: 'tp', sec: 'tp', id: r.id, r, at: t, cf: t });
-  });
+  if (typeof tpJournOn != 'function' || tpJournOn()) {
+    (S.tp || []).forEach(r => {
+      if (!r || r.k != 'c' || r.val == null) return;
+      if (typeof tpIsCardActive == 'function' && !tpIsCardActive(r.op, r.n)) return;
+      const t = cfTime(r) || Date.now();
+      out.push({ _jl: 'tp', sec: 'tp', id: r.id, r, at: t, cf: t });
+    });
+  }
   return out.sort((a, b) => cfTime(a) - cfTime(b));
 }
 /* rnd() بدون معاملات تعيد الأصناف القديمة فقط (لتنبيهات التقرير والرئيسية) */
@@ -56,7 +59,7 @@ function jlSecSummary(sec, staleCnt) {
     return P(A.length + G.length, 'أصناف ومجموعات') + P(cnt, 'القطع المرقمة') + stP;
   }
   if (sec == 'tp') {
-    const C = (S.tp || []).filter(r => r && r.k == 'c');
+    const C = (S.tp || []).filter(r => r && r.k == 'c' && r.val != null && (typeof tpIsCardActive != 'function' || tpIsCardActive(r.op, r.n)));
     return P(C.length, 'فئات البطاقات') + P(C.reduce((s, r) => s + (+r.val || 0), 0), 'مجموع البطاقات') + stP;
   }
   const phCnt = ph().reduce((s, i) => s + (+i.cnt || 0), 0), csCnt = S.items.filter(i => i.sec == 'case').reduce((s, i) => s + csTot(i), 0);
@@ -64,7 +67,7 @@ function jlSecSummary(sec, staleCnt) {
 }
 const itemCard = i => i._jl == 'ag' ? agCard(i.d) : i._jl == 'tp' ? jlTpCard(i.r) : i.sec == 'phones' ? phCard(i) : i.sec == 'case' ? csCard(i) : i.sec == 'acc' ? (gkc(i.kind).g ? agItemCard(i) : acCard(i)) : i.sec == 'glass' ? gl2(i) : '';
 function jlTpCard(r) {
-  return `<div class="card"><div class="row2"><b>تعبئة <bdi>${esc(r.op)}</bdi> — بطاقة ${r.n} درهم</b><span class="m">${r.val <= 0 ? 'نفد' : r.est ? `<bdi class="ltr">≈${r.val}</bdi>` : 'العدد ' + r.val}</span></div><div class="m">آخر تأكيد ${agoTxt(cfTime(r))}</div><div class="sub"><button class="btn s sm" onclick="go('tp')">فتح شاشة التعبئة</button></div></div>`;
+  return `<div class="card"><div class="row2"><b>تعبئة <bdi>${esc(r.op)}</bdi> — بطاقة ${r.n} درهم</b><span class="m">${r.val <= 0 ? 'نفد' : 'العدد ' + r.val}</span></div><div class="m">آخر تأكيد ${agoTxt(cfTime(r))}</div><div class="sub"><button class="btn s sm" onclick="go('tp')">فتح شاشة التعبئة</button></div></div>`;
 }
 const fmtDh = p => { p = dg(p || '').trim(); return !p ? '' : /^\d+(\.\d+)?$/.test(p) ? p + ' درهم' : p; };
 /* سطر جرد مضغوط وسريع (تعديل فوري + زر تأكيد ✓ في الطرف الثابت) */
@@ -80,7 +83,7 @@ function jlCompactRow(i) {
   }
   if (i._jl == 'tp') {
     const r = i.r;
-    return `<div class="card cmp jl-row"><div class="row2"><div class="cmp-main" onclick="go('tp')"><b>تعبئة <bdi>${esc(r.op)}</bdi> — ${r.n} درهم</b><div class="m">${r.val <= 0 ? 'نفد' : (r.est ? `<bdi class="ltr">≈${r.val}</bdi>` : 'العدد ' + r.val)} · ${dBadge}</div></div>`
+    return `<div class="card cmp jl-row"><div class="row2"><div class="cmp-main" onclick="go('tp')"><b>تعبئة <bdi>${esc(r.op)}</bdi> — ${r.n} درهم</b><div class="m">${r.val <= 0 ? 'نفد' : 'العدد ' + r.val} · ${dBadge}</div></div>`
       + `<div class="jl-acts"><button class="btn s sm" onclick="go('tp')">تعديل</button><button class="rck" title="تأكيد كما هو" onclick="rCfTp('${r.id}')">${I('check')}</button></div></div></div>`;
   }
   if (i.sec == 'phones') {
