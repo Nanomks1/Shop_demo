@@ -1,7 +1,7 @@
 /* ============================================================
    topup.js — التعبئة الحسابية المبسّطة:
-   بطاقات التعبئة (العدد × الفئة) + أرصدة الهواتف + مال رف التعبئة
-   المجموع الكامل ومقارنته برأس المال المرجعي، والخصم من مال الرف عند الشراء.
+   بطاقات التعبئة (العدد × الفئة) + أرصدة الهواتف + رصيد صندوق التعبئة
+   المجموع الكامل ومقارنته برأس المال المرجعي، والخصم من الصندوق عند الشراء.
    يُحمَّل بعد core.js مباشرة.
    ============================================================ */
 (() => {
@@ -48,7 +48,7 @@
     else svT = setTimeout(save, 150);   // الحفظ بعد التحديث حتى لا تُغلق لوحة المفاتيح
   }
   const put = (op, k, n, v, est, now) => putRaw(rid(op, k, n), op, k, n, v, est, now);
-  /* الحساب الكامل: البطاقات + الهواتف + مال الرف */
+  /* الحساب الكامل: البطاقات + الهواتف + رصيد صندوق التعبئة */
   function calc() {
     const byOp = {};
     let cardsTot = 0, phonesTot = 0, missCards = 0, estCards = 0, missPh = 0, oldPh = 0;
@@ -98,7 +98,7 @@
     });
     return L;
   };
-  /* ---------- الشراء / التعبئة من مال الرف ---------- */
+  /* ---------- الشراء / التعبئة من صندوق التعبئة ---------- */
   window.tpBuySync = (k, baseOrDenom) => {
     const qEl = $('tpb_q'), dEl = $('tpb_d'), cEl = $('tpb_calc');
     if (!qEl || !dEl || !cEl) return;
@@ -117,7 +117,7 @@
   window.tpBuyWarn = () => {
     const dEl = $('tpb_d'), wEl = $('tpb_w'); if (!dEl || !wEl) return;
     const d = num(dEl.value) || 0, c = cashVal();
-    wEl.textContent = (c != null && d > c) ? 'تنبيه: المخصوم (' + dm(d) + ') أكبر من مال الرف المسجّل (' + dm(c) + ') — سيصبح مال الرف 0 درهم.' : '';
+    wEl.textContent = (c != null && d > c) ? 'تنبيه: المخصوم (' + dm(d) + ') أكبر من رصيد صندوق التعبئة المسجّل (' + dm(c) + ') — سيصبح رصيد الصندوق 0 درهم.' : '';
   };
   window.tpBuySub = k => {
     const qEl = $('tpb_q'), dEl = $('tpb_d'); if (!qEl || !dEl) return;
@@ -135,12 +135,12 @@
       ? ('الرصيد المسجل الآن: <b>' + (curV == null ? 'غير مسجّل' : esc(dm(curV))) + '</b>')
       : ('المتوفر الآن: <b>' + (curV == null ? 'غير مسجّل' : (r0 && r0.est ? '≈' : '') + curV + ' بطاقة') + '</b>');
     const cashTxt = curCash == null
-      ? 'مال الرف غير مسجّل بعد (لن يُخصم منه تلقائياً حتى تسجّل مبلغ الرف)'
-      : 'المتوفر في مال الرف حالياً: <b>' + esc(dm(curCash)) + '</b>';
+      ? 'رصيد صندوق التعبئة غير مسجّل بعد (لن يُخصم منه تلقائياً حتى تسجّله)'
+      : 'المتوفر في صندوق التعبئة حالياً: <b>' + esc(dm(curCash)) + '</b>';
     $('sh').innerHTML = `<div class="bar"></div><h3>${esc(title)}</h3><p class="m">${curTxt}</p>`
       + `<label>${k == 'p' ? 'المبلغ المُعبَّأ / المُضاف (درهم)' : 'الكمية التي وصلت (عدد البطاقات)'}<input id="tpb_q" type="tel" inputmode="${k == 'p' ? 'decimal' : 'numeric'}" placeholder="${k == 'p' ? 'مثال: 500' : 'مثال: 10'}" oninput="tpBuySync('${k}',${k == 'p' ? (curV || 0) : n})"></label>`
       + `<div id="tpb_calc" class="m">${k == 'p' ? (curV != null ? 'الرصيد بعد التعبئة: ' + esc(dm(curV)) : '') : 'التكلفة الاسمية: 0 درهم'}</div>`
-      + `<label>المبلغ المأخوذ من مال الرف (درهم)<input id="tpb_d" type="tel" inputmode="decimal" placeholder="0" oninput="tpBuyWarn()"><span class="m">يُحسب تلقائياً كاملاً؛ اجعله 0 إن دُفع من خارج مال التعبئة.</span></label>`
+      + `<label>المبلغ المأخوذ من صندوق التعبئة (درهم)<input id="tpb_d" type="tel" inputmode="decimal" placeholder="0" oninput="tpBuyWarn()"><span class="m">يُحسب تلقائياً كاملاً؛ اجعله 0 إن دُفع من خارج صندوق التعبئة.</span></label>`
       + `<div class="m">${cashTxt}</div><div id="tpb_w" class="rs"></div>`
       + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button><button class="btn" onclick="tpBuySub('${k}')">تأكيد</button></div>`;
     sheetOpen(v => {
@@ -153,26 +153,26 @@
         if (didDed) putRaw('tp_cash_box', '', 'm', 0, Math.max(0, rnd2(c0 - v.ded)), 0, true);
         if (typeof rcLogIn == 'function') rcLogIn('tp', id, '', 'تعبئة ' + op + ' — رصيد الهاتف', '+' + dm(v.q) + ' ← ' + dm(nv) + (didDed ? ' · خُصم ' + dm(v.ded) : ''));
         save(); render();
-        toast('تمت تعبئة ' + op + (didDed ? ' وخُصم ' + dm(v.ded) + ' من الرف' : ''), () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
+        toast('تمت تعبئة ' + op + (didDed ? ' وخُصم ' + dm(v.ded) + ' من الصندوق' : ''), () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
       } else {
         const nv = (curV || 0) + v.q;
         put(op, 'c', n, nv, 0, true);
         if (didDed) putRaw('tp_cash_box', '', 'm', 0, Math.max(0, rnd2(c0 - v.ded)), 0, true);
-        if (typeof rcLogIn == 'function') rcLogIn('tp', id, '', 'تعبئة ' + op + ' — بطاقة ' + n, '+' + v.q + (didDed ? ' · خُصم ' + dm(v.ded) + ' من الرف' : ''));
+        if (typeof rcLogIn == 'function') rcLogIn('tp', id, '', 'تعبئة ' + op + ' — بطاقة ' + n, '+' + v.q + (didDed ? ' · خُصم ' + dm(v.ded) + ' من الصندوق' : ''));
         save(); render();
-        toast('أُضيفت ' + v.q + ' بطاقة' + (didDed ? ' وخُصم ' + dm(v.ded) + ' من الرف' : ''), () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
+        toast('أُضيفت ' + v.q + ' بطاقة' + (didDed ? ' وخُصم ' + dm(v.ded) + ' من الصندوق' : ''), () => { S.tp = JSON.parse(prev); S.cfg.rin = JSON.parse(prevRin); });
       }
     });
     setTimeout(() => { const el = $('tpb_q'); if (el) el.focus(); }, 120);
   }
   window.tpFix = id => tpBuySheet(id);
   window.tpBuyOpen = (op, k, n) => tpBuySheet(rid(op, k, n));
-  /* خيارات الفئة عند الضغط على شارتها (شراء من الرف أو تصفير) */
+  /* خيارات الفئة عند الضغط على شارتها (شراء من الصندوق أو تصفير) */
   window.tpCardAct = (op, n) => {
     const r0 = rec(op, 'c', n), v = r0 && r0.val != null ? r0.val : null;
-    $('sh').innerHTML = `<div class="bar"></div><h3>بطاقة ${esc(op)} — فئة ${n} درهم</h3>`
+    $('sh').innerHTML = `<div class="bar"></div><h3>بطاقة <span class="tp-op" data-op="${esc(op)}">${esc(op)}</span> — فئة ${n} درهم</h3>`
       + `<p class="m">المتوفر الآن: <b>${v == null ? 'غير مسجّل' : (r0 && r0.est ? '≈' : '') + v + ' بطاقة (' + dm(v * n) + ')'}</b></p>`
-      + `<button class="btn" onclick="finish('buy')">${I('plus')} شراء بطاقات من مال الرف</button>`
+      + `<button class="btn" onclick="finish('buy')">${I('plus')} شراء بطاقات من صندوق التعبئة</button>`
       + `<button class="btn s del" onclick="finish('zero')">تصفير الفئة (نفد = 0)</button>`
       + `<div class="acts"><button class="btn s" onclick="finish(null)">إغلاق</button></div>`;
     sheetOpen(w => {
@@ -180,11 +180,11 @@
       else if (w == 'zero') tpZero(op, n);
     });
   };
-  /* نافذة اختيار موحّدة للشراء أو تعبئة الهاتف من مال الرف */
+  /* نافذة اختيار موحّدة لتزويد رصيد الهاتف أو البطاقات من صندوق التعبئة */
   window.tpBuyMenu = () => {
-    $('sh').innerHTML = `<div class="bar"></div><h3>شراء بطاقات / تعبئة هاتف من مال الرف</h3>`
-      + `<label>تعبئة رصيد هاتف</label><div class="tp-menu-row">${OPS.map(op => `<button type="button" class="btn s sm" onclick="finish('${rid(op, 'p', 1)}')">${esc(op)}</button>`).join('')}</div>`
-      + OPS.map(op => `<label>بطاقات ${esc(op)}</label><div class="tp-menu-row">${CARDS.map(n => `<button type="button" class="btn s sm" onclick="finish('${rid(op, 'c', n)}')">${n} درهم</button>`).join('')}</div>`).join('')
+    $('sh').innerHTML = `<div class="bar"></div><h3>تزويد رصيد أو بطاقات</h3>`
+      + `<label>تعبئة رصيد هاتف</label><div class="tp-menu-row">${OPS.map(op => `<button type="button" class="btn s sm tp-op" data-op="${op}" onclick="finish('${rid(op, 'p', 1)}')">${esc(op)}</button>`).join('')}</div>`
+      + OPS.map(op => `<label>بطاقات <b class="tp-op" data-op="${op}">${esc(op)}</b></label><div class="tp-menu-row">${CARDS.map(n => `<button type="button" class="btn s sm" onclick="finish('${rid(op, 'c', n)}')">${n} درهم</button>`).join('')}</div>`).join('')
       + `<div class="acts"><button class="btn s" onclick="finish(null)">إلغاء</button></div>`;
     sheetOpen(id => { if (id) setTimeout(() => tpBuySheet(id), 350); });
   };
@@ -228,12 +228,14 @@
     const dfEl = $('tps_diff'), alEl = $('tps_al');
     if (dfEl) {
       if (c.cap > 0) {
+        dfEl.hidden = false;
         if (c.incomplete) { dfEl.className = 'tp-diff wn'; dfEl.textContent = 'رأس المال ' + dm(c.cap) + ' · غير مكتمل'; }
         else if (c.diff === 0) { dfEl.className = 'tp-diff ok'; dfEl.textContent = 'متوازن ✓ (' + dm(c.cap) + ')'; }
         else if (c.diff < 0) { dfEl.className = 'tp-diff al'; dfEl.textContent = 'ناقص ' + dm(Math.abs(c.diff)) + ' من ' + dm(c.cap); }
         else { dfEl.className = 'tp-diff ok'; dfEl.textContent = 'زائد ' + dm(c.diff) + ' فوق ' + dm(c.cap); }
       } else {
-        dfEl.className = 'tp-diff'; dfEl.textContent = okE() ? 'تحديد رأس المال' : 'بلا رأس مال مرجعي';
+        dfEl.hidden = !okE();
+        if (okE()) { dfEl.className = 'tp-diff'; dfEl.textContent = 'تحديد رأس المال'; }
       }
     }
     if (alEl) {
@@ -241,8 +243,8 @@
       if (c.missCards) msgs.push(arCnt(c.missCards, 'فئة غير مسجلة', 'فئتان غير مسجلتين', 'فئات غير مسجلة', 'فئة غير مسجلة'));
       if (c.estCards) msgs.push(arCnt(c.estCards, 'فئة تقديرية', 'فئتان تقديريتان', 'فئات تقديرية', 'فئة تقديرية'));
       if (c.missPh || c.oldPh) msgs.push('أرصدة الهواتف (' + phDone() + '/' + OPS.length + ')');
-      if (c.cashMiss) msgs.push('مال الرف غير مسجّل');
-      else if (c.cashOld) msgs.push('مال الرف لم يُؤكَّد اليوم');
+      if (c.cashMiss) msgs.push('صندوق التعبئة غير مسجّل');
+      else if (c.cashOld) msgs.push('صندوق التعبئة لم يُؤكَّد اليوم');
       if (msgs.length) {
         alEl.hidden = false;
         alEl.className = 'tp-al wn';
@@ -251,7 +253,7 @@
         alEl.hidden = false;
         alEl.className = 'tp-al al';
         alEl.innerHTML = `<div>${I('alert')} <b>ناقص ${esc(dm(Math.abs(c.diff)))} عن رأس المال</b></div>`
-          + `<div class="m">راجع: بطاقات أو تعبئة لم تُسجَّل، بيع بالكريدي، أو مبلغ مسحوب من الرف.</div>`
+          + `<div class="m">راجع: بطاقات أو تعبئة لم تُسجَّل، بيع بالكريدي، أو مبلغ مسحوب من الصندوق.</div>`
           + (nr ? `<div class="tp-note-show">${I('chat')} <b>ملاحظة اليوم:</b> ${esc(nr.val)}</div>` : '')
           + `<button type="button" class="btn s sm" onclick="tpNoteEd()">${nr ? 'تعديل ملاحظة الفرق' : '+ تدوين ملاحظة للفرق'}</button>`;
       } else if (nr) {
@@ -312,7 +314,7 @@
       render();
     });
   };
-  /* ---------- الشاشة (بطاقات هادئة، سطر واحد لكل فئة، وشارة تتلوّن بالحالة فقط) ---------- */
+  /* ---------- الشاشة (بطاقات هادئة، ألوان الشركات للعناوين فقط، وتلوين الشارة بالحالة) ---------- */
   const row1 = (op, k, n) => {
     const r = rec(op, k, n), v = val(op, k, n), id = op + '_' + k + n, ph = k == 'p', est = !!(r && r.est);
     if (ph) return `<div class="tpr" id="tpr_${id}"><span class="dotl" id="tpd_${id}"></span><span class="tpn tp-tap" onclick="tpBuyOpen('${op}','p',${n})">رصيد الهاتف</span><span class="tpt" id="tpt_${id}"></span>`
@@ -330,26 +332,27 @@
     let h = `<div class="qbar rsum"><div class="qpill al"><div class="qn" id="tps_r">${t.r}</div><div class="ql">نافد / منخفض</div></div><div class="qpill wn"><div class="qn" id="tps_y">${t.y}</div><div class="ql">قارب النفاد</div></div><div class="qpill rp"><div class="qn" id="tps_u">${t.u}</div><div class="ql">غير مسجّل</div></div></div>`
       + `<div id="tpl" class="rsent ${l[1] ? 'w' : ''}">${esc(l[0])}</div>`;
     OPS.forEach(op => {
-      h += `<div class="card tpop"><div class="tpoh"><b>${op}</b><span class="m" id="tpu_${op}"></span></div>`
+      h += `<div class="card tpop"><div class="tpoh"><b class="tp-op" data-op="${op}">${op}</b><span class="m" id="tpu_${op}"></span></div>`
         + `<div class="tp-subtot" id="tpoh_${op}"></div>`
         + PH.map(n => row1(op, 'p', n)).join('')
         + CARDS.map(n => row1(op, 'c', n)).join('') + `</div>`;
     });
-    h += `<div class="card"><div class="tpoh"><b>مال رف التعبئة</b><span class="m" id="tpu_cash"></span></div>`
-      + `<div class="row2" style="margin-top:6px"><span class="m f1">النقد الموجود في درج/رف التعبئة</span>`
-      + `<button type="button" class="tp-cfm" id="tpcfm_cash" hidden onclick="tpCfm('tp_cash_box')" title="تأكيد نفس المبلغ لليوم">${I('check')}</button>`
-      + `<input class="tpi tp-cash-inp" id="tpi_cash" inputmode="decimal" placeholder="0" value="${cv == null ? '' : esc(cv)}" oninput="tpIn('','m',0,this)" onchange="tpIn('','m',0,this,1)" onfocus="this.select()"><span class="m tpu">درهم</span></div></div>`;
+    h += `<div class="card"><div class="tp-cash-row">`
+      + `<div class="tp-cash-info"><b>رصيد صندوق التعبئة</b><small class="m" id="tpu_cash"></small></div>`
+      + `<div class="tp-ctrl"><button type="button" class="tp-cfm" id="tpcfm_cash" hidden onclick="tpCfm('tp_cash_box')" title="تأكيد نفس المبلغ لليوم">${I('check')}</button>`
+      + `<input class="tpi tp-cash-inp" id="tpi_cash" inputmode="decimal" placeholder="0" value="${cv == null ? '' : esc(cv)}" oninput="tpIn('','m',0,this)" onchange="tpIn('','m',0,this,1)" onfocus="this.select()"><span class="m tpu">درهم</span></div>`
+      + `</div></div>`;
     h += `<div class="card tp-sum-card">`
       + `<div class="tp-sum-grid">`
       + `<div class="tp-sum-cell"><small>البطاقات</small><b id="tps_c">0 درهم</b></div>`
       + `<div class="tp-sum-cell"><small>الهواتف</small><b id="tps_p">0 درهم</b></div>`
-      + `<div class="tp-sum-cell"><small>مال الرف</small><b id="tps_m">0 درهم</b></div>`
+      + `<div class="tp-sum-cell"><small>صندوق التعبئة</small><b id="tps_m">0 درهم</b></div>`
       + `</div>`
       + `<div class="tp-grand-bar"><div><small>المجموع الكامل</small><b id="tps_tot">0 درهم</b></div>`
       + `<button type="button" id="tps_diff" class="tp-diff" onclick="if(okTpE())tpLim('cap')"></button></div>`
       + `<div id="tps_al" class="tp-al" hidden></div>`
       + `</div>`;
-    h += `<div class="pair-grid"><button class="btn" onclick="tpBuyMenu()">${I('plus')} شراء / تعبئة من الرف</button><button class="btn s" onclick="go('rep',{rf:'topup'})">عرض في التقرير</button></div>`;
+    h += `<div class="pair-grid"><button class="btn" onclick="tpBuyMenu()">${I('plus')} تزويد رصيد/بطاقات</button><button class="btn s" onclick="go('rep',{rf:'topup'})">عرض في التقرير</button></div>`;
     return { t: 'التعبئة', h, a: paint };
   };
   /* ---------- الحدود ورأس المال المرجعي ---------- */

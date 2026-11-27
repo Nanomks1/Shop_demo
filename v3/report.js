@@ -126,7 +126,7 @@
   const cleanReq = s => String(s || '').replace(/(?:\+?212|0)[\s\-.]*[567](?:[\s\-.]*\d){8}/g, '').replace(/\s*[-–—:]\s*$/, '').replace(/\s{2,}/g, ' ').trim();
   const tpSumTxt = ts => {
     if (!ts || (ts.grand <= 0 && !ts.cap && ts.incomplete)) return '';
-    const base = `حساب التعبئة: بطاقات ${ts.cardsTot} + هواتف ${ts.phonesTot} + كاش ${ts.cashTot} = ${ts.grand}`;
+    const base = `حساب التعبئة: بطاقات ${ts.cardsTot} + هواتف ${ts.phonesTot} + الصندوق ${ts.cashTot} = ${ts.grand}`;
     if (ts.incomplete) return base + ' درهم (الجرد غير مكتمل اليوم)';
     if (ts.cap > 0) {
       if (ts.diff === 0) return base + ' درهم (متوازن ✓)';
@@ -357,7 +357,7 @@
     }
     return `<div class="card rp-click" onclick="go('tp')">`
       + `<div class="row2"><b>${I('ctopup')} حساب التعبئة</b>${badge}</div>`
-      + `<div class="m" style="margin-top:4px">بطاقات <bdi>${ts.cardsTot}</bdi> + هواتف <bdi>${ts.phonesTot}</bdi> + كاش <bdi>${ts.cashTot}</bdi> = <b><bdi>${ts.grand} درهم</bdi></b>${ts.cap > 0 ? ` (من أصل <bdi>${ts.cap} درهم</bdi>)` : ''}</div>`
+      + `<div class="m" style="margin-top:4px">بطاقات <bdi>${ts.cardsTot}</bdi> + هواتف <bdi>${ts.phonesTot}</bdi> + الصندوق <bdi>${ts.cashTot}</bdi> = <b><bdi>${ts.grand} درهم</bdi></b>${ts.cap > 0 ? ` (من أصل <bdi>${ts.cap} درهم</bdi>)` : ''}</div>`
       + (ts.note ? `<div class="rs" style="margin-top:4px">${I('chat')} ${esc(ts.note)}</div>` : '')
       + `</div>`;
   }
@@ -375,8 +375,8 @@
         if (ts.u > 0) msgs.push('لم تُسجَّل ' + arCnt(ts.u, 'خانة', 'خانتان', 'خانات', 'خانة'));
         if (ts.estCards > 0) msgs.push(arCnt(ts.estCards, 'فئة تقديرية', 'فئتان تقديريتان', 'فئات تقديرية', 'فئة تقديرية'));
         if (ts.stalePh) msgs.push('أرصدة اليوم: ' + ts.done + ' من ' + ts.tot);
-        if (ts.cashMiss) msgs.push('مال الرف غير مسجّل');
-        else if (ts.cashOld) msgs.push('مال الرف لم يُؤكَّد اليوم');
+        if (ts.cashMiss) msgs.push('صندوق التعبئة غير مسجّل');
+        else if (ts.cashOld) msgs.push('صندوق التعبئة لم يُؤكَّد اليوم');
         h += `<div class="card row2">${I('alert')}<span class="f1"><b>التعبئة:</b> ${esc(msgs.join(' · '))}</span><button class="btn s sm" onclick="go('tp')">افتح التعبئة</button></div>`;
       }
       if (c.tpSum) h += tpReportBox(ts);

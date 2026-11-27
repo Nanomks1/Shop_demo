@@ -13,6 +13,7 @@
   --ok-t:#065f46;--ok-bg:rgba(16,185,129,.14);--ok-bd:rgba(16,185,129,.42);
   --wn-t:#9a3412;--wn-bg:rgba(245,158,11,.15);--wn-bd:rgba(245,158,11,.45);
   --al-t:#991b1b;--al-bg:rgba(239,68,68,.13);--al-bd:rgba(239,68,68,.42);
+  --op-iam:#1d4ed8;--op-org:#ea580c;--op-inw:#9333ea;
   --rs:#9a3412;--fs:18px;--ds:1;--r:8px;--rb:8px;--rt:8px;--rc:10px;--rf:8px;
   --sh:0 1px 2px rgba(28,25,23,.05),0 6px 18px rgba(28,25,23,.06);
   color-scheme:only light;
@@ -31,6 +32,7 @@
   --ok-t:#4ade80;--ok-bg:rgba(34,197,94,.16);--ok-bd:rgba(74,222,128,.42);
   --wn-t:#fbbf24;--wn-bg:rgba(245,158,11,.16);--wn-bd:rgba(251,191,36,.42);
   --al-t:#fca5a5;--al-bg:rgba(239,68,68,.16);--al-bd:rgba(248,113,113,.42);
+  --op-iam:#60a5fa;--op-org:#fb923c;--op-inw:#c084fc;
   --rs:#fbbf24;--sh:0 8px 24px rgba(0,0,0,.42);
   color-scheme:dark;
 }
@@ -423,11 +425,14 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .empty-state{background:var(--c);border:1.5px dashed var(--b);border-radius:var(--r);padding:20px 14px;text-align:center;margin:8px 0}
 .empty-state b{display:block;color:var(--t);font-size:var(--t-md);margin-bottom:3px}
 .empty-state span{color:var(--m);font-size:var(--t-sm)}
-/* ---- التعبئة والحساب اليومي (ألوان هادئة، صف واحد للفئة، وتلوين الشارة بالحالة فقط) ---- */
+/* ---- التعبئة والحساب اليومي (ألوان هادئة، ألوان الشركات للعناوين فقط، وتلوين الشارة بالحالة) ---- */
 .tph{cursor:pointer;padding:10px 12px}.tph .tpic{width:2.5rem;height:2.5rem;border-radius:var(--r);background:var(--ab);color:var(--pt);display:flex;align-items:center;justify-content:center;flex:none}
 .tpop{padding:.65rem .72rem}
 .tpoh{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;gap:8px;flex-wrap:wrap}
 .tpoh b{font-size:var(--t-lg);color:var(--t);font-weight:800}
+.tpoh .tp-op[data-op=IAM],.tp-op[data-op=IAM],.tp-menu-row .tp-op[data-op=IAM]{color:var(--op-iam)}
+.tpoh .tp-op[data-op=ORANGE],.tp-op[data-op=ORANGE],.tp-menu-row .tp-op[data-op=ORANGE]{color:var(--op-org)}
+.tpoh .tp-op[data-op=INWI],.tp-op[data-op=INWI],.tp-menu-row .tp-op[data-op=INWI]{color:var(--op-inw)}
 .tp-subtot{font-size:var(--t-xs);font-weight:700;color:var(--m);padding-bottom:6px;margin-bottom:2px;border-bottom:1px solid var(--bl)}
 .tpr{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--bl);flex-wrap:wrap}.tpr:last-child{border-bottom:0}
 .tpr.c{justify-content:space-between;flex-wrap:nowrap;gap:8px;padding:6px 0}
@@ -452,6 +457,10 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .tp-sb:active,.tp-cfm:active,.tpd:active{transform:scale(.95)}
 .tpi{width:3.55rem!important;min-width:3rem;min-height:max(40px,calc(2.15rem * var(--ds)));padding:.2em .25em;text-align:center;font-weight:800;border-radius:8px;direction:ltr}.tpu{font-size:var(--t-sm)}
 [data-ds=lg] .tpr.c{flex-wrap:wrap}
+.tp-cash-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tp-cash-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 8rem}
+.tp-cash-info b{font-size:var(--t-md);font-weight:700;color:var(--t)}
+.tp-cash-info small{font-size:var(--t-xs)}
 .tp-cash-inp{width:5.8rem!important;min-width:4.8rem}
 .tp-sum-card{padding:.7rem}
 .tp-sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
