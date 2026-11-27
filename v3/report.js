@@ -6,7 +6,7 @@
   const RTABS = [['all', 'الشامل'], ['topup', 'التعبئة'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['pochette', 'البوشيط'], ['acc', 'الإكسسوارات']];
   const RSEC = { topup: ['التعبئة', '📶 التعبئة'], phones: ['الهواتف الناقصة', '📱 الهواتف'], glass: ['الأنتي كاس', '🛡️ الأنتي كاس'], pochette: ['البوشيط', '🅿️ البوشيط'], acc: ['الإكسسوارات', '🔌 الإكسسوارات'] };
   const SCOL = { topup: '#0891b2', phones: '#2563eb', glass: '#0d9488', pochette: '#db2777', acc: '#7c3aed', req: '#64748b' };
-  const RD = { lv: 'a', dt: 1, st: 1, pr: 0, rq: 1, pn: 1, em: 0, ft: '', hs: [], rr: 0, rd: 0, rm: 1, nd: [], rh: 16, wa: '', stRnd: 1 };
+  const RD = { lv: 'a', dt: 1, st: 1, pr: 0, rq: 1, pn: 1, em: 0, ft: '', hs: [], rr: 0, rd: 0, rm: 1, nd: [], rh: 16, wa: '', stRnd: 1, tpSum: 1 };
   const rcf = () => ({ ...RD, tt: 'تقرير ' + shopName(), ...(S.cfg.rc || {}) });
   const okEdit = () => isAdmin() || !S.users.length;
   const rSecs = m => m == 'all' ? ['topup', 'phones', 'glass', 'pochette', 'acc'] : [m];
@@ -124,6 +124,17 @@
   const dbLine = () => { const n = (S.debt || []).filter(x => !x.paid).length; return n ? 'ديون مفتوحة: ' + n : ''; };
   const sentToday = () => { const x = S.cfg.rs; return !!(x && x.t && new Date(x.t).toDateString() == new Date().toDateString()); };
   const cleanReq = s => String(s || '').replace(/(?:\+?212|0)[\s\-.]*[567](?:[\s\-.]*\d){8}/g, '').replace(/\s*[-–—:]\s*$/, '').replace(/\s{2,}/g, ' ').trim();
+  const tpSumTxt = ts => {
+    if (!ts || (ts.grand <= 0 && !ts.cap && ts.incomplete)) return '';
+    const base = `حساب التعبئة: بطاقات ${ts.cardsTot} + هواتف ${ts.phonesTot} + كاش ${ts.cashTot} = ${ts.grand}`;
+    if (ts.incomplete) return base + ' درهم (الجرد غير مكتمل اليوم)';
+    if (ts.cap > 0) {
+      if (ts.diff === 0) return base + ' درهم (متوازن ✓)';
+      if (ts.diff < 0) return `⚠ ${base} من ${ts.cap} درهم (ناقص ${Math.abs(ts.diff)} درهم)`;
+      return `${base} من ${ts.cap} درهم (زائد ${ts.diff} درهم)`;
+    }
+    return base + ' درهم';
+  };
   /* حساب عدد النواقص والطلبات التي ظهرت بعد آخر إرسال اليوم */
   function newAfterSend() {
     const x = S.cfg.rs; if (!x || !x.t || !sentToday()) return 0;
@@ -241,6 +252,11 @@
       const ts = tpSummary();
       if (ts.u > 0) o.push('تنبيه تعبئة: لم تُسجَّل بعد ' + arCnt(ts.u, 'خانة', 'خانتان', 'خانات', 'خانة'));
       if (ts.stalePh) o.push('أرصدة التعبئة اليوم: مسجّل ' + ts.done + ' من ' + ts.tot + ' فقط');
+      if (c.tpSum) {
+        const stx = tpSumTxt(ts);
+        if (stx) o.push(stx);
+        if (ts.note) o.push('ملاحظة التعبئة: ' + ts.note);
+      }
     }
     B.forEach(b => {
       if (!b.ls.length && !c.em) return;
@@ -330,6 +346,21 @@
       + list.map(x => `<div class="rin-row" onclick="rcOpenRin('${x.id}')"><div class="f1"><b><bdi>${esc(x.lbl)}</bdi></b><div class="m">${esc(x.det)}</div></div><div class="rin-meta"><bdi class="ltr">${fdTime(x.t)}</bdi>${x.by ? `<small>${esc(x.by)}</small>` : ''}</div></div>`).join('')
       + `</div></details>`;
   }
+  function tpReportBox(ts) {
+    if (!ts || (ts.grand <= 0 && !ts.cap && ts.incomplete)) return '';
+    let badge = '';
+    if (ts.incomplete) badge = '<span class="rp-badge warn">جرد غير مكتمل</span>';
+    else if (ts.cap > 0) {
+      if (ts.diff === 0) badge = '<span class="rp-badge ok">متوازن ✓</span>';
+      else if (ts.diff < 0) badge = `<span class="rp-badge bad">ناقص <bdi>${Math.abs(ts.diff)} درهم</bdi></span>`;
+      else badge = `<span class="rp-badge ok">زائد <bdi>${ts.diff} درهم</bdi></span>`;
+    }
+    return `<div class="card rp-click" onclick="go('tp')">`
+      + `<div class="row2"><b>${I('ctopup')} حساب التعبئة</b>${badge}</div>`
+      + `<div class="m" style="margin-top:4px">بطاقات <bdi>${ts.cardsTot}</bdi> + هواتف <bdi>${ts.phonesTot}</bdi> + كاش <bdi>${ts.cashTot}</bdi> = <b><bdi>${ts.grand} درهم</bdi></b>${ts.cap > 0 ? ` (من أصل <bdi>${ts.cap} درهم</bdi>)` : ''}</div>`
+      + (ts.note ? `<div class="rs" style="margin-top:4px">${I('chat')} ${esc(ts.note)}</div>` : '')
+      + `</div>`;
+  }
   function repBodyHtml(F, lv, rq) {
     const c = rcf(), nq = nz(rq || ''), B = blocks(F, lv), rset = rinKeySet(), tin = todayRin();
     let h = '';
@@ -339,12 +370,16 @@
     }
     if (!nq && (F == 'all' || F == 'topup') && !c.hs.includes('topup') && typeof tpSummary == 'function') {
       const ts = tpSummary();
-      if (ts.u > 0 || ts.stalePh) {
+      if (ts.u > 0 || ts.stalePh || ts.cashMiss || ts.cashOld || ts.estCards > 0) {
         const msgs = [];
         if (ts.u > 0) msgs.push('لم تُسجَّل ' + arCnt(ts.u, 'خانة', 'خانتان', 'خانات', 'خانة'));
+        if (ts.estCards > 0) msgs.push(arCnt(ts.estCards, 'فئة تقديرية', 'فئتان تقديريتان', 'فئات تقديرية', 'فئة تقديرية'));
         if (ts.stalePh) msgs.push('أرصدة اليوم: ' + ts.done + ' من ' + ts.tot);
+        if (ts.cashMiss) msgs.push('مال الرف غير مسجّل');
+        else if (ts.cashOld) msgs.push('مال الرف لم يُؤكَّد اليوم');
         h += `<div class="card row2">${I('alert')}<span class="f1"><b>التعبئة:</b> ${esc(msgs.join(' · '))}</span><button class="btn s sm" onclick="go('tp')">افتح التعبئة</button></div>`;
       }
+      if (c.tpSum) h += tpReportBox(ts);
     }
     if (!nq && tin.length) h += rinBoxHtml(tin);
     let anyRow = false;
@@ -418,7 +453,7 @@
       t: 'التقرير اليومي', h: '<p class="m">هذه الإعدادات تحدد ما يظهر في التقرير ونصّ الواتساب، وتنطبق على كل الأجهزة.</p>'
         + '<h3>العنوان والتوقيع</h3>' + row('عنوان التقرير', 'rcTt()', c.tt || 'بدون') + tog('إظهار التاريخ بجانب العنوان', 'dt') + row('عبارة في آخر التقرير', 'rcFt()', c.ft || 'بدون')
         + '<h3>ما الذي يُدرج</h3>' + tog('قائمة الهواتف المتوفرة', 'st') + (c.st ? tog('أسعار الهواتف المتوفرة', 'pr') : '') + tog('طلبات الزبائن', 'rq') + tog('ملاحظات البوشيط (باقي / خاصنا)', 'pn') + tog('إظهار الأقسام التي لا نقص فيها', 'em')
-        + '<h3>أسطر إضافية في التقرير الشامل</h3>' + tog('سطر الصيانة (في المحل / جاهز / لم يصلح / منسي)', 'rr') + tog('سطر الديون المفتوحة', 'rd') + tog('تنبيه الجولة اليومية (أصناف غير مؤكدة) في النص', 'stRnd')
+        + '<h3>أسطر إضافية في التقرير الشامل</h3>' + tog('سطر ملخص حساب التعبئة والمجموع الكامل', 'tpSum') + tog('سطر الصيانة (في المحل / جاهز / لم يصلح / منسي)', 'rr') + tog('سطر الديون المفتوحة', 'rd') + tog('تنبيه الجولة اليومية (أصناف غير مؤكدة) في النص', 'stRnd')
         + '<h3>الإرسال والتذكير</h3>' + row('رقم واتساب المعلم (اختياري)', 'rcWaEd()', c.wa || 'اختيار يدوي') + tog('تذكير في الرئيسية إن لم يُرسل التقرير اليوم', 'rm') + row('ساعة بدء التذكير', 'rcRh()', c.rh + ':00')
         + row('أيام عطلة المحل (بلا تذكير)', "go('st_shop')", od.length ? arCnt(od.length, 'يوم', 'يومان', 'أيام') : 'لا عطلة')
         + '<h3>المستوى الافتراضي</h3><div style="display:flex;gap:6px;margin-bottom:10px"><button class="tag ' + (c.lv == 'a' ? 'on' : '') + '" onclick="rcSet({lv:\'a\'})">النافد وقارب النفاد</button><button class="tag ' + (c.lv == 'r' ? 'on' : '') + '" onclick="rcSet({lv:\'r\'})">النافد فقط</button></div>'
