@@ -63,7 +63,7 @@ const SRCH = [];                                // مصادر البحث: {k, l,
 const ST = { ver: 0, dirty: 0 };                // ver: يتغير مع كل حفظ (ذاكرة البحث) · dirty: يحتاج مزامنة
 /* ---------- الثوابت ---------- */
 const TG = { brand: 'الماركات', color: 'الألوان', cap: 'السعات', ram: 'RAM', kind: 'نوع الإكسسوار', conn: 'الموصل', tier: 'الفئات السعرية', glass: 'أنواع الزجاج', pw: 'القدرة (واط)', fault: 'أعطال الصيانة', rpchk: 'حالة الاستلام والأمانات' };
-const PL = { del: 'الحذف', price: 'تعديل الأسعار', tags: 'إدارة الوسوم', fields: 'إدارة الحقول', trash: 'الاسترجاع من المحذوفات', stat: 'عرض الإحصائيات', rpDone: 'تعديل الصيانة المسلّمة (الأرشيف)', debt: 'إدارة الديون (تسجيل ودفع)' };
+const PL = { del: 'الحذف', price: 'تعديل الأسعار', tags: 'إدارة الوسوم', fields: 'إدارة الحقول', trash: 'الاسترجاع من المحذوفات', stat: 'عرض الإحصائيات', rpDone: 'تعديل الصيانة المسلّمة (الأرشيف)', debt: 'إدارة الديون (دفعة وتعديل وتسجيل)', debtAdd: 'تسجيل دين جديد فقط (دون دفع أو تعديل)' };
 const DT = { g: '#16a34a', y: '#d97706', r: '#dc2626' }, TX = { g: 'متوفر', y: 'قارب على النفاد', r: 'نفد' };
 const DL0 = { low: 1, gmin: 10, cl: 3, stale: 7, alk: 5 };
 const LM = [
@@ -464,6 +464,11 @@ function restore(id, fromUndo) {
     if (it && it.cnt > 0) it.cnt = Math.max(0, it.cnt - 1);
   }
   if (t.coll == 'gg' && t.obj && t.obj._it) { const its = t.obj._it; delete t.obj._it; its.forEach(x => { if (!S.items.some(y => y.id == x.id)) S.items.push(x); }); }   // مجموعة الأنتي كاس تعود مع مخزونها
+  if (t.coll == 'debt' && t.obj && t.obj.rp) {   // لا يُربط دينان بتذكرة صيانة واحدة
+    const r = (S.rp || []).find(x => x.id == t.obj.rp);
+    if (r && r.debt && r.debt != t.obj.id && (S.debt || []).some(x => x.id == r.debt)) { delete t.obj.rp; toast('أُعيد الدين دون ربطه: التذكرة مرتبطة بدين آخر'); }
+    else if (r) r.debt = t.obj.id;
+  }
   S[t.coll] = S[t.coll] || []; S[t.coll].push(t.obj); save(); render();
 }
 const row = (l, fn, sub) => `<button class="card row2 st-row" onclick="${fn}"><b class="st-lbl">${esc(l)}</b>${sub !== undefined && sub !== '' ? `<span class="m st-val">${esc(sub)}</span>` : ''}<span class="st-arr">${ic('back')}</span></button>`;

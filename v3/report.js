@@ -121,7 +121,11 @@
     const late = d.filter(x => Date.now() - (x.t1 || x.t0) > lim('rpLate') * 864e5).length;
     return i || d.length ? 'الصيانة: ' + i + ' في المحل · ' + ok + ' جاهز للتسليم' + (nf ? ' · ' + nf + ' لم يصلح' : '') + (late ? ' (منسي ' + late + ')' : '') : '';
   };
-  const dbLine = () => { const n = (S.debt || []).filter(x => !x.paid).length; return n ? 'ديون مفتوحة: ' + n : ''; };
+  const dbLine = () => {
+    const O = (S.debt || []).filter(x => !x.paid); if (!O.length) return '';
+    const tot = Math.round(O.reduce((s, d) => s + dRem(d), 0) * 100) / 100, late = O.filter(dbtLate).length;
+    return 'ديون مفتوحة: ' + O.length + ' بمجموع ' + tot + ' درهم' + (late ? ' (' + late + ' متأخر)' : '');
+  };
   const sentToday = () => { const x = S.cfg.rs; return !!(x && x.t && new Date(x.t).toDateString() == new Date().toDateString()); };
   const cleanReq = s => String(s || '').replace(/(?:\+?212|0)[\s\-.]*[567](?:[\s\-.]*\d){8}/g, '').replace(/\s*[-–—:]\s*$/, '').replace(/\s{2,}/g, ' ').trim();
   const tpAdjTxt = ts => {

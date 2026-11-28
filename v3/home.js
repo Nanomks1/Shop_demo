@@ -333,7 +333,7 @@ HK.render.push(() => {
   });
 });
 /* ---------- الحدود ---------- */
-const LMIN1 = ['alk', 'stale', 'rpSlow', 'rpLate', 'rpKeep', 'csBuy'];
+const LMIN1 = ['alk', 'stale', 'rpSlow', 'rpLate', 'rpKeep', 'csBuy', 'dbo'];
 const limShow = k => k == 'gmin' ? lim(k) - 1 : lim(k);
 function limEd(k) {
   if (!isAdmin()) return toast('للمدير فقط');

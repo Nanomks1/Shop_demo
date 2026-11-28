@@ -87,7 +87,7 @@ window.rDV = function (id, pre) {
       r.dnote = [dn, addTxt ? 'مرفق: ' + addTxt : ''].filter(Boolean).join(' · ');
     });
     const remDebt = !notFixed && cap !== null ? Math.max(0, cap - dep - paidNum) : 0;
-    if (remDebt > 0 && !r.debt && can('debt')) {
+    if (remDebt > 0 && !r.debt && canDebtAdd()) {
       setTimeout(() => {
         sure(`الباقي غير المقبوض هو ${remDebt} درهم (السعر ${cap}${dep ? ' − العربون ' + dep : ''} − المقبوض ${paidNum}). هل تريد تسجيل ${remDebt} درهم كدين على «${r.name}»؟`, 'نعم، سجّله كدين', false).then(ok => {
           if (!ok) return;

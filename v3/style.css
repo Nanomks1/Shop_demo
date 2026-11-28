@@ -354,6 +354,18 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .dbt-who b{font-size:var(--t-lg);font-weight:800}
 .dbt-amt{display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-inline-start:auto}
 .dbt-orig{font-size:var(--t-xs);color:var(--m);font-weight:600;white-space:nowrap}
+.dbt-sum{grid-template-columns:1fr 1fr}
+.dbt-sum3{grid-template-columns:repeat(3,1fr)}
+.dbt-line{margin-top:4px}
+.dbt-why{font-weight:600;margin-top:5px}
+.dbt-h{margin:12px 0 4px}
+.dbt-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.dbt-age{display:inline-flex;align-items:center;padding:.05em .5em;border-radius:6px;border:1px solid var(--bl);background:var(--c);color:var(--m);font-size:var(--t-xs);font-weight:700}
+.dbt-age.late{background:var(--wn-bg);border-color:var(--wn-bd);color:var(--wn-t)}
+.sec-panel.dbt-tabs{padding:8px}
+.dbt-tabs .sec-tags{border:0;padding:0}
+.dbt-tabs .tag{flex:1;justify-content:center}
+.card.rp-ok{border-color:var(--ok-bd)}
 /* ---- التقرير اليومي ونوافذ تسجيل وصول البضاعة وسجل الوصول ---- */
 .rsum .qpill{cursor:default}
 .rsum .al .qn{color:var(--al-t)}.rsum .wn .qn{color:var(--wn-t)}
