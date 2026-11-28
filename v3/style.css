@@ -265,9 +265,14 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .cs-chip b{min-width:1.1rem;text-align:center}
 .jl-row{display:flex;flex-direction:column;gap:6px}
 .jl-row>.row2{width:100%;flex:1;min-width:0;flex-wrap:wrap}
-.jl-acts{display:inline-flex;align-items:center;gap:5px;flex:none;margin-inline-start:auto}
+.jl-acts{display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px;flex:0 1 auto;max-width:100%;margin-inline-start:auto}
+.jl-cn{min-width:2.1rem;min-height:calc(1.95rem * var(--ds));padding:0 .35em;border-radius:8px;border:1px dashed var(--b);background:var(--inp);color:var(--t);font:inherit;font-weight:800;font-size:var(--t-md);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.jl-ok{display:inline-flex;align-items:center;padding:.05em .45em;border-radius:6px;background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-t);font-size:var(--t-xs);font-weight:700;white-space:nowrap}
+.jl-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:7px;border-top:1px dashed var(--bl)}
+.jl-bar .tag{margin:0;padding:.22em .55em;font-size:var(--t-xs)}
+.rck.done{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok-t)}
 .jl-sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0 8px}
-.jl-sum-pill{background:var(--c);border:1px solid var(--bl);border-radius:var(--rc);padding:.45rem .5rem;text-align:center;box-shadow:var(--sh)}
+.jl-sum-pill{min-width:0;background:var(--c);border:1px solid var(--bl);border-radius:var(--rc);padding:.45rem .5rem;text-align:center;box-shadow:var(--sh)}
 .jl-sum-pill b{display:block;font-size:var(--t-xl);font-weight:800;color:var(--pt);line-height:1.2}
 .jl-sum-pill small{display:block;font-size:var(--t-xs);color:var(--m);margin-top:2px}
 .jl-sum-pill.wn b{color:var(--wn-t)}

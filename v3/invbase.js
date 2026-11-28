@@ -16,6 +16,16 @@ const touch = (i, cf) => {
   i.at = Date.now();
   if (cf) i.cf = i.at;
 };
+const cfTouch = i => {
+  if (!i) return;
+  i.cf = Date.now();
+  i.by = S.me;
+};
+/* خيارات الجرد والجولة اليومية القابلة للتعديل من المدير (st_rnd) */
+const JLXD = { ac: 1, ns: 1, nz: 1, all: 'e', so: 'n', hs: [] };
+const jlx = k => { const o = S.cfg && S.cfg.jrx; return !o || o[k] === undefined ? JLXD[k] : o[k]; };
+const jlSecOn = s => s == 'tp' ? (typeof tpJournOn == 'function' && tpJournOn()) : !((jlx('hs') || []).includes(s));
+const jlAutoCf = () => V.v == 'jl' && !!jlx('ac');
 const sumv = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
 S.fields = S.fields || []; S.gg = S.gg || []; S.ag = S.ag || [];
 /* cl: 2 يعني لكل لون: 0 نفد (أحمر)، 1 أو 2 قارب (برتقالي)، 3 فأكثر متوفر (أخضر) */

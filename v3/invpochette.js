@@ -257,7 +257,7 @@ function csC(id, vid, d) {
   if (d < 0 && x.n <= 0) return toast('العدد 0 بالفعل');
   csDo(id, (d < 0 ? 'بيع ' : 'إضافة ') + csNm(it) + ' (' + (x.c || 'عام') + ') ' + (d < 0 ? '−1' : '+1'), r => {
     const y = r.v.find(z => z.id == vid), was = y.n;
-    y.n = Math.max(0, y.n + d); if (d < 0) csOut(r, y, was); touch(r);
+    y.n = Math.max(0, y.n + d); if (d < 0) csOut(r, y, was); touch(r, jlAutoCf());
   });
   if (d > 0) reqChk('بوشيط ' + it.name);
   csShR(id);

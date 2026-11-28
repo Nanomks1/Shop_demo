@@ -70,13 +70,47 @@ VW.st_shop = () => {
   };
 };
 /* ---------- 2. الجرد والجولة اليومية ---------- */
+const AS_JR_SECS = [['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['case', 'البوشيط'], ['acc', 'الإكسسوارات'], ['tp', 'التعبئة']];
+const AS_JR_ALL = { e: 'متاح للجميع', a: 'للمدير فقط', o: 'مخفي' };
+function asJrTog(k) {
+  if (!isAdmin() && S.users.length) return toast('للمدير فقط');
+  upd(() => {
+    S.cfg.jrx = { ...(S.cfg.jrx || {}) };
+    S.cfg.jrx[k] = jlx(k) ? 0 : 1;
+  });
+}
+function asJrAll() {
+  if (!isAdmin() && S.users.length) return toast('للمدير فقط');
+  const ord = ['e', 'a', 'o'], nx = ord[(ord.indexOf(jlx('all')) + 1) % ord.length];
+  upd(() => { S.cfg.jrx = { ...(S.cfg.jrx || {}), all: nx }; });
+}
+function asJrSo() {
+  if (!isAdmin() && S.users.length) return toast('للمدير فقط');
+  upd(() => { S.cfg.jrx = { ...(S.cfg.jrx || {}), so: jlx('so') == 'n' ? 'o' : 'n' }; });
+}
+function asJrSec(s) {
+  if (!isAdmin() && S.users.length) return toast('للمدير فقط');
+  if (s == 'tp') return typeof tpxTog == 'function' ? tpxTog('jl') : null;
+  const hs = (jlx('hs') || []).slice(), idx = hs.indexOf(s);
+  if (idx < 0) hs.push(s); else hs.splice(idx, 1);
+  upd(() => { S.cfg.jrx = { ...(S.cfg.jrx || {}), hs }; });
+}
 VW.st_rnd = () => {
   const stl = typeof rnd == 'function' ? rnd(false).length : 0;
   return {
     t: 'الجرد والجولة اليومية',
-    h: '<p class="m">تنبهك الجولة اليومية بالأصناف التي لم يتغير عددها أو لم تُؤكَّد منذ المدة المحددة.</p>'
+    h: '<p class="m">تنبهك الجولة اليومية بالأصناف التي لم يتغير عددها أو لم تُؤكَّد منذ المدة المحددة (متزامن لكل الأجهزة).</p>'
       + `<div class="card row2"><div class="f1"><b>الحالة الآن</b><div class="m">${stl ? arCnt(stl, 'صنف غير مؤكد', 'صنفان غير مؤكدين', 'أصناف غير مؤكدة', 'صنفاً غير مؤكد') : 'كل الأصناف مؤكدة حديثاً ✓'}</div></div><button class="btn sm" onclick="go('jl')">افتح الجرد</button></div>`
       + row('يُعتبر الصنف غير مؤكد بعد (أيام)', "limEd('stale')", lim('stale') + ' يوم')
+      + '<h3>الأقسام المشمولة في تنبيه «غير مؤكد»</h3>'
+      + '<p class="m">الأزرق = يظهر في تنبيهات «غير مؤكد». الأقسام المعطّلة تبقى متاحة متى أردت في «جرد شامل للقسم».</p>'
+      + `<div class="card"><div class="rp-chip-box">${AS_JR_SECS.map(([s, l]) => `<button type="button" class="tag ${jlSecOn(s) ? 'on' : ''}" onclick="asJrSec('${s}')">${l}</button>`).join('')}</div></div>`
+      + '<h3>سلوك الجرد والتأكيد</h3>'
+      + swRow('استبعاد الموقوف شراؤها من تنبيه «غير مؤكد»', "asJrTog('ns')", !!jlx('ns'), 'تبقى ظاهرة في «جرد شامل للقسم»')
+      + swRow('استبعاد الأصناف المنتهية (العدد 0) من تنبيه «غير مؤكد»', "asJrTog('nz')", !!jlx('nz'), 'المنتهي يظل في التقرير اليومي وفي «جرد شامل»')
+      + swRow('تأكيد الصنف تلقائياً عند تعديل عدده (− / +) داخل الجرد', "asJrTog('ac')", !!jlx('ac'))
+      + row('زر «تأكيد كل القائمة الظاهرة»', 'asJrAll()', AS_JR_ALL[jlx('all')] || AS_JR_ALL.e)
+      + row('الترتيب الافتراضي في «جرد شامل للقسم»', 'asJrSo()', jlx('so') == 'n' ? 'حسب الماركة والاسم (كالرفوف)' : 'الأقدم تأكيداً أولاً')
   };
 };
 /* ---------- 3. قاموس البحث والمترادفات ---------- */
@@ -252,7 +286,7 @@ VW.st_diag = () => {
 /* ---------- التسجيل في قائمة المزيد ---------- */
 MORE.push(
   { g: 'work', o: 10, l: 'هوية المحل وأيام العطلة', d: 'اسم المحل وتوقيعه، وأيام العطلة الموحّدة للتقرير والتعبئة', fn: "go('st_shop')", n: () => shopName() },
-  { g: 'work', o: 30, l: 'الجرد والجولة اليومية', d: 'بعد كم يوم يُعتبر الصنف غير مؤكد في الجولة', fn: "go('st_rnd')", n: () => lim('stale') + ' يوم' },
+  { g: 'work', o: 30, l: 'الجرد والجولة اليومية', d: 'مدة التنبيه، الأقسام المشمولة، وسلوك التأكيد والترتيب', fn: "go('st_rnd')", n: () => lim('stale') + ' يوم' },
   { g: 'work', o: 40, l: 'قاموس البحث والمترادفات', d: 'إضافة وتعديل كلمات الدارجة والعربية والفرنسية لفهم البحث', fn: "go('st_dict')", n: () => (S.cfg.al && Object.keys(S.cfg.al).length) ? '+' + Object.keys(S.cfg.al).length : '' },
   { g: 'work', o: 50, l: 'قوالب رسائل الواتساب', d: 'تخصيص رسائل الجاهزية وتذكير الدين وتوفر طلب الزبون', fn: "go('st_wa')" },
   { g: 'adm', o: 50, l: 'حالة النظام والتشخيص', d: 'المساحة، خزنة الصور، الإصدار، وسجل الأخطاء', fn: "go('st_diag')", n: () => asAppVer() }

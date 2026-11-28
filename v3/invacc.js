@@ -101,7 +101,7 @@ function acView() {
 function acC(id, d) {
   const i = find(id); if (!i) return;
   if (d < 0 && i.cnt <= 0) return toast('العدد 0 — إن كان غير محدَّث اضغط على الرقم لتصحيحه');
-  commit(d < 0 ? 'بيع ' + acTitle(i) + ' (−1)' : 'إضافة ' + acTitle(i) + ' (+1)', () => { const w = i.cnt > 0; i.cnt = Math.max(0, i.cnt + d); if (w && i.cnt == 0) ocBump(i); touch(i); });
+  commit(d < 0 ? 'بيع ' + acTitle(i) + ' (−1)' : 'إضافة ' + acTitle(i) + ' (+1)', () => { const w = i.cnt > 0; i.cnt = Math.max(0, i.cnt + d); if (w && i.cnt == 0) ocBump(i); touch(i, jlAutoCf()); });
   if (d > 0) acReq(acName(i));
 }
 function acCnt(id) {
@@ -148,7 +148,7 @@ function acDone(v, r) {
     if (!can('price')) v.price = r.price;
     if (typeof r.cnt == 'number' && v.cnt === undefined) v.st = acSt(r); /* مسح العدد يُبقي الحالة التي كانت معروضة */
     const cntChg = r.cnt !== v.cnt;
-    commit('تم التعديل', () => { Object.assign(r, v); if (cntChg) touch(r, 1); else r.by = S.me; });
+    commit('تم التعديل', () => { Object.assign(r, v); if (cntChg) touch(r, 1); else { r.by = S.me; if (jlAutoCf()) r.cf = Date.now(); } });
     if (cntChg && v.cnt > 0) reqChk(acName(r), 1);
     return;
   }
@@ -314,7 +314,7 @@ function agBuy(e) {
 function agC(e, dl) {
   const d = agD(e); if (!d || d.mode != 'cnt') return;
   if (dl < 0 && d.tot <= 0) return toast('المجموع 0 — إن كان غير محدَّث اضغط على الرقم لتصحيحه');
-  agSet(d, g => { const n = Math.max(0, d.tot + dl); if (dl < 0 && n == 0) ocBump(g); g.cnt = n; g.base = d.mt; delete g.lv; }, true, false, dl < 0 ? 'بيع من ' + d.title + ' (−1)' : 'إضافة إلى ' + d.title + ' (+1)');
+  agSet(d, g => { const n = Math.max(0, d.tot + dl); if (dl < 0 && n == 0) ocBump(g); g.cnt = n; g.base = d.mt; delete g.lv; }, true, jlAutoCf(), dl < 0 ? 'بيع من ' + d.title + ' (−1)' : 'إضافة إلى ' + d.title + ' (+1)');
   if (dl > 0) acReq(d.title);
 }
 function agCnt(e) {

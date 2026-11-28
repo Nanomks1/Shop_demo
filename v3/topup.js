@@ -9,7 +9,7 @@
   const OPS = ['IAM', 'ORANGE', 'INWI'];
   const DEF_CARDS = [5, 10, 20, 50], PH = [1];
   const D0 = { bo: 30, br: 10, cl: { 5: 3, 10: 3, 20: 3, 50: 3 }, rh: 10, cap: 0, rm: 1 };
-  const TPXD = { un: 1, sum: 1, dc: 1, tm: 1, jl: 1, rem: 1, ao: 1, by: 1, wu: 1 };
+  const TPXD = { un: 1, sum: 1, dc: 1, tm: 1, jl: 0, rem: 1, ao: 1, by: 1, wu: 1 };
   const TPXL = [
     ['un', 'شريط «تراجع» بعد كل ضغطة − / + في البطاقات'],
     ['sum', 'إظهار بطاقة الحساب والمجموع الكامل في شاشة التعبئة'],
@@ -98,6 +98,18 @@
   }
   window.tpIsCardActive = (op, n) => cardsList().includes(+n) && cardOn(op, +n);
   window.tpJournOn = () => !!tpx('jl');
+  window.tpJlEdit = id => {
+    const r = recId(id); if (!r || r.k != 'c') return;
+    const cur = r.val != null ? Math.round(r.val) : '';
+    ask(`بطاقة ${r.op} — ${r.n} درهم`, [{ k: 'v', l: 'العدد الفعلي الآن', t: 'tel', v: cur }], 'حفظ').then(v => {
+      if (!v || v.v.trim() === '') return;
+      const x = num(v.v, true); if (x == null) return toast('اكتب عدداً صحيحاً');
+      const prev = JSON.stringify(T()), nv = Math.max(0, Math.round(x));
+      put(r.op, 'c', r.n, nv, true);
+      render();
+      toast(`تم تحديث ${r.op} ${r.n} ← ${nv}`, () => { S.tp = JSON.parse(prev); });
+    });
+  };
   /* الحساب الكامل: البطاقات + الهواتف + رصيد صندوق التعبئة + حركات اليوم */
   function calc() {
     const cs = cardsList(), byOp = {}, adjs = adjList();

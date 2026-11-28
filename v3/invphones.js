@@ -112,7 +112,7 @@ function phGCard(g) {
 function phUCard(g) {
   const i = g.items[0], mem = memBadge(g.ram, g.cap);
   return cardH(
-    `<div class="ph-top" onclick="phOpen('${i.id}')"><b class="ph-nm"><bdi>${esc(i.brand + ' ' + i.name)}</bdi></b><div class="ph-pr-wrap">${i.price ? prBadge(i.price) : ''}</div></div>`
+    `<div class="ph-top" onclick="phOpen('${i.id}')"><b class="ph-nm"><bdi>${esc(g.brand + ' ' + g.name)}</bdi></b><div class="ph-pr-wrap">${i.price ? prBadge(i.price) : ''}</div></div>`
     + `<div class="ph-bot"><div class="ph-specs" onclick="phOpen('${i.id}')">${mem}<span class="phk c">مستعمل</span>${(+i.cnt || 0) > 1 ? `<span class="phk">× ${+i.cnt}</span>` : ''}${i.color ? `<span class="m"><bdi>${esc(i.color)}</bdi></span>` : ''}${rsQ(i) ? `<span class="rs">· محجوز${rsOld(i) ? ' ⚠' : ''}</span>` : ''}</div><button class="btn s sm sell" onclick="phC('${i.id}',-1)">− بيع</button></div>`
     + (i.imei ? `<div class="cs-nt m">IMEI: <bdi>${esc(i.imei)}</bdi></div>` : '') + (i.note ? `<div class="cs-nt m">${esc(i.note)}</div>` : ''),
     colOf(i), 'cmp'
@@ -300,7 +300,7 @@ function phC(id, d) {
   const i = find(id); if (!i) return;
   if (d < 0 && rsQ(i) > 0 && av(i) <= 0) return toast('كل القطع محجوزة: سلّم الحجز أو ألغِه أولاً');
   if (d < 0 && i.cnt <= 0) return toast('العدد 0 بالفعل: لا توجد قطع للبيع');
-  commit(d < 0 ? 'بيع ' + i.brand + ' ' + i.name + ' (−1)' : 'إضافة ' + i.brand + ' ' + i.name + ' (+1)', () => { i.cnt = Math.max(0, i.cnt + d); phSoldFix(i); if (d > 0) phStpFix(i); touch(i); });
+  commit(d < 0 ? 'بيع ' + i.brand + ' ' + i.name + ' (−1)' : 'إضافة ' + i.brand + ' ' + i.name + ' (+1)', () => { i.cnt = Math.max(0, i.cnt + d); phSoldFix(i); if (d > 0) phStpFix(i); touch(i, jlAutoCf()); });
   if (d > 0) return reqChk(i.brand + ' ' + i.name);
 }
 /* الإضافة: ابحث أولاً، فإن وُجد الهاتف أضف الكمية بدل إعادة الكتابة */
@@ -361,7 +361,7 @@ function phDone(v, r) {
           if (v.imei) mg.imei = mg.imei ? (mg.imei.includes(v.imei) ? mg.imei : mg.imei + ' · ' + v.imei) : v.imei;
           if (rsL(r).length) mg.res = [...rsL(mg), ...rsL(r)];
           phStpFix(mg); touch(mg, 1); S.items.splice(S.items.indexOf(r), 1);
-        } else { Object.assign(r, v); phSoldFix(r); if (cntChg) { phStpFix(r); touch(r, 1); } else r.by = S.me; }
+        } else { Object.assign(r, v); phSoldFix(r); if (cntChg) { phStpFix(r); touch(r, 1); } else { r.by = S.me; if (jlAutoCf()) r.cf = Date.now(); } }
         if (ap) sib.forEach(i => { i.price = v.price; touch(i); });
       });
       if (cntChg && v.cnt > 0) reqChk(r.brand + ' ' + r.name, 1);
