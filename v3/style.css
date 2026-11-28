@@ -270,6 +270,10 @@ main>.rtabs:first-of-type{position:sticky;top:calc(52px + env(safe-area-inset-to
 .jl-ok{display:inline-flex;align-items:center;padding:.05em .45em;border-radius:6px;background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-t);font-size:var(--t-xs);font-weight:700;white-space:nowrap}
 .jl-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:7px;border-top:1px dashed var(--bl)}
 .jl-bar .tag{margin:0;padding:.22em .55em;font-size:var(--t-xs)}
+.jl-acts .tag{margin:0;padding:4px 7px;font-size:var(--t-xs)}
+.jl-seg{width:100%}
+.jl-q{margin-top:8px}
+.jl-bar-act{gap:5px;flex-wrap:wrap}
 .rck.done{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok-t)}
 .jl-sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0 8px}
 .jl-sum-pill{min-width:0;background:var(--c);border:1px solid var(--bl);border-radius:var(--rc);padding:.45rem .5rem;text-align:center;box-shadow:var(--sh)}

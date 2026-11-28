@@ -14,28 +14,30 @@ const touch = (i, cf) => {
   if (!i.cf && i.at) i.cf = i.at;
   i.by = S.me;
   i.at = Date.now();
-  if (cf) i.cf = i.at;
+  if (cf) { i.cf = i.at; i.cfb = S.me; }
 };
+/* تأكيد الجولة: يسجّل من أكّد في cfb ولا يمحو اسم آخر من عدّل الصنف (by) */
 const cfTouch = i => {
   if (!i) return;
   i.cf = Date.now();
-  i.by = S.me;
+  i.cfb = S.me;
 };
 /* خيارات الجرد والجولة اليومية القابلة للتعديل من المدير (st_rnd) */
-const JLXD = { ac: 1, ns: 1, nz: 1, all: 'e', so: 'n', hs: [] };
+const JLXD = { ac: 1, ns: 1, nz: 1, all: 'a', so: 'n', hs: [] };
 const jlx = k => { const o = S.cfg && S.cfg.jrx; return !o || o[k] === undefined ? JLXD[k] : o[k]; };
 const jlSecOn = s => s == 'tp' ? (typeof tpJournOn == 'function' && tpJournOn()) : !((jlx('hs') || []).includes(s));
 const jlAutoCf = () => V.v == 'jl' && !!jlx('ac');
 const sumv = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
 S.fields = S.fields || []; S.gg = S.gg || []; S.ag = S.ag || [];
 /* cl: 2 يعني لكل لون: 0 نفد (أحمر)، 1 أو 2 قارب (برتقالي)، 3 فأكثر متوفر (أخضر) */
-Object.assign(DL0, { rsd: 7, cl: 2, csBuy: 3, gA: 30, gB: 20, gC: 10, gY: 3, acl: 3, agl: 10 });
+Object.assign(DL0, { rsd: 7, cl: 2, csBuy: 3, gA: 30, gB: 20, gC: 10, gY: 3, acl: 3, agl: 10, jq: 30 });
 LM.push(
   ['rsd', 'هاتف: يُعتبر الحجز قديماً بعد (أيام)، 0 = بلا تنبيه'],
   ['csBuy', 'بوشيط: الكمية الافتراضية عند الشراء من التقرير'],
   ['gA', 'أنتي كاس: مستوى «غامق» يُحسب كـ (قطعة)'], ['gB', 'أنتي كاس: مستوى «أخضر» يُحسب كـ (قطعة)'], ['gC', 'أنتي كاس: مستوى «فاتح» يُحسب كـ (قطعة)'],
   ['gY', 'أنتي كاس: مستوى «قليل» يُحسب كـ (قطعة)'], ['acl', 'إكسسوار بعدد: «قليل» عند عدد فأقل'],
-  ['agl', 'مجموعة إكسسوار (كابل/شاحن): «قارب النفاد» عند مجموع فأقل']
+  ['agl', 'مجموعة إكسسوار (كابل/شاحن): «قارب النفاد» عند مجموع فأقل'],
+  ['jq', 'الجولة: حصة اليوم (أقصى عدد أصناف غير مؤكدة تظهر، 0 = بلا حد)']
 );
 /* قائمة إكمال تلقائي موحدة لأسماء الموديلات في المحل */
 function invModelNames() {

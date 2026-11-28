@@ -170,7 +170,7 @@ function glB(g) {   // بطاقة نتيجة البحث: كل أنواع الز�
   }).join('') + '</div>', colG(g));
 }
 const glReqT = (g, m) => 'أنتي كاس ' + (((g.br || {})[m]) ? g.br[m] + ' ' : '') + m;   // اسم السلعة لتنبيه طلب الزبون مع الماركة
-function glC(gid, j, k, d) { const m = S.gg.find(x => x.id == gid).models[k], ty = S.tags.glass[j]; glDo((d < 0 ? 'بيع ' : 'إضافة ') + m + (d < 0 ? ' (−1)' : ' (+1)'), () => { const i = glGet(gid, ty); i.stock[m] = Math.max(0, (i.stock[m] || 0) + d); touch(i, jlAutoCf()); }); if (d > 0) reqChk(glReqT(S.gg.find(x => x.id == gid), m)); }
+function glC(gid, j, k, d) { const m = S.gg.find(x => x.id == gid).models[k], ty = S.tags.glass[j]; if (d < 0) { const it0 = gitem(gid, ty); if (!(it0 && it0.stock && it0.stock[m] > 0)) return toast('العدد 0 بالفعل'); } glDo((d < 0 ? 'بيع ' : 'إضافة ') + m + (d < 0 ? ' (−1)' : ' (+1)'), () => { const i = glGet(gid, ty); i.stock[m] = Math.max(0, (i.stock[m] || 0) + d); touch(i, jlAutoCf()); }); if (d > 0) reqChk(glReqT(S.gg.find(x => x.id == gid), m)); }
 function glLv(gid, j, k, l) { const m = S.gg.find(x => x.id == gid).models[k], ty = S.tags.glass[j]; glDo('تم: ' + (l == 'r' ? 'نفد' : l == 'y' ? 'قليل' : lvN(l) + '+') + ' — ' + m, () => { const i = glGet(gid, ty); i.lv = i.lv || {}; i.lv[m] = l; delete i.stock[m]; touch(i, 1); }); if (l != 'r') reqChk(glReqT(S.gg.find(x => x.id == gid), m)); }
 function glEx(gid, j, k) {
   const m = S.gg.find(x => x.id == gid).models[k], i0 = gitem(gid, S.tags.glass[j]) || {};

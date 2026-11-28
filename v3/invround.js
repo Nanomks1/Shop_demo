@@ -55,29 +55,39 @@ function rnd(allMode) {
     return !t || now - t > ms;
   });
 }
+/* حصة اليوم: أقدم N صنفاً غير مؤكد (N من الإعدادات، 0 = بلا حد) */
+function rndToday() {
+  const L = rnd(false), q = +lim('jq') || 0;
+  if (!q || L.length <= q) return L;
+  const done = rndAll().filter(i => jlIsToday(cfTime(i))).length;
+  return L.slice(0, Math.max(0, q - done));
+}
+const jlKey = i => (i._jl || 's') + ':' + i.id;
+const jlSecIdx = i => Math.max(0, JL_TABS.findIndex(t => t[0] == jlSecOf(i)));
+const jlGlBr = (g, ms) => g ? (ms.map(m => (g.br || {})[m]).find(Boolean) || '') : '';
 const jlSecOf = i => i._jl == 'ag' ? 'acc' : i._jl == 'tp' ? 'tp' : i.sec;
 function jlTextOf(i) {
   if (i._jl == 'ag') return agTxt(i.d) + ' ' + i.d.title;
   if (i._jl == 'tp') return 'تعبئة ' + i.r.op + ' ' + i.r.n;
   if (i.sec == 'glass') {
     const g = S.gg.find(x => x.id == i.gid);
-    return (i.ty || '') + ' ' + (g ? g.models.map(m => ((g.br || {})[m] || '') + ' ' + m).join(' ') : '');
+    return (i.ty || '') + ' ' + (g ? gMods(g, i.ty).map(m => ((g.br || {})[m] || '') + ' ' + m).join(' ') : '');
   }
   return nzText(i);
 }
 function jlNameOf(i) {
   if (i._jl == 'ag') return i.d.title || '';
   if (i._jl == 'tp') return i.r.op + ' ' + String(i.r.n).padStart(4, '0');
-  if (i.sec == 'phones') return [i.brand, i.name, i.cap, i.color].filter(Boolean).join(' ');
-  if (i.sec == 'glass') { const g = S.gg.find(x => x.id == i.gid); return (g ? gMods(g, i.ty).join(' ') : '') + ' ' + (i.ty || ''); }
+  if (i.sec == 'phones') return [i.brand, i.name, i.ram, i.cap, i.color].filter(Boolean).join(' ');
+  if (i.sec == 'glass') { const g = S.gg.find(x => x.id == i.gid), ms = g ? gMods(g, i.ty) : []; return [jlGlBr(g, ms), ms.join(' '), i.ty].filter(Boolean).join(' '); }
   if (i.sec == 'case') return csNm(i);
-  if (i.sec == 'acc') return acName(i);
+  if (i.sec == 'acc') return [acName(i), i.pw, i.tier].filter(Boolean).join(' ');
   return '';
 }
 /* إحصائيات سريعة للرف/القسم المختار */
 function jlSecSummary(sec) {
   const P = (n, l, cls = '') => `<div class="jl-sum-pill ${cls}"><b><bdi class="ltr">${n}</bdi></b><small>${l}</small></div>`;
-  const staleSec = rnd(false).filter(i => sec == 'all' || jlSecOf(i) == sec).length;
+  const staleSec = rndToday().filter(i => sec == 'all' || jlSecOf(i) == sec).length;
   const stP = P(staleSec, 'غير مؤكد', staleSec ? 'wn' : '');
   if (sec == 'phones') {
     const A = ph();
@@ -153,7 +163,9 @@ function jlCompactRow(i) {
     const sub = d.tot !== null ? `المجموع <bdi class="ltr">${d.est ? '≈' : ''}${d.tot}</bdi>` : esc(ALB2[d.st]);
     const ctrl = d.mode == 'cnt'
       ? `<button class="btn s sm" onclick="agC('${e}',-1)">−</button><button type="button" class="cn jl-cn" onclick="agCnt('${e}')">${d.est ? '≈' : ''}${d.tot}</button><button class="btn sm" onclick="agC('${e}',1)">+</button>`
-      : ['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" style="margin:0;padding:4px 7px;font-size:var(--t-xs)" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('');
+      : d.mode == 'mem'
+        ? `<button class="btn s sm" onclick="agOpen('${e}')">فتح المجموعة</button>`
+        : ['g', 'y', 'r'].map(s => `<button class="tag ${d.st == s ? 'on' : ''}" onclick="agLv('${e}','${s}')">${ALB2[s]}</button>`).join('');
     return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[d.st]}"></span><div class="cmp-main" onclick="agOpen('${e}')"><b>${esc(d.title)}</b><div class="m">${sub} · ${dBadge}</div></div>`
       + `<div class="jl-acts">${ctrl}${ckBtn(`rCfAg('${e}')`)}</div></div></div>`;
   }
@@ -163,16 +175,16 @@ function jlCompactRow(i) {
       + `<div class="jl-acts"><button class="btn s sm" onclick="tpJlEdit('${r.id}')">تعديل</button>${ckBtn(`rCfTp('${r.id}')`)}</div></div></div>`;
   }
   if (i.sec == 'phones') {
-    const s = phSt(i), g = phGroup(i), isU = i.cond == 'مستعمل';
+    const s = phSt(i), g = phGroup(i), isU = i.cond == 'مستعمل', sw = i.color ? `<span class="cc-sw s" style="background:${csBg(i.color)}"></span> ` : '';
     const sub = [i.color, i.ram, i.cap, i.price && fmtDh(i.price), rsQ(i) ? 'محجوز ' + rsQ(i) : '', isU && i.imei ? 'IMEI ' + i.imei : ''].filter(Boolean).map(x => `<bdi>${esc(x)}</bdi>`).join(' · ');
-    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phOpen('${i.id}')"><b><bdi>${esc(i.brand + ' ' + i.name)}</bdi>${isU ? ' <span class="phk c">مستعمل</span>' : ''}${g.stp ? ' <span class="phk c">متوقف</span>' : ''}</b><div class="m">${sub ? sub + ' · ' : ''}${dBadge}</div></div>`
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="phOpen('${i.id}')"><b><bdi>${esc(i.brand + ' ' + i.name)}</bdi>${isU ? ' <span class="phk c">مستعمل</span>' : ''}${g.stp ? ' <span class="phk c">متوقف</span>' : ''}</b><div class="m">${sw}${sub ? sub + ' · ' : ''}${dBadge}</div></div>`
       + `<div class="jl-acts"><button class="btn s sm" onclick="phC('${i.id}',-1)">−</button><button type="button" class="cn jl-cn" onclick="phCnt('${i.id}')">${i.cnt}</button><button class="btn sm" onclick="phC('${i.id}',1)">+</button>`
       + `${ckBtn(`rCf('${i.id}')`)}</div></div></div>`;
   }
   if (i.sec == 'glass') {
     const g = S.gg.find(x => x.id == i.gid); if (!g) return '';
-    const s = gSt(i, g, i.ty), j = Math.max(0, S.tags.glass.indexOf(i.ty));
-    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="jlGlOpen('${g.id}',${j})"><b>زجاج <bdi>${esc(i.ty)}</bdi>: ${glModsH(gMods(g, i.ty))}${gStop(i, g) ? ' <span class="phk c">متوقف</span>' : ''}</b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi>${gPr(i) ? ' · <bdi>' + esc(fmtDh(gPr(i))) + '</bdi>' : ''} · ${dBadge}</div></div>`
+    const s = gSt(i, g, i.ty), j = Math.max(0, S.tags.glass.indexOf(i.ty)), br = jlGlBr(g, gMods(g, i.ty));
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="jlGlOpen('${g.id}',${j})"><b>زجاج <bdi>${esc(i.ty)}</bdi>: ${glModsH(gMods(g, i.ty))}${br ? ` <span class="m">· <bdi>${esc(br)}</bdi></span>` : ''}${gStop(i, g) ? ' <span class="phk c">متوقف</span>' : ''}</b><div class="m">المجموع <bdi class="ltr">${gEst(i, g) ? '≈' : ''}${gTot(i, g)}</bdi>${gPr(i) ? ' · <bdi>' + esc(fmtDh(gPr(i))) + '</bdi>' : ''} · ${dBadge}</div></div>`
       + `<div class="jl-acts"><button class="btn s sm" onclick="jlGlOpen('${g.id}',${j})">تعديل</button>${ckBtn(`rCf('${i.id}')`)}</div></div></div>`;
   }
   if (i.sec == 'case') {
@@ -181,10 +193,10 @@ function jlCompactRow(i) {
       + `<div class="jl-acts"><button class="btn s sm" onclick="csOpen('${i.id}')">الألوان (${V0.length})</button>${ckBtn(`rCf('${i.id}')`)}</div></div></div>`;
   }
   if (i.sec == 'acc') {
-    const s = acSt(i), cn = typeof i.cnt == 'number';
+    const s = acSt(i), cn = typeof i.cnt == 'number', meta = [...new Set([acTierTxt(i), i.pw, i.price && fmtDh(i.price)].filter(Boolean))].map(x => `<bdi>${esc(x)}</bdi>`).join(' · ');
     const act = cn ? `<button class="btn s sm" onclick="acC('${i.id}',-1)">−</button><button type="button" class="cn jl-cn" onclick="acCnt('${i.id}')">${i.cnt}</button><button class="btn sm" onclick="acC('${i.id}',1)">+</button>`
-      : ['g', 'y', 'r'].map(x => `<button class="tag ${i.st == x ? 'on' : ''}" style="margin:0;padding:4px 7px;font-size:var(--t-xs)" onclick="acS('${i.id}','${x}')">${ALB[x]}</button>`).join('');
-    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="acOpen('${i.id}')"><b><bdi>${esc(acTitle(i))}</bdi></b><div class="m">${i.price ? '<bdi>' + esc(fmtDh(i.price)) + '</bdi> · ' : ''}${dBadge}</div></div>`
+      : ['g', 'y', 'r'].map(x => `<button class="tag ${i.st == x ? 'on' : ''}" onclick="acS('${i.id}','${x}')">${ALB[x]}</button>`).join('');
+    return `<div class="card cmp jl-row"><div class="row2"><span class="dotl" style="background:${DT[s]}"></span><div class="cmp-main" onclick="acOpen('${i.id}')"><b><bdi>${esc(acTitle(i))}</bdi></b><div class="m">${meta ? meta + ' · ' : ''}${dBadge}</div></div>`
       + `<div class="jl-acts">${act}${ckBtn(`rCf('${i.id}')`)}</div></div></div>`;
   }
   return '';
@@ -213,25 +225,44 @@ const jlCurSec = () => {
   const s = V.js || V.jk || 'all';
   return s == 'tp' && (typeof tpJournOn == 'function' && !tpJournOn()) ? 'all' : s;
 };
+/* غير المؤكد في هذه الزيارة: ما ظهر غير مؤكد يبقى ظاهراً بعد تأكيده (✓ أو − أو +) حتى الخروج من الشاشة */
+function jlStaleView() {
+  V.jseen = V.jseen || {};
+  rndToday().forEach(i => { V.jseen[jlKey(i)] = 1; });
+  return rndAll().filter(i => V.jseen[jlKey(i)]);
+}
+/* وقت التأكيد وقت أول ظهور: لا يقفز الصف بعد تأكيده عند الترتيب بالأقدم */
+const jlT0 = i => { V.jt0 = V.jt0 || {}; const k = jlKey(i); return k in V.jt0 ? V.jt0[k] : (V.jt0[k] = cfTime(i)); };
+function jlSort(L) {
+  if ((V.jso || jlx('so')) == 'n') return [...L].sort((a, b) => (jlSecIdx(a) - jlSecIdx(b)) || jlNameOf(a).localeCompare(jlNameOf(b), undefined, { numeric: true }));
+  return [...L].sort((a, b) => jlT0(a) - jlT0(b));
+}
 function jlFiltered() {
   const allMode = V.jm == 'all', sec = jlCurSec(), q = nz(V.jq || '');
-  let L = rnd(allMode).filter(i => (sec == 'all' || jlSecOf(i) == sec) && (!q || nzHit(nz(jlTextOf(i)), V.jq, q)));
-  if (allMode && V.jrem) L = L.filter(i => !jlIsToday(cfTime(i)));
-  if (allMode && (V.jso || jlx('so')) == 'n') {
-    L = [...L].sort((a, b) => jlNameOf(a).localeCompare(jlNameOf(b), undefined, { numeric: true }));
+  let L = (allMode ? rndAll() : jlStaleView()).filter(i => (sec == 'all' || jlSecOf(i) == sec) && (!q || nzHit(nz(jlTextOf(i)), V.jq, q)));
+  if (allMode && V.jrem) {
+    V.jrs = V.jrs || {};
+    L.forEach(i => { if (!jlIsToday(cfTime(i))) V.jrs[jlKey(i)] = 1; });
+    L = L.filter(i => V.jrs[jlKey(i)] || !jlIsToday(cfTime(i)));
   }
-  return L;
+  if (allMode && V.jav) {
+    V.jas = V.jas || {};
+    L.forEach(i => { if (!jlIsZero(i)) V.jas[jlKey(i)] = 1; });
+    L = L.filter(i => V.jas[jlKey(i)] || !jlIsZero(i));
+  }
+  return jlSort(L);
 }
+const jlPend = L => L.filter(i => !jlIsToday(cfTime(i)));
 function jlListHtml() {
   const L = jlFiltered(), limN = V.jlim || 40, a = L.slice(0, limN), rem = L.length - a.length;
   const more = rem > 0 ? `<button type="button" class="btn s" onclick="V.jlim=(V.jlim||40)+40;jlRefreshList()">عرض المزيد (+${Math.min(40, rem)} من ${rem} متبقية)</button>` : '';
-  return { a, total: L.length, html: a.map(jlCompactRow).join('') + more };
+  return { a, total: L.length, pend: jlPend(a).length, html: a.map(jlCompactRow).join('') + more };
 }
 function rCfAll() {
   const mod = jlx('all');
   if (mod == 'o') return;
   if (mod == 'a' && !isAdmin()) return toast('تأكيد الكل للمدير فقط');
-  const L = jlFiltered().slice(0, V.jlim || 40);
+  const L = jlPend(jlFiltered().slice(0, V.jlim || 40));
   if (!L.length) return;
   sure('تأكيد ' + L.length + ' صنفاً ظاهراً الآن كما هي؟', 'تأكيد الكل', false).then(y => {
     if (!y) return;
@@ -242,7 +273,7 @@ function rCfAll() {
           const g = S.ag.find(x => x.id == i.id);
           if (g) cfTouch(g);
           i.d.mem.forEach(m => cfTouch(m));
-          if (!g && !i.d.mem.length) S.ag.push({ id: i.d.id, kind: i.d.kind, conn: i.d.conn, tier: i.d.tier, pw: i.d.pw, by: S.me, cf: Date.now() });
+          if (!g && !i.d.mem.length) S.ag.push({ id: i.d.id, kind: i.d.kind, conn: i.d.conn, tier: i.d.tier, pw: i.d.pw, by: S.me, cfb: S.me, cf: Date.now() });
         } else if (i._jl == 'tp') {
           cfTouch(i.r);
         } else {
@@ -253,20 +284,28 @@ function rCfAll() {
   });
 }
 function jlEmptyHtml() {
-  if (String(V.jq || '').trim()) return emptyBox('لا توجد نتائج مطابقة في الجرد', 'جرّب كلمة أخرى أو امسح البحث');
+  const sec = jlCurSec(), inSec = i => sec == 'all' || jlSecOf(i) == sec;
+  if (String(V.jq || '').trim()) {
+    const e = emptyBox('لا توجد نتائج مطابقة في الجرد', 'جرّب كلمة أخرى أو امسح البحث');
+    return V.jm == 'all' ? e : e + `<button type="button" class="btn s" onclick="V.jm='all';V.jlim=40;render()">ابحث في الجرد الشامل</button>`;
+  }
   if (V.jm == 'all') {
     return V.jrem
       ? emptyBox('تم جرد كل أصناف هذا القسم اليوم ✓', 'اضغط «المتبقي اليوم» لإظهار كل الأصناف')
       : emptyBox('لا توجد أصناف مسجلة في هذا القسم بعد');
   }
+  if (sec != 'all' && !jlSecOn(sec)) return emptyBox('هذا القسم مستبعد من تنبيهات «غير مؤكد»', 'راجعه متى شئت من «جرد شامل للقسم»');
+  const hid = rnd(false).filter(inSec).length;
+  if ((+lim('jq') || 0) && hid > 0 && !rndToday().filter(inSec).length) return emptyBox('أنجزتَ حصة اليوم ✓', 'بقي ' + hid + ' صنفاً غير مؤكد لأيام قادمة، أو افتح «جرد شامل للقسم»');
   return emptyBox('كل الأصناف في هذا القسم مؤكدة حديثاً ✓', 'اضغط «جرد شامل للقسم» في الأعلى إن أردت مراجعة كل المخزون');
 }
 const JL_TABS = [['all', 'الكل'], ['phones', 'الهواتف'], ['glass', 'الأنتي كاس'], ['case', 'البوشيط'], ['acc', 'الإكسسوارات'], ['tp', 'التعبئة']];
 function jlRefreshList() {
-  const { a, html } = jlListHtml(), box = $('jl_list'), btn = $('jl_cf_all'), clr = $('jl_q_clr');
-  const mod = jlx('all'), showAll = a.length && mod != 'o' && (mod != 'a' || isAdmin());
-  if (clr) clr.hidden = !String(V.jq || '').trim();
-  if (btn) { btn.hidden = !showAll; btn.innerHTML = `${I('check')} تأكيد كل القائمة الظاهرة (${a.length})`; }
+  const { total, pend, html } = jlListHtml(), box = $('jl_list'), btn = $('jl_cf_all'), clr = $('jl_q_clr'), cnt = $('jl_cnt');
+  const mod = jlx('all'), showAll = pend && mod != 'o' && (mod != 'a' || isAdmin()), hasQ = !!String(V.jq || '').trim();
+  if (clr) clr.hidden = !hasQ;
+  if (cnt) { cnt.hidden = !hasQ; cnt.textContent = hasQ ? total + ' نتيجة' : ''; }
+  if (btn) { btn.hidden = !showAll; btn.innerHTML = `${I('check')} تأكيد كل القائمة الظاهرة (${pend})`; }
   if (box) box.innerHTML = html || jlEmptyHtml();
 }
 function jlClearQ() {
@@ -276,23 +315,31 @@ function jlClearQ() {
 VW.jl = () => {
   const allMode = V.jm == 'all', sec = jlCurSec(), tpOn = typeof tpJournOn == 'function' && tpJournOn();
   const tabs = JL_TABS.filter(([k]) => k != 'tp' || tpOn);
-  const staleSecCnt = rnd(false).filter(i => sec == 'all' || jlSecOf(i) == sec).length;
+  const td = rndToday(), sc = {};
+  td.forEach(i => { const k = jlSecOf(i); sc[k] = (sc[k] || 0) + 1; });
+  const tabN = k => k == 'all' ? td.length : (sc[k] || 0);
+  const staleSecCnt = tabN(sec);
   const secAll = allMode ? rndAll().filter(i => sec == 'all' || jlSecOf(i) == sec) : [];
   const doneSec = allMode ? secAll.filter(i => jlIsToday(cfTime(i))).length : 0;
   const remSec = secAll.length - doneSec;
-  const { a, html } = jlListHtml();
-  const mod = jlx('all'), showAll = a.length && mod != 'o' && (mod != 'a' || isAdmin());
-  const soNow = V.jso || jlx('so');
+  const { total, pend, html } = jlListHtml();
+  const mod = jlx('all'), showAll = pend && mod != 'o' && (mod != 'a' || isAdmin());
+  const soNow = V.jso || jlx('so'), hid = allMode ? 0 : rnd(false).length - td.length, hasQ = !!String(V.jq || '').trim();
+  const tg = (on, fn, l) => `<button type="button" class="tag ${on ? 'on' : ''}" onclick="${fn}">${l}</button>`;
+  const lbar = allMode ? `تم جرد اليوم: <b>${doneSec}</b> من <b>${secAll.length}</b>` : (hid > 0 ? `مؤجَّل لأيام قادمة (حصة اليوم): <b>${hid}</b>` : '');
+  const acts = (allMode ? tg(V.jrem, "V.jrem=!V.jrem;V.jrs={};V.jlim=40;render()", `المتبقي (${remSec})`) + tg(V.jav, "V.jav=!V.jav;V.jas={};V.jlim=40;render()", 'المتوفر فقط') : '')
+    + tg(false, "V.jso=(V.jso||jlx('so'))=='n'?'o':'n';render()", soNow == 'n' ? 'ترتيب: الرف' : 'ترتيب: الأقدم');
   return {
     t: 'الجرد والجولة اليومية',
     h: `<div class="jl-sum-grid">${jlSecSummary(sec)}</div>`
       + `<div class="sec-panel">`
-      + `<div class="sec-tags">${tabs.map(([k, l]) => `<button class="tag ${sec == k ? 'on' : ''}" onclick="V.js='${k}';delete V.jk;V.jlim=40;render()">${l}</button>`).join('')}</div>`
-      + `<div class="sec-toolbar"><div class="seg-group" style="width:100%"><button type="button" class="seg-btn ${!allMode ? 'on' : ''}" onclick="V.jm='old';V.jlim=40;render()">يحتاج تأكيداً (${staleSecCnt})</button><button type="button" class="seg-btn ${allMode ? 'on' : ''}" onclick="V.jm='all';V.jlim=40;render()">جرد شامل للقسم</button></div></div>`
-      + (allMode ? `<div class="jl-bar"><span class="m">تم جرد اليوم: <b>${doneSec}</b> من <b>${secAll.length}</b></span><div class="row2" style="gap:5px"><button type="button" class="tag ${V.jrem ? 'on' : ''}" onclick="V.jrem=!V.jrem;V.jlim=40;render()">المتبقي (${remSec})</button><button type="button" class="tag" onclick="V.jso=(V.jso||jlx('so'))=='n'?'o':'n';render()">${soNow == 'n' ? 'ترتيب: الرف' : 'ترتيب: الأقدم'}</button></div></div>` : '')
-      + `<div class="q-wrap" style="margin-top:8px"><input id="jl_q" placeholder="ابحث داخل الجرد: موديل أو ماركة..." value="${esc(V.jq || '')}" oninput="V.jq=this.value;V.jlim=40;jlRefreshList()"><button id="jl_q_clr" type="button" class="q-clr" ${V.jq ? '' : 'hidden'} onclick="jlClearQ()" aria-label="مسح البحث">✕</button></div>`
+      + `<div class="sec-tags">${tabs.map(([k, l]) => `<button class="tag ${sec == k ? 'on' : ''}" onclick="V.js='${k}';delete V.jk;V.jlim=40;render()">${l}${tabN(k) ? ' (' + tabN(k) + ')' : ''}</button>`).join('')}</div>`
+      + `<div class="sec-toolbar"><div class="seg-group jl-seg"><button type="button" class="seg-btn ${!allMode ? 'on' : ''}" onclick="V.jm='old';V.jlim=40;render()">يحتاج تأكيداً (${staleSecCnt})</button><button type="button" class="seg-btn ${allMode ? 'on' : ''}" onclick="V.jm='all';V.jlim=40;render()">جرد شامل للقسم</button></div></div>`
+      + `<div class="jl-bar"><span class="m">${lbar}</span><div class="row2 jl-bar-act">${acts}</div></div>`
+      + `<div class="q-wrap jl-q"><input id="jl_q" placeholder="ابحث داخل الجرد: موديل أو ماركة..." value="${esc(V.jq || '')}" oninput="V.jq=this.value;V.jlim=40;jlRefreshList()"><button id="jl_q_clr" type="button" class="q-clr" ${hasQ ? '' : 'hidden'} onclick="jlClearQ()" aria-label="مسح البحث">✕</button></div>`
+      + `<div id="jl_cnt" class="m" ${hasQ ? '' : 'hidden'}>${hasQ ? total + ' نتيجة' : ''}</div>`
       + `</div>`
-      + `<button id="jl_cf_all" class="btn s" ${showAll ? '' : 'hidden'} onclick="rCfAll()">${I('check')} تأكيد كل القائمة الظاهرة (${a.length})</button>`
+      + `<button id="jl_cf_all" class="btn s" ${showAll ? '' : 'hidden'} onclick="rCfAll()">${I('check')} تأكيد كل القائمة الظاهرة (${pend})</button>`
       + `<div id="jl_list">${html || jlEmptyHtml()}</div>`
   };
 };
